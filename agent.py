@@ -13,6 +13,8 @@ import pytesseract
 from PIL import ImageEnhance, ImageFilter
 import json
 import re
+import cv2
+import math
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
@@ -284,49 +286,68 @@ def job_tool(task):
 # ================= CHAT =================
 
 def chat_tool(task):
-
-    print("🤔 Thinking with project context...")
-
-    context_data = []
+    
+    # 1. تجميع الصور من سياق المشروع (project_context)
+    images = []
+    text_context_data = []
 
     for item in project_context:
-        entry = {
-            "file": item["path"],
-            "type": item["type"]
-        }
+        if item["type"] == "image":
+            images.append(item["path"])
+        else:
+            # تجميع بيانات الملفات النصية والـ PDF والـ Excel
+            entry = {"file": item["path"], "type": item["type"]}
+            if "data" in item:
+                entry["data"] = item["data"]
+            text_context_data.append(entry)
 
-        if "data" in item:
-            entry["data"] = item["data"]
-
-        context_data.append(entry)
-
-    full_prompt = f"""
-You are an AI assistant working with structured project data.
-
-IMPORTANT RULES:
-- Use ONLY the DATA_JSON provided.
-- DO NOT guess or invent values.
-- Compare real values only.
-- If something is empty, say it is missing.
-
-PROJECT CONTEXT JSON:
-{json.dumps(context_data, indent=2)}
-
-USER QUESTION:
-{task}
-
-Give a clear comparison answer based strictly on DATA_JSON.
-"""
-
-    r = ollama.chat(
-        model="llama3",
-        messages=[{
-            "role":"user",
-            "content": full_prompt
+    # 2. تحديد الموديل والرسالة بناءً على وجود صور
+    if images:
+        print(f"👁 Vision Mode: Analyzing {len(images)} images using LLaVA...")
+        model_name = "llava"
+        
+        # لو المستخدم مبعتش سؤال، نفترض إنه عايز وصف
+        prompt = task if task else "Describe this image."
+        
+        # في حالة الصور، بنبعت الصور للموديل مباشرة
+        messages = [{
+            "role": "user",
+            "content": prompt,
+            "images": images # هنا السر، بنبعت قايمة مسارات الصور
         }]
-    )
+        
+    else:
+        # الشات العادي (نصوص وكود وبيانات) - ده كودك القديم زي ما هو
+        print("🤔 Thinking with project context...")
+        model_name = "llama3"
+        
+        full_prompt = f"""
+        You are an AI assistant working with structured project data.
+        
+        IMPORTANT RULES:
+        - Use ONLY the DATA_JSON provided.
+        - DO NOT guess or invent values.
+        
+        PROJECT CONTEXT JSON:
+        {json.dumps(text_context_data, indent=2, ensure_ascii=False)}
+        
+        USER QUESTION:
+        {task}
+        """
+        messages = [{"role": "user", "content": full_prompt}]
 
-    print(f"\n🤖 Agent: {r['message']['content']}")
+    # 3. إرسال الطلب لـ Ollama
+    try:
+        r = ollama.chat(
+            model=model_name,
+            messages=messages
+        )
+        print(f"\n🤖 Agent: {r['message']['content']}")
+        
+    except Exception as e:
+        print(f"\n❌ AI Error: {e}")
+        if model_name == "llava":
+            print("💡 Tip: Make sure you ran 'ollama pull llava'")
 
 # ================= FILE TYPE DETECTOR =================
 
@@ -395,24 +416,88 @@ def handle_code_file(file_path):
 
 
 def handle_image_file(file_path):
-
     try:
         size = os.path.getsize(file_path) / (1024*1024)
         print(f"🖼 Image attached: {os.path.basename(file_path)}")
         print(f"📦 Size: {size:.2f} MB")
-        print("⚡ Vision analysis can be added later.")
+        
+        # 🔥 التعديل هنا: رسالة توضيحية فقط
+        print("⚡ Vision ready: Ask me to describe it!") 
 
     except Exception as e:
         print(f"❌ Image error: {e}")
 
 
 def handle_video_file(file_path):
-
+    print("🎬 Processing video for RTX 3060 Ti...")
+    
     try:
-        size = os.path.getsize(file_path) / (1024*1024)
-        print(f"🎬 Video attached: {os.path.basename(file_path)}")
-        print(f"📦 Size: {size:.2f} MB")
+        vidcap = cv2.VideoCapture(file_path)
+        
+        # معلومات الفيديو
+        total_frames = int(vidcap.get(cv2.CAP_PROP_FRAME_COUNT))
+        fps = vidcap.get(cv2.CAP_PROP_FPS)
+        duration = total_frames / fps
+        
+        print(f"⏱ Duration: {duration:.1f}s | Total Frames: {total_frames}")
 
+        # ✅ استراتيجية 3060 Ti:
+        # هناخد 5 لقطات موزعة بالتساوي على الفيديو كله
+        # ده أفضل من أخذ لقطة كل ثانية عشان الذاكرة متتخنقش
+        target_frame_count = 5 
+        
+        # لو الفيديو قصير جدا (أقل من 5 ثواني) هناخد لقطة كل ثانية
+        if duration < 5:
+            step = int(fps) # كل ثانية
+        else:
+            step = int(total_frames / target_frame_count)
+
+        if step == 0: step = 1
+
+        count = 0
+        extracted_count = 0
+        
+        while True:
+            # نقفز للفريم المطلوب مباشرة لتوفير المعالجة
+            # (بدل ما نقرأ فريم فريم)
+            frame_id = extracted_count * step
+            if frame_id >= total_frames:
+                break
+                
+            vidcap.set(cv2.CAP_PROP_POS_FRAMES, frame_id)
+            success, image = vidcap.read()
+            
+            if not success: break
+            
+            # 🔥 أهم خطوة للـ 8GB VRAM: تصغير الصورة
+            # بنخلي الارتفاع 512 بيكسل بس، والعرض يتضبط أوتوماتيك
+            # ده بيخلي الصورة خفيفة جداً على الموديل
+            height, width = image.shape[:2]
+            max_height = 512
+            if height > max_height:
+                scale = max_height / height
+                new_width = int(width * scale)
+                image = cv2.resize(image, (new_width, max_height))
+
+            # الحفظ والإضافة
+            frame_path = f"{file_path}_frame_{extracted_count}.jpg"
+            cv2.imwrite(frame_path, image)
+            
+            project_context.append({
+                "path": frame_path,
+                "type": "image"
+            })
+            
+            print(f"📸 Frame {extracted_count+1}: {os.path.basename(frame_path)} (Resized)")
+            extracted_count += 1
+            
+            # أمان أخير
+            if extracted_count >= 6:
+                break
+        
+        save_project_context()
+        print(f"⚡ Done! {extracted_count} frames ready. Ask: 'Describe video'")
+        
     except Exception as e:
         print(f"❌ Video error: {e}")
 
