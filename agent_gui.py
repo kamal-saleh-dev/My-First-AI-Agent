@@ -80,14 +80,11 @@ copy_btn = ctk.CTkButton(
 copy_btn.pack(side="right")
 
 # ===========================================
-# FOOTER CONTAINER (BOTTOM)
+# 🎨 GUI LAYOUT & STYLING (MODERN CHATGPT STYLE)
 # ===========================================
-footer = ctk.CTkFrame(app, fg_color="transparent")
-footer.pack(side="bottom", fill="x", padx=20, pady=(0,20))
 
-# ===========================================
-# CHAT AREA (MIDDLE)
-# ===========================================
+# 1. Main Chat Area (منطقة الشات)
+# وضعناها هنا لأنها يجب أن تكون قبل الـ Footer
 chat_area = ctk.CTkScrollableFrame(
     app,
     width=900,
@@ -96,99 +93,157 @@ chat_area = ctk.CTkScrollableFrame(
 )
 chat_area.pack(pady=10, padx=20, fill="both", expand=True)
 
-# ===========================================
-# STATUS & CONTEXT (INSIDE FOOTER - TOP)
-# ===========================================
+# 2. Main Footer Container
+# ده الفريم الكبير اللي شايل كل حاجة تحت
+footer = ctk.CTkFrame(app, fg_color="transparent")
+footer.pack(side="bottom", fill="x", padx=40, pady=(0, 25))
 
-status_frame = ctk.CTkFrame(footer, fg_color="transparent")
-status_frame.pack(fill="x", pady=(0,5))
+# 3. Status Bar (شريط الحالة صغير فوق)
+status_frame = ctk.CTkFrame(footer, fg_color="transparent", height=20)
+status_frame.pack(fill="x", pady=(0, 5))
 
+# أيقونة الحالة (نقطة خضراء + كلمة Idle)
 status_label = ctk.CTkLabel(
-    status_frame,
-    text="● Idle",
-    font=("Segoe UI",12,"bold"),
+    status_frame, 
+    text="● Idle", 
+    font=("Segoe UI", 12, "bold"), 
     text_color="#00ff00"
 )
-status_label.pack(side="top")
+status_label.pack(side="top", anchor="center")
 
+# عدد ملفات الذاكرة (Context)
 context_label = ctk.CTkLabel(
-    status_frame,
-    text="🧠 Context: 0 files",
-    font=("Segoe UI",11),
+    footer, 
+    text="Context: 0 files", 
+    font=("Segoe UI", 10), 
     text_color="gray"
 )
-context_label.pack(side="top")
+context_label.pack(pady=(0, 5))
+
+# 4. Pending Files Area (شريط الملفات المرفقة)
+# ده مخفي دلوقتي، هيظهر بس لما تختار ملفات
+pending_frame = ctk.CTkScrollableFrame(
+    footer, 
+    fg_color="transparent", 
+    orientation="horizontal", 
+    height=45 # ارتفاع مناسب للـ Chips
+)
+# (سيتم عمل Pack له داخل دالة التحديث)
+
+# 5. THE CAPSULE INPUT BAR (الكبسولة)
+input_container = ctk.CTkFrame(
+    footer, 
+    fg_color="#2f2f2f",      # لون رمادي غامق زي ChatGPT
+    corner_radius=25,        # تدويرة كبيرة
+    border_width=1, 
+    border_color="#444"      # حدود خفيفة
+)
+input_container.pack(fill="x", ipady=5)
+
+# تعريف دالة Attach (نحتاجها قبل الزرار)
+def attach_file():
+    global pending_attachments
+    file_paths = filedialog.askopenfilenames(title="Select files")
+    if not file_paths: return
+
+    for fp in file_paths:
+        if fp not in pending_attachments:
+            pending_attachments.append(fp)
+    
+    refresh_file_chips()
+
+# زرار الإضافة (+)
+attach_btn = ctk.CTkButton(
+    input_container, 
+    text="+", 
+    width=40, 
+    height=40, 
+    fg_color="transparent", 
+    hover_color="#404040", 
+    text_color="#aaaaaa",
+    font=("Arial", 24),
+    corner_radius=20,
+    command=attach_file
+)
+attach_btn.pack(side="left", padx=(10, 0))
+
+# خانة الكتابة
+input_box = ctk.CTkEntry(
+    input_container, 
+    placeholder_text="Ask anything...", 
+    placeholder_text_color="#888",
+    height=45, 
+    font=("Segoe UI", 15),
+    fg_color="transparent", 
+    border_width=0, 
+    text_color="white"
+)
+input_box.pack(side="left", fill="x", expand=True, padx=10)
+# (سيتم ربط زر Enter لاحقًا بعد تعريف دالة send_command)
+
+# زرار الإرسال (سهم)
+send_btn = ctk.CTkButton(
+    input_container, 
+    text="➤", 
+    width=40, 
+    height=40, 
+    fg_color="white",        # لون أبيض
+    text_color="black",      # سهم أسود
+    hover_color="#dddddd",
+    corner_radius=20,        # دائري بالكامل
+    font=("Segoe UI", 16, "bold"),
+    # (سيتم وضع الأمر command لاحقًا)
+)
+send_btn.pack(side="right", padx=(0, 10))
 
 # ===========================================
-# 📎 FILE CHIPS AREA (NEW)
+# 🔄 UI HELPER FUNCTIONS
 # ===========================================
-# ده المكان اللي هيظهر فيه زراير الملفات
-pending_frame = ctk.CTkFrame(footer, fg_color="transparent", height=0)
-pending_frame.pack(fill="x", pady=(0, 5))
+
+def remove_attachment(path):
+    if path in pending_attachments:
+        pending_attachments.remove(path)
+        refresh_file_chips()
 
 def refresh_file_chips():
-    # 1. امسح كل الزراير القديمة
+    # 1. تنظيف القديم
     for widget in pending_frame.winfo_children():
         widget.destroy()
 
-    # 2. ارسم زراير جديدة لكل ملف في القائمة
+    # 2. إظهار/إخفاء الشريط
+    if not pending_attachments:
+        pending_frame.pack_forget()
+    else:
+        # يظهر فوق الكبسولة (Input Container)
+        pending_frame.pack(fill="x", pady=(0, 10), before=input_container)
+
+    # 3. رسم الزراير (Chips)
     for file_path in pending_attachments:
-        filename = os.path.basename(file_path)
+        name = os.path.basename(file_path)
+        if len(name) > 20: name = name[:17] + "..."
         
-        # زرار شكل الشريحة (Chip)
-        chip = ctk.CTkButton(
-            pending_frame,
-            text=f"📄 {filename}  ✕", # الاسم وجنبه علامة إكس
-            font=("Segoe UI", 11),
-            height=24,
-            corner_radius=12,
-            fg_color="#333333",
-            hover_color="#c42b1c", # لون أحمر لما تقف عليه عشان المسح
-            # دالة المسح مربوطة بالمسار ده
+        # كبسولة للملف
+        chip = ctk.CTkFrame(pending_frame, fg_color="#3a3a3a", corner_radius=15)
+        chip.pack(side="left", padx=5)
+        
+        # أيقونة + اسم
+        icon = "🖼" if name.lower().endswith(('.png','.jpg','.jpeg')) else "📄"
+        lbl = ctk.CTkLabel(chip, text=f"{icon} {name}", font=("Segoe UI", 11), text_color="#ddd")
+        lbl.pack(side="left", padx=(10, 5), pady=5)
+        
+        # زرار حذف (x)
+        btn = ctk.CTkButton(
+            chip, 
+            text="×", 
+            width=20, 
+            height=20, 
+            fg_color="transparent", 
+            hover_color="#555", 
+            text_color="#ff5555",
+            font=("Arial", 12, "bold"),
             command=lambda p=file_path: remove_attachment(p)
         )
-        chip.pack(side="left", padx=(0, 5), pady=2)
-
-def remove_attachment(path_to_remove):
-    if path_to_remove in pending_attachments:
-        pending_attachments.remove(path_to_remove)
-        refresh_file_chips() # تحديث الشكل
-
-# ===========================================
-# INPUT AREA (INSIDE FOOTER - BOTTOM)
-# ===========================================
-
-input_frame = ctk.CTkFrame(footer, fg_color="transparent")
-input_frame.pack(fill="x", pady=(0,0))
-
-input_box = ctk.CTkEntry(
-    input_frame,
-    placeholder_text="Type command...",
-    height=45,
-    font=("Segoe UI",14),
-    corner_radius=22
-)
-input_box.pack(side="left", fill="x", expand=True, padx=(0,10))
-
-attach_btn = ctk.CTkButton(
-    input_frame,
-    text="📎",
-    width=50,
-    height=45,
-    fg_color="#444",
-    command=lambda: attach_file()
-)
-attach_btn.pack(side="right", padx=(0,5))
-
-send_btn = ctk.CTkButton(
-    input_frame,
-    text="Send",
-    width=80,
-    height=45,
-    fg_color=USER_BUBBLE,
-    command=lambda: send_command()
-)
-send_btn.pack(side="right")
+        btn.pack(side="right", padx=(0, 5))
 
 # ===========================================
 # STATUS LOGIC
@@ -335,38 +390,55 @@ def start_agent():
 
 def send_command(event=None):
     global pending_attachments
-    cmd=input_box.get().strip()
+    cmd = input_box.get().strip()
 
     # لو مفيش نص ومفيش ملفات، متبعتش حاجة
     if not cmd and not pending_attachments:
         return
 
-    # اظهار رسالة المستخدم
-    if cmd: add_user_message(cmd)
-    
+    # 1. إظهار رسالة للمستخدم في الشات
+    if cmd:
+        add_user_message(cmd)
+    elif pending_attachments:
+        # لو باعت ملفات بس من غير كلام، بنكتب رسالة تلقائية إننا طلبنا تحليل
+        count = len(pending_attachments)
+        add_user_message(f"📂 Auto-Analyze Request ({count} files)")
+
     set_status("Thinking")
-    input_box.delete(0,"end")
+    input_box.delete(0, "end")
 
     if process:
         try:
-            # 1. ابعت النص الأول
-            if cmd: process.stdin.write(cmd+"\n")
-            
-            # 2. ابعت الملفات ورا بعض (أوامر attach)
+            # 2. ابعت أوامر الـ attach لكل الملفات الأول
+            # الـ Agent هيستقبلهم ويخزنهم في الذاكرة (Context)
             for fp in pending_attachments:
-                # لو عايز تظهر في الشات إنك بعت ملف، فعل السطر ده:
-                # add_user_message(f"📎 Attached: {os.path.basename(fp)}")
                 process.stdin.write(f"attach {fp}\n")
+            
+            # 3. المنطق الذكي (Smart Trigger)
+            if cmd:
+                # الحالة الأولى: المستخدم كاتب أمر محدد
+                process.stdin.write(cmd + "\n")
+            else:
+                # الحالة الثانية: المستخدم مبعتش كلام (سايبها فاضية)
+                # بنبعت أمر عام "Analyze" والـ Agent هو اللي بيحدد الطريقة
+                # سواء كان صورة (Vision) أو ملف نصي (Summarize/Explain)
+                process.stdin.write("Analyze and describe the attached files in detail.\n")
             
             process.stdin.flush()
             
-            # 3. نظف القائمة والواجهة
+            # تنظيف القائمة والواجهة
             pending_attachments.clear()
             refresh_file_chips()
             
-        except: pass
+        except Exception as e:
+            print(f"Error sending: {e}")
 
-input_box.bind("<Return>",send_command)
+# تأكد من ربط زرار الإنتر
+input_box.bind("<Return>", send_command)
+
+# ربط زرار الإرسال والإنتر بدالة الإرسال
+input_box.bind("<Return>", send_command)
+send_btn.configure(command=send_command)
 
 # ===========================================
 # SHORTCUT FIX
