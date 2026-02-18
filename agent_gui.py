@@ -32,7 +32,7 @@ process = None
 current_status = "Idle"
 anim_step = 0
 full_chat_history = ""
-pending_attachments = []
+pending_attachments = [] # قائمة الملفات المعلقة
 
 # ===========================================
 # WINDOW SETUP
@@ -82,14 +82,12 @@ copy_btn.pack(side="right")
 # ===========================================
 # FOOTER CONTAINER (BOTTOM)
 # ===========================================
-# ده حاوية لكل حاجة تحت (الحالة + الملفات + الكتابة)
 footer = ctk.CTkFrame(app, fg_color="transparent")
 footer.pack(side="bottom", fill="x", padx=20, pady=(0,20))
 
 # ===========================================
 # CHAT AREA (MIDDLE)
 # ===========================================
-# الشات بياخد كل المساحة المتاحة بين الهيدر والفوتر
 chat_area = ctk.CTkScrollableFrame(
     app,
     width=900,
@@ -103,7 +101,7 @@ chat_area.pack(pady=10, padx=20, fill="both", expand=True)
 # ===========================================
 
 status_frame = ctk.CTkFrame(footer, fg_color="transparent")
-status_frame.pack(fill="x", pady=(5,5))
+status_frame.pack(fill="x", pady=(0,5))
 
 status_label = ctk.CTkLabel(
     status_frame,
@@ -121,20 +119,47 @@ context_label = ctk.CTkLabel(
 )
 context_label.pack(side="top")
 
-pending_label = ctk.CTkLabel(
-    status_frame,
-    text="", # فاضي في البداية
-    font=("Segoe UI",11),
-    text_color="#ffaa00"
-)
-pending_label.pack(side="top")
+# ===========================================
+# 📎 FILE CHIPS AREA (NEW)
+# ===========================================
+# ده المكان اللي هيظهر فيه زراير الملفات
+pending_frame = ctk.CTkFrame(footer, fg_color="transparent", height=0)
+pending_frame.pack(fill="x", pady=(0, 5))
+
+def refresh_file_chips():
+    # 1. امسح كل الزراير القديمة
+    for widget in pending_frame.winfo_children():
+        widget.destroy()
+
+    # 2. ارسم زراير جديدة لكل ملف في القائمة
+    for file_path in pending_attachments:
+        filename = os.path.basename(file_path)
+        
+        # زرار شكل الشريحة (Chip)
+        chip = ctk.CTkButton(
+            pending_frame,
+            text=f"📄 {filename}  ✕", # الاسم وجنبه علامة إكس
+            font=("Segoe UI", 11),
+            height=24,
+            corner_radius=12,
+            fg_color="#333333",
+            hover_color="#c42b1c", # لون أحمر لما تقف عليه عشان المسح
+            # دالة المسح مربوطة بالمسار ده
+            command=lambda p=file_path: remove_attachment(p)
+        )
+        chip.pack(side="left", padx=(0, 5), pady=2)
+
+def remove_attachment(path_to_remove):
+    if path_to_remove in pending_attachments:
+        pending_attachments.remove(path_to_remove)
+        refresh_file_chips() # تحديث الشكل
 
 # ===========================================
 # INPUT AREA (INSIDE FOOTER - BOTTOM)
 # ===========================================
 
 input_frame = ctk.CTkFrame(footer, fg_color="transparent")
-input_frame.pack(fill="x", pady=(5,0))
+input_frame.pack(fill="x", pady=(0,0))
 
 input_box = ctk.CTkEntry(
     input_frame,
@@ -151,7 +176,7 @@ attach_btn = ctk.CTkButton(
     width=50,
     height=45,
     fg_color="#444",
-    command=lambda: attach_file() # Placeholder function call
+    command=lambda: attach_file()
 )
 attach_btn.pack(side="right", padx=(0,5))
 
@@ -180,7 +205,6 @@ def set_status(s):
 def animate_status():
     global anim_step
     anim_step += 1
-
     if current_status=="Idle":
         status_label.configure(text=f"● Idle{' .'*(anim_step%3)}")
     elif current_status=="Running":
@@ -188,7 +212,6 @@ def animate_status():
         status_label.configure(text=frames[anim_step%4])
     elif current_status=="Thinking":
         status_label.configure(text=f"● Thinking{' .'*(anim_step%4)}")
-
     app.after(400,animate_status)
 
 # ===========================================
@@ -196,12 +219,9 @@ def animate_status():
 # ===========================================
 
 def add_bubble(text,is_user=False):
-
     global full_chat_history
-
     sender = "YOU" if is_user else "AGENT"
     icon = "👤" if is_user else "🤖"
-
     full_chat_history += f"[{sender}]: {text}\n"
 
     color = USER_BUBBLE if is_user else BOT_BUBBLE
@@ -214,29 +234,15 @@ def add_bubble(text,is_user=False):
     bubble.pack(anchor=align)
 
     ctk.CTkLabel(bubble,text=icon).pack(side="left",padx=(12,5),pady=8)
-
-    ctk.CTkLabel(
-        bubble,
-        text=f"{sender}:",
-        font=("Segoe UI",13,"bold")
-    ).pack(side="left",pady=8)
-
-    ctk.CTkLabel(
-        bubble,
-        text=text,
-        wraplength=500,
-        justify="left",
-        font=("Segoe UI",14)
-    ).pack(side="left",padx=(8,15),pady=8)
+    ctk.CTkLabel(bubble,text=f"{sender}:",font=("Segoe UI",13,"bold")).pack(side="left",pady=8)
+    ctk.CTkLabel(bubble,text=text,wraplength=500,justify="left",font=("Segoe UI",14)).pack(side="left",padx=(8,15),pady=8)
 
     app.update_idletasks()
-    # Scroll to bottom
     chat_area._parent_canvas.yview_moveto(1)
 
 def add_bot_message(t):
     clean=t.replace("Agent:","").strip()
-    if clean:
-        add_bubble(clean,False)
+    if clean: add_bubble(clean,False)
 
 def add_user_message(t):
     add_bubble(t,True)
@@ -247,18 +253,16 @@ def update_context_counter(text):
             num = text.split("(")[1].split("files")[0].strip()
             context_label.configure(text=f"🧠 Context: {num} files")
         except: pass
-
     if "Added to project context" in text:
         try:
             num = text.split("(")[1].split("files")[0].strip()
             context_label.configure(text=f"🧠 Context: {num} files")
         except: pass
-
     if "Project context cleared" in text:
         context_label.configure(text="🧠 Context: 0 files")
 
 # ===========================================
-# ATTACH LOGIC
+# ATTACH LOGIC (UPDATED)
 # ===========================================
 def attach_file():
     global pending_attachments
@@ -269,7 +273,7 @@ def attach_file():
         if fp not in pending_attachments:
             pending_attachments.append(fp)
     
-    pending_label.configure(text=f"📎 Pending: {len(pending_attachments)} files")
+    refresh_file_chips() # تحديث واجهة الملفات
 
 # ===========================================
 # AGENT LOGIC
@@ -326,29 +330,40 @@ def start_agent():
         add_bot_message(f"Error starting agent: {e}")
 
 # ===========================================
-# SEND LOGIC
+# SEND LOGIC (UPDATED)
 # ===========================================
 
 def send_command(event=None):
     global pending_attachments
     cmd=input_box.get().strip()
 
+    # لو مفيش نص ومفيش ملفات، متبعتش حاجة
     if not cmd and not pending_attachments:
         return
 
+    # اظهار رسالة المستخدم
     if cmd: add_user_message(cmd)
+    
     set_status("Thinking")
     input_box.delete(0,"end")
 
     if process:
         try:
+            # 1. ابعت النص الأول
             if cmd: process.stdin.write(cmd+"\n")
+            
+            # 2. ابعت الملفات ورا بعض (أوامر attach)
             for fp in pending_attachments:
+                # لو عايز تظهر في الشات إنك بعت ملف، فعل السطر ده:
+                # add_user_message(f"📎 Attached: {os.path.basename(fp)}")
                 process.stdin.write(f"attach {fp}\n")
             
             process.stdin.flush()
+            
+            # 3. نظف القائمة والواجهة
             pending_attachments.clear()
-            pending_label.configure(text="") # Clear pending label
+            refresh_file_chips()
+            
         except: pass
 
 input_box.bind("<Return>",send_command)
