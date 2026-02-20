@@ -5,11 +5,6 @@ from tkinter import filedialog
 # ===========================================
 # 🔥 FIX EXE LOOP
 # ===========================================
-if len(sys.argv) > 1 and sys.argv[1] == "--worker":
-    if getattr(sys, 'frozen', False):
-        os.chdir(os.path.dirname(sys.executable))
-    import agent 
-    sys.exit()
 
 import customtkinter as ctk
 import subprocess
@@ -181,20 +176,20 @@ input_box = ctk.CTkEntry(
 input_box.pack(side="left", fill="x", expand=True, padx=10)
 # (سيتم ربط زر Enter لاحقًا بعد تعريف دالة send_command)
 
-# زرار الإرسال (سهم)
+# زرار الإرسال (ستايل ChatGPT)
 send_btn = ctk.CTkButton(
     input_container, 
-    text="➤", 
+    text="➢",                # شكل طائرة ورقية أو سهم حاد
     width=40, 
     height=40, 
-    fg_color="white",        # لون أبيض
-    text_color="black",      # سهم أسود
-    hover_color="#dddddd",
-    corner_radius=20,        # دائري بالكامل
-    font=("Segoe UI", 16, "bold"),
-    # (سيتم وضع الأمر command لاحقًا)
+    fg_color=USER_BUBBLE,    # نفس لون رسايلك (الأزرق)
+    text_color="white",      # أيقونة بيضاء
+    hover_color="#005f99",   # أغمق سنة لما تقف عليه
+    corner_radius=20,        # دائرة كاملة
+    font=("Arial", 20, "bold"), # خط متناسق
+    command=lambda: None
 )
-send_btn.pack(side="right", padx=(0, 10))
+send_btn.pack(side="right", padx=(5, 10))
 
 # ===========================================
 # 🔄 UI HELPER FUNCTIONS
@@ -335,18 +330,37 @@ def attach_file():
 # ===========================================
 
 def read_output():
-    while True:
-        if process is None: break
-        try:
-            line=process.stdout.readline()
-            if not line: break
-            clean=line.strip()
+    global process
+
+    buffer = []
+
+    try:
+        for line in iter(process.stdout.readline, ''):
+            if process is None:
+                break
+
+            clean = line.strip()
+
             if clean:
-                app.after(0,lambda t=clean:add_bot_message(t))
-                app.after(0,lambda t=clean:update_context_counter(t))
-                app.after(0,lambda:set_status("Running"))
-                app.after(2000,lambda:set_status("Idle"))
-        except: break
+                buffer.append(clean)
+
+            # لما يتجمع 5 سطور نعرضهم مرة واحدة
+            if len(buffer) >= 5:
+                text = "\n".join(buffer)
+                buffer.clear()
+
+                app.after(0, lambda t=text: add_bot_message(t))
+                app.after(0, lambda t=text: update_context_counter(t))
+                app.after(0, lambda: set_status("Running"))
+                app.after(2000, lambda: set_status("Idle"))
+
+        # عرض أي كلام باقي
+        if buffer:
+            text = "\n".join(buffer)
+            app.after(0, lambda t=text: add_bot_message(t))
+
+    except Exception as e:
+        print("Read output error:", e)
 
 def start_agent():
     global process
@@ -360,11 +374,8 @@ def start_agent():
         startupinfo = subprocess.STARTUPINFO()
         startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
 
-    if getattr(sys, 'frozen', False):
-        cmd = [sys.executable, "--worker"]
-    else:
-        agent_path = os.path.join(base_dir, "agent.py")
-        cmd = [sys.executable, agent_path]
+    agent_path = os.path.join(base_dir, "agent.py")
+    cmd = [sys.executable, agent_path]
 
     try:
         process = subprocess.Popen(
@@ -388,6 +399,26 @@ def start_agent():
 # SEND LOGIC (UPDATED)
 # ===========================================
 
+def _send_to_agent(cmd, files):
+    global pending_attachments
+
+    if process:
+        try:
+            # attach files first
+            for fp in files:
+                process.stdin.write(f"attach {fp}\n")
+
+            # send command
+            if cmd:
+                process.stdin.write(cmd + "\n")
+            else:
+                process.stdin.write("Analyze and describe the attached files in detail.\n")
+
+            process.stdin.flush()
+
+        except Exception as e:
+            print("Error sending:", e)
+
 def send_command(event=None):
     global pending_attachments
     cmd = input_box.get().strip()
@@ -407,31 +438,17 @@ def send_command(event=None):
     set_status("Thinking")
     input_box.delete(0, "end")
 
-    if process:
-        try:
-            # 2. ابعت أوامر الـ attach لكل الملفات الأول
-            # الـ Agent هيستقبلهم ويخزنهم في الذاكرة (Context)
-            for fp in pending_attachments:
-                process.stdin.write(f"attach {fp}\n")
-            
-            # 3. المنطق الذكي (Smart Trigger)
-            if cmd:
-                # الحالة الأولى: المستخدم كاتب أمر محدد
-                process.stdin.write(cmd + "\n")
-            else:
-                # الحالة الثانية: المستخدم مبعتش كلام (سايبها فاضية)
-                # بنبعت أمر عام "Analyze" والـ Agent هو اللي بيحدد الطريقة
-                # سواء كان صورة (Vision) أو ملف نصي (Summarize/Explain)
-                process.stdin.write("Analyze and describe the attached files in detail.\n")
-            
-            process.stdin.flush()
-            
-            # تنظيف القائمة والواجهة
-            pending_attachments.clear()
-            refresh_file_chips()
-            
-        except Exception as e:
-            print(f"Error sending: {e}")
+    files_copy = pending_attachments.copy()
+
+    threading.Thread(
+        target=_send_to_agent,
+        args=(cmd, files_copy),
+        daemon=True
+    ).start()
+
+    pending_attachments.clear()
+    refresh_file_chips()
+
 
 # تأكد من ربط زرار الإنتر
 input_box.bind("<Return>", send_command)

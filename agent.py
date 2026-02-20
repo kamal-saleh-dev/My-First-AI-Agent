@@ -18,7 +18,7 @@ import math
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
-sys.stdin = io.TextIOWrapper(sys.stdin.buffer, encoding="utf-8")
+sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
 
 # 🔥 FIX WINDOWS ENCODING
 sys.stdout.reconfigure(encoding="utf-8")
@@ -286,68 +286,143 @@ def job_tool(task):
 # ================= CHAT =================
 
 def chat_tool(task):
+    # Normalize task string
+    if task:
+        task = task.strip()
     
-    # 1. تجميع الصور من سياق المشروع (project_context)
-    images = []
-    text_context_data = []
+    # 🚨 KEY FIX: Treat the auto-message as "No Task" to trigger the loop
+    if task == "Analyze and describe the attached files in detail.":
+        # 🧠 Auto Brain already handled analysis
+        if len(project_context) > 0:
+            print("⚡ Auto Brain already analyzed attached files.")
+            return
+        task = ""
 
-    for item in project_context:
-        if item["type"] == "image":
-            images.append(item["path"])
-        else:
-            # تجميع بيانات الملفات النصية والـ PDF والـ Excel
-            entry = {"file": item["path"], "type": item["type"]}
-            if "data" in item:
-                entry["data"] = item["data"]
-            text_context_data.append(entry)
+    # ---------------------------------------------------------
+    # MODE A: Auto-Analyze (Loop through files)
+    # ---------------------------------------------------------
+    if not task:
+        print(f"🚀 Auto-Analyzing {len(project_context)} items separately...")
+        
+        for i, item in enumerate(project_context, 1):
+            file_path = item["path"]
+            file_type = item["type"]
+            file_name = os.path.basename(file_path)
+            
+            print(f"\n[{i}/{len(project_context)}] 🔍 Analyzing: {file_name}...")
+            
+            try:
+                # 1. Image Analysis
+                if file_type == "image":
+                    r = ollama.chat(
+                        model="llava",
+                        messages=[{
+                            "role": "user",
+                            "content": "Describe this image in detail.",
+                            "images": [file_path] # Send ONLY this image
+                        }]
+                    )
+                    print(f"🖼 Report for {file_name}:")
+                    print(f"🤖 Agent: {r['message']['content']}")
+                
+                # 2. Text/Data Analysis
+                else:
+                    content_to_analyze = ""
+                    if "data" in item:
+                        content_to_analyze = json.dumps(item["data"], indent=2)
+                    else:
+                        try:
+                            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                                content_to_analyze = f.read(2000)
+                        except:
+                            content_to_analyze = "Could not read file content."
 
-    # 2. تحديد الموديل والرسالة بناءً على وجود صور
-    if images:
-        print(f"👁 Vision Mode: Analyzing {len(images)} images using LLaVA...")
-        model_name = "llava"
-        
-        # لو المستخدم مبعتش سؤال، نفترض إنه عايز وصف
-        prompt = task if task else "Describe this image."
-        
-        # في حالة الصور، بنبعت الصور للموديل مباشرة
-        messages = [{
-            "role": "user",
-            "content": prompt,
-            "images": images # هنا السر، بنبعت قايمة مسارات الصور
-        }]
-        
+                    r = ollama.chat(
+                        model="llama3",
+                        messages=[{
+                            "role": "user",
+                            "content": f"Summarize this file:\n\n{content_to_analyze}"
+                        }]
+                    )
+                    print(f"📄 Report for {file_name}:")
+                    print(f"🤖 Agent: {r['message']['content']}")
+
+                print("-" * 40) 
+
+            except Exception as e:
+                print(f"❌ Error analyzing {file_name}: {e}")
+
+    # ---------------------------------------------------------
+    # MODE B: Specific Question (Group Analysis)
+    # ---------------------------------------------------------
     else:
-        # الشات العادي (نصوص وكود وبيانات) - ده كودك القديم زي ما هو
-        print("🤔 Thinking with project context...")
-        model_name = "llama3"
+        # Collect all images
+        images = [item["path"] for item in project_context if item["type"] == "image"]
         
-        full_prompt = f"""
-        You are an AI assistant working with structured project data.
-        
-        IMPORTANT RULES:
-        - Use ONLY the DATA_JSON provided.
-        - DO NOT guess or invent values.
-        
-        PROJECT CONTEXT JSON:
-        {json.dumps(text_context_data, indent=2, ensure_ascii=False)}
-        
-        USER QUESTION:
-        {task}
-        """
-        messages = [{"role": "user", "content": full_prompt}]
+        # Collect all text context
+        text_context = ""
+        keywords = task.lower().split()
 
-    # 3. إرسال الطلب لـ Ollama
-    try:
-        r = ollama.chat(
-            model=model_name,
-            messages=messages
-        )
-        print(f"\n🤖 Agent: {r['message']['content']}")
-        
-    except Exception as e:
-        print(f"\n❌ AI Error: {e}")
-        if model_name == "llava":
-            print("💡 Tip: Make sure you ran 'ollama pull llava'")
+        for item in project_context:
+
+            if item["type"] == "image":
+                continue
+
+            file_name = os.path.basename(item["path"]).lower()
+
+            # Smart filtering
+            relevant = any(k in file_name for k in keywords)
+
+            # لو مفيش match ناخد أول ملفين بس كـ fallback
+            if not relevant and len(text_context) > 2000:
+                continue
+
+            text_context += f"\n--- File: {os.path.basename(item['path'])} ---\n"
+
+            if "data" in item:
+                text_context += json.dumps(item["data"])
+            elif "cached_text" in item:
+                text_context += item["cached_text"]
+
+                text_context += f"\n--- File: {os.path.basename(item['path'])} ---\n"
+                if "data" in item:
+                    text_context += json.dumps(item['data'])
+                else:
+                    try:
+                        if "cached_text" in item:
+                            text_context += item["cached_text"]
+                        else:
+                            try:
+                                with open(item["path"], "r", encoding="utf-8", errors="ignore") as f:
+                                    content = f.read(1000)
+
+                                item["cached_text"] = content
+                                text_context += content
+
+                            except:
+                                pass
+
+                    except: pass
+
+        model_name = "llava" if images else "llama3"
+        print(f"🤔 Thinking about {len(images)} images and text files...")
+
+        prompt = task
+        if text_context:
+            prompt = f"Context from files:\n{text_context}\n\nQuestion: {task}"
+
+        try:
+            r = ollama.chat(
+                model=model_name,
+                messages=[{
+                    "role": "user",
+                    "content": prompt,
+                    "images": images if images else None
+                }]
+            )
+            print(f"\n🤖 Agent: {r['message']['content']}")
+        except Exception as e:
+            print(f"❌ Error: {e}")
 
 # ================= FILE TYPE DETECTOR =================
 
@@ -391,6 +466,38 @@ def detect_file_type(file_path):
     return "text"
 
 # ================= SMART HANDLERS =================
+
+def brain_prompt(file_type, file_name):
+
+    file_name = file_name.lower()
+
+    # صور
+    if file_type == "image":
+        return "Describe this image in detail. Mention important visual details."
+
+    # كود
+    if file_type == "code":
+        return "Explain this code briefly. Detect bugs and suggest improvements."
+
+    # PDF
+    if file_type == "pdf":
+        if "invoice" in file_name or "receipt" in file_name:
+            return "Extract invoice information in structured form."
+        return "Summarize this PDF clearly."
+
+    # Word / Text
+    if file_type in ["word", "text"]:
+        return "Summarize this document and extract key points."
+
+    # Excel
+    if file_type == "excel":
+        return "Analyze this spreadsheet and explain the data."
+
+    # PowerPoint
+    if file_type == "ppt":
+        return "Summarize this presentation slide by slide."
+
+    return "Analyze this file intelligently."
 
 def handle_code_file(file_path):
 
@@ -483,10 +590,12 @@ def handle_video_file(file_path):
             frame_path = f"{file_path}_frame_{extracted_count}.jpg"
             cv2.imwrite(frame_path, image)
             
-            project_context.append({
-                "path": frame_path,
-                "type": "image"
-            })
+            if not any(item["path"] == frame_path for item in project_context):
+                project_context.append({
+                    "path": frame_path,
+                    "type": "image"
+                })
+
             
             print(f"📸 Frame {extracted_count+1}: {os.path.basename(frame_path)} (Resized)")
             extracted_count += 1
@@ -706,6 +815,32 @@ def handle_ppt_file(file_path):
 
 # ================= ATTACH =================
 
+def self_correct(text):
+
+    try:
+        r = ollama.chat(
+            model="llama3",
+            messages=[{
+                "role": "user",
+                "content": f"""
+                    Rewrite this response so it sounds natural, clear and smart.
+
+                    Return ONLY the final improved response.
+                    Do NOT explain changes.
+                    Do NOT add notes.
+                    Do NOT add headings.
+
+                    Response:
+                    {text}
+                    """
+                }]
+            )
+
+        return r["message"]["content"]
+
+    except:
+        return text
+
 def attach_tool(file_path):
 
     if not os.path.exists(file_path):
@@ -716,48 +851,85 @@ def attach_tool(file_path):
 
     print(f"📎 Detected type: {file_type}")
 
-    # حفظ الملف في project context
-    project_context.append({
-        "path": file_path,
-        "type": file_type
-    })
+    already_exists = any(
+    item["path"] == file_path
+    for item in project_context
+    )
 
-    print(f"🧠 Added to project context ({len(project_context)} files)")
+    if not already_exists:
+        project_context.append({
+            "path": file_path,
+            "type": file_type
+        })
+        print(f"🧠 Added to project context ({len(project_context)} files)")
+    else:
+        print("⚡ File already in context, skipped.")
 
     save_project_context()
 
-    if file_type == "code":
-        handle_code_file(file_path)
+    try:
+        print("🧠 Auto Brain analyzing...")
 
-    elif file_type == "image":
-        handle_image_file(file_path)
+        previous_memory = None
 
-    elif file_type == "video":
-        handle_video_file(file_path)
-    
-    elif file_type == "pdf":
-        handle_pdf_file(file_path)
+        for item in project_context:
+            if item["path"] == file_path:
+                previous_memory = item.get("brain_memory")
+                break
 
-    elif file_type == "word":
-        handle_word_file(file_path)
+        prompt = brain_prompt(file_type, os.path.basename(file_path))
 
-    elif file_type == "excel":
-        handle_excel_file(file_path)
+        if previous_memory:
+            prompt += f"\n\nPrevious analysis:\n{previous_memory}\n\nUpdate or improve the analysis."
 
-    elif file_type == "ppt":
-        handle_ppt_file(file_path)
+        # الصور تستخدم llava
+        if file_type == "image":
 
-    else:
-        # fallback text reader
-        try:
-            with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
-                content = f.read(2000)
+            r = ollama.chat(
+                model="llava",
+                messages=[{
+                    "role": "user",
+                    "content": prompt,
+                    "images": [file_path]
+                }]
+            )
 
-            print("📂 Text file loaded.")
-            print(content)
+        else:
+            # باقي الملفات
+            content = ""
 
-        except Exception as e:
-            print(f"❌ Cannot read file: {e}")
+            try:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read(3000)
+            except:
+                content = "Could not read file."
+
+            r = ollama.chat(
+                model="llama3",
+                messages=[{
+                    "role": "user",
+                    "content": f"{prompt}\n\n{content}"
+                }]
+            )
+
+        result = r["message"]["content"]
+
+        # 🧠 Self Correction
+        result = self_correct(result)
+
+        print("🤖 Brain Result:")
+        print(result)
+
+        # 🧠 حفظ نتيجة التحليل في الذاكرة
+        for item in project_context:
+            if item["path"] == file_path:
+                item["brain_memory"] = result
+                break
+
+        save_project_context()
+
+    except Exception as e:
+        print(f"❌ Brain error: {e}")
 
 # ================= LOOP =================
 
