@@ -1,6 +1,7 @@
 import sys
 import os
 from tkinter import filedialog
+import time
 
 # ===========================================
 # 🔥 FIX EXE LOOP
@@ -287,8 +288,8 @@ def add_bubble(text,is_user=False):
     ctk.CTkLabel(bubble,text=f"{sender}:",font=("Segoe UI",13,"bold")).pack(side="left",pady=8)
     ctk.CTkLabel(bubble,text=text,wraplength=500,justify="left",font=("Segoe UI",14)).pack(side="left",padx=(8,15),pady=8)
 
-    app.update_idletasks()
-    chat_area._parent_canvas.yview_moveto(1)
+    # 🔥 التعديل السحري هنا: بنعمل سكرول بنعومة وبدون ضغط على الواجهة
+    app.after(50, lambda: chat_area._parent_canvas.yview_moveto(1))
 
 def add_bot_message(t):
     clean=t.replace("Agent:","").strip()
@@ -329,10 +330,13 @@ def attach_file():
 # AGENT LOGIC
 # ===========================================
 
-def read_output():
-    global process
+idle_timer = None
 
-    buffer = []
+def make_idle():
+    set_status("Idle")
+
+def read_output():
+    global process, idle_timer
 
     try:
         for line in iter(process.stdout.readline, ''):
@@ -342,22 +346,22 @@ def read_output():
             clean = line.strip()
 
             if clean:
-                buffer.append(clean)
-
-            # لما يتجمع 5 سطور نعرضهم مرة واحدة
-            if len(buffer) >= 5:
-                text = "\n".join(buffer)
-                buffer.clear()
-
-                app.after(0, lambda t=text: add_bot_message(t))
-                app.after(0, lambda t=text: update_context_counter(t))
-                app.after(0, lambda: set_status("Running"))
-                app.after(2000, lambda: set_status("Idle"))
-
-        # عرض أي كلام باقي
-        if buffer:
-            text = "\n".join(buffer)
-            app.after(0, lambda t=text: add_bot_message(t))
+                app.after(0, lambda t=clean: add_bot_message(t))
+                app.after(0, lambda t=clean: update_context_counter(t))
+                
+                if idle_timer is not None:
+                    app.after_cancel(idle_timer)
+                    idle_timer = None
+                
+                # 🔥 التعديل هنا: خلينا الواجهة تقرأ الحروف كلها (سمول) عشان متتخدعش تاني
+                clean_lower = clean.lower()
+                if any(word in clean_lower for word in ["analyzing", "comparing", "thinking", "reading", "processing"]):
+                    app.after(0, lambda: set_status("Thinking"))
+                else:
+                    app.after(0, lambda: set_status("Running"))
+                    idle_timer = app.after(2000, make_idle)
+                
+                time.sleep(0.5) # سرعة نزول الكلام اللي ظبطناها
 
     except Exception as e:
         print("Read output error:", e)
@@ -391,6 +395,18 @@ def start_agent():
             startupinfo=startupinfo
         )
         add_bot_message("Hello! System ready.")
+
+        # 🔥 Sync context counter on startup
+        try:
+            import json
+            context_file = os.path.join(base_dir, "project_context.json")
+            if os.path.exists(context_file):
+                with open(context_file, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                    context_label.configure(text=f"🧠 Context: {len(data)} files")
+        except:
+            pass
+
         threading.Thread(target=read_output,daemon=True).start()
     except Exception as e:
         add_bot_message(f"Error starting agent: {e}")
