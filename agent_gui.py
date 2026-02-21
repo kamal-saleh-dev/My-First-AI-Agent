@@ -241,6 +241,20 @@ def refresh_file_chips():
         )
         btn.pack(side="right", padx=(0, 5))
 
+def update_context_counter(text):
+    if "Loaded project context" in text:
+        try:
+            num = text.split("(")[1].split("files")[0].strip()
+            context_label.configure(text=f"🧠 Context: {num} files")
+        except: pass
+    if "Added to project context" in text:
+        try:
+            num = text.split("(")[1].split("files")[0].strip()
+            context_label.configure(text=f"🧠 Context: {num} files")
+        except: pass
+    if "Project context cleared" in text:
+        context_label.configure(text="🧠 Context: 0 files")
+
 # ===========================================
 # STATUS LOGIC
 # ===========================================
@@ -266,11 +280,22 @@ def animate_status():
     app.after(400,animate_status)
 
 # ===========================================
-# BUBBLES
+# 🚦 QUEUE & ANIMATION SYSTEM (نظام الطابور والكتابة)
 # ===========================================
+msg_queue = []
+is_typing = False
 
-def add_bubble(text,is_user=False):
-    global full_chat_history
+def process_queue():
+    global is_typing, msg_queue
+    # لو فيه رسايل مستنية ومفيش حاجة بتكتب دلوقتي، ابدأ اللي عليها الدور
+    if msg_queue and not is_typing:
+        next_msg = msg_queue.pop(0)
+        show_bubble_sequentially(next_msg['text'], next_msg['is_user'])
+
+def show_bubble_sequentially(text, is_user):
+    global is_typing, full_chat_history
+    is_typing = True
+    
     sender = "YOU" if is_user else "AGENT"
     icon = "👤" if is_user else "🤖"
     full_chat_history += f"[{sender}]: {text}\n"
@@ -284,12 +309,38 @@ def add_bubble(text,is_user=False):
     bubble = ctk.CTkFrame(wrapper, fg_color=color, corner_radius=20)
     bubble.pack(anchor=align)
 
-    ctk.CTkLabel(bubble,text=icon).pack(side="left",padx=(12,5),pady=8)
-    ctk.CTkLabel(bubble,text=f"{sender}:",font=("Segoe UI",13,"bold")).pack(side="left",pady=8)
-    ctk.CTkLabel(bubble,text=text,wraplength=500,justify="left",font=("Segoe UI",14)).pack(side="left",padx=(8,15),pady=8)
+    ctk.CTkLabel(bubble, text=icon).pack(side="left", padx=(12,5), pady=8)
+    ctk.CTkLabel(bubble, text=f"{sender}:", font=("Segoe UI", 13, "bold")).pack(side="left", pady=8)
+    
+    msg_label = ctk.CTkLabel(bubble, text="", wraplength=500, justify="left", font=("Segoe UI", 14))
+    msg_label.pack(side="left", padx=(8,15), pady=8)
 
-    # 🔥 التعديل السحري هنا: بنعمل سكرول بنعومة وبدون ضغط على الواجهة
-    app.after(50, lambda: chat_area._parent_canvas.yview_moveto(1))
+    # تشغيل تأثير الكتابة
+    type_text_effect(msg_label, text, 0)
+
+def type_text_effect(label, text, index=0):
+    global is_typing
+    if index < len(text):
+        current_text = label.cget("text")
+        label.configure(text=current_text + text[index])
+        
+        # سرعة الكتابة (20 مللي ثانية)
+        app.after(20, type_text_effect, label, text, index + 1)
+        
+        if text[index] == " " or index == len(text)-1:
+            chat_area._parent_canvas.yview_moveto(1)
+    else:
+        # 🔥 هنا السر: بنقول للسيستم أنا خلصت كتابة البالونة دي
+        is_typing = False
+        chat_area._parent_canvas.yview_moveto(1)
+        # استدعاء الرسالة اللي بعدها من الطابور بعد 100 مللي ثانية
+        app.after(100, process_queue)
+
+def add_bubble(text, is_user=False):
+    global msg_queue
+    # بنضيف الرسالة للطابور بدل ما نعرضها فوراً
+    msg_queue.append({'text': text, 'is_user': is_user})
+    process_queue()
 
 def add_bot_message(t):
     clean=t.replace("Agent:","").strip()
@@ -297,20 +348,6 @@ def add_bot_message(t):
 
 def add_user_message(t):
     add_bubble(t,True)
-
-def update_context_counter(text):
-    if "Loaded project context" in text:
-        try:
-            num = text.split("(")[1].split("files")[0].strip()
-            context_label.configure(text=f"🧠 Context: {num} files")
-        except: pass
-    if "Added to project context" in text:
-        try:
-            num = text.split("(")[1].split("files")[0].strip()
-            context_label.configure(text=f"🧠 Context: {num} files")
-        except: pass
-    if "Project context cleared" in text:
-        context_label.configure(text="🧠 Context: 0 files")
 
 # ===========================================
 # ATTACH LOGIC (UPDATED)
@@ -335,34 +372,99 @@ idle_timer = None
 def make_idle():
     set_status("Idle")
 
+# ===========================================
+# 🔥 STREAMING ENGINE (محرك الكتابة الحية)
+# ===========================================
+is_streaming_mode = False
+active_bot_label = None
+
+def start_new_bot_bubble():
+    global active_bot_label, full_chat_history
+    
+    wrapper = ctk.CTkFrame(chat_area, fg_color="transparent")
+    wrapper.pack(fill="x", pady=6, padx=15)
+
+    bubble = ctk.CTkFrame(wrapper, fg_color=BOT_BUBBLE, corner_radius=20)
+    bubble.pack(anchor="w")
+
+    ctk.CTkLabel(bubble, text="🤖").pack(side="left", padx=(12,5), pady=8)
+    ctk.CTkLabel(bubble, text="AGENT:", font=("Segoe UI", 13, "bold")).pack(side="left", pady=8)
+    
+    active_bot_label = ctk.CTkLabel(bubble, text="", wraplength=500, justify="left", font=("Segoe UI", 14))
+    active_bot_label.pack(side="left", padx=(8,15), pady=8)
+    
+    full_chat_history += "[AGENT]: "
+
+def stream_to_bubble(text_chunk):
+    global active_bot_label, full_chat_history
+    if active_bot_label:
+        current = active_bot_label.cget("text")
+        active_bot_label.configure(text=current + text_chunk)
+        full_chat_history += text_chunk
+        
+        # بنعمل سكرول لتحت مع المسافات والسطور بس عشان الواجهة متهنجش
+        if text_chunk in [" ", "\n"]:
+            chat_area._parent_canvas.yview_moveto(1)
+
+def reset_idle_timer():
+    global idle_timer
+    set_status("Running")
+    if idle_timer is not None:
+        app.after_cancel(idle_timer)
+    idle_timer = app.after(2000, make_idle)
+
+def process_line(line):
+    clean_lower = line.lower()
+    # تحديث الحالة بناءً على الكلمات المفتاحية
+    if any(word in clean_lower for word in ["analyzing", "comparing", "thinking", "reading", "processing", "swapping", "loading"]):
+        set_status("Thinking")
+    else:
+        set_status("Running")
+        # يرجع Idle بعد ثانيتين لو مفيش جديد
+        app.after(2000, lambda: set_status("Idle"))
+        
+    update_context_counter(line) # تحديث العداد
+    add_bot_message(line)        # إضافة الرسالة للطابور
+
 def read_output():
-    global process, idle_timer
-
+    global process, is_streaming_mode, is_typing, msg_queue
+    
+    buffer = ""
     try:
-        for line in iter(process.stdout.readline, ''):
-            if process is None:
-                break
-
-            clean = line.strip()
-
-            if clean:
-                app.after(0, lambda t=clean: add_bot_message(t))
-                app.after(0, lambda t=clean: update_context_counter(t))
-                
-                if idle_timer is not None:
-                    app.after_cancel(idle_timer)
-                    idle_timer = None
-                
-                # 🔥 التعديل هنا: خلينا الواجهة تقرأ الحروف كلها (سمول) عشان متتخدعش تاني
-                clean_lower = clean.lower()
-                if any(word in clean_lower for word in ["analyzing", "comparing", "thinking", "reading", "processing"]):
-                    app.after(0, lambda: set_status("Thinking"))
+        while True:
+            if process is None: break
+            
+            char = process.stdout.read(1)
+            if not char: break
+            
+            buffer += char
+            
+            if not is_streaming_mode:
+                if char == '\n':
+                    line = buffer.strip()
+                    buffer = ""
+                    if line:
+                        app.after(0, lambda l=line: process_line(l))
                 else:
-                    app.after(0, lambda: set_status("Running"))
-                    idle_timer = app.after(2000, make_idle)
+                    if "🤖 Agent:" in buffer:
+                        # 🔥 الانتظار لحد ما كل بالونات النظام تخلص كتابة حرف حرف
+                        while is_typing or msg_queue:
+                            time.sleep(0.1) 
+                        
+                        is_streaming_mode = True
+                        buffer = buffer.split("🤖 Agent:")[1]
+                        app.after(0, start_new_bot_bubble)
+                        if buffer:
+                            app.after(0, lambda c=buffer: stream_to_bubble(c))
+                        buffer = ""
+            else:
+                app.after(0, lambda c=char: stream_to_bubble(c))
+                buffer = ""
+                app.after(0, reset_idle_timer)
                 
-                time.sleep(0.5) # سرعة نزول الكلام اللي ظبطناها
-
+                # سرعة الـ Streaming للإجابة النهائية
+                subprocess.time.sleep(0.02)
+                
     except Exception as e:
         print("Read output error:", e)
 
@@ -436,12 +538,14 @@ def _send_to_agent(cmd, files):
             print("Error sending:", e)
 
 def send_command(event=None):
-    global pending_attachments
+    global pending_attachments, is_streaming_mode
     cmd = input_box.get().strip()
 
     # لو مفيش نص ومفيش ملفات، متبعتش حاجة
     if not cmd and not pending_attachments:
         return
+
+    is_streaming_mode = False # 🔥 إيقاف وضع الـ Streaming مع كل رسالة جديدة
 
     # 1. إظهار رسالة للمستخدم في الشات
     if cmd:
