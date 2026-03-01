@@ -14,7 +14,11 @@ from PIL import ImageEnhance, ImageFilter
 import json
 import re
 import cv2
-import math
+
+chat_history = [] # 🧠 ذاكرة الـ Agent
+current_project_name = ""       # هيحفظ اسم البروجكت الحالي
+awaiting_project_name = False   # حالة انتظار اسم البروجكت من اليوزر
+pending_task = ""               # لحفظ الطلب الأصلي لحد ما اليوزر يكتب الاسم
 
 pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
@@ -46,7 +50,7 @@ def detect_mode(user):
         return "JOB"
     if t.startswith("attach"):
         return "ATTACH"
-    if "clear" in t:
+    if t.strip() == "clear":
         return "CLEAR"
     return "CHAT"
 
@@ -198,7 +202,58 @@ def run_python(file_path):
     except Exception as e:
         print(f"❌ Run Error: {e}")
 
+def auto_run_and_fix(task_description, initial_code):
+    temp_file = "sandbox_test.py"
+    current_code = initial_code
+    attempts = 0
+    max_attempts = 3 # هيحاول يصلح نفسه لحد 3 مرات
 
+    while attempts < max_attempts:
+        attempts += 1
+        print(f"🧪 Testing code (Attempt {attempts})...")
+        
+        with open(temp_file, "w", encoding="utf-8") as f:
+            f.write(current_code)
+
+        try:
+            result = subprocess.run(
+                [sys.executable, temp_file],
+                capture_output=True,
+                text=True,
+                timeout=5 # وقت قليل عشان لو فيه Infinite Loop
+            )
+
+            if result.returncode == 0:
+                print(f"✅ Success on attempt {attempts}!")
+                return current_code, result.stdout
+            
+            # لو فشل، نبعت الـ Error للموديل
+            print(f"❌ Attempt {attempts} failed. Refactoring...")
+            error_msg = result.stderr
+            
+            fix_prompt = f"""FIX THIS PYTHON CODE.
+            TASK: {task_description}
+            ERROR: {error_msg}
+            CODE TO FIX:
+            {current_code}
+            
+            RULES: Return ONLY the raw code. No markdown, no explanations."""
+            
+            response = ollama.chat(model="llama3", messages=[{"role": "user", "content": fix_prompt}])
+            raw_content = response["message"]["content"]
+            
+            # تنظيف صارم للكود من أي رغي جانبي
+            current_code = raw_content.replace("```python", "").replace("```", "").strip()
+            if "import" not in current_code and "print" not in current_code: # حماية لو رد بكلام رغي
+                 current_code = initial_code # ارجع للأصل لو الموديل خرف
+
+        except subprocess.TimeoutExpired:
+            return current_code, "❌ Execution timed out (Possible infinite loop)."
+        except Exception as e:
+            return current_code, f"❌ System Error: {str(e)}"
+
+    return current_code, "⚠️ Could not fix code after 3 attempts."
+    
 # ================= DELETE =================
 
 def delete_tool(task):
@@ -269,40 +324,78 @@ def project_tool(task):
         os.chdir(cwd)
 
 # ================= JOB =================
+import warnings
+import urllib.parse
+import webbrowser
+warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 def job_tool(task):
-    print(f"🔎 Searching jobs for: {task}...")
+    print("🧠 Analyzing job market...")
+    
+    # 🔥 Prompt صارم جداً مع مثال واضح
+    prompt = f"""Extract job details from this request: '{task}'. 
+    Default Title: Game Developer OR Python AI
+    Default Platform: Upwork
+    Default Location: Remote OR Egypt
+    Reply ONLY with this exact format: TITLE | PLATFORM | LOCATION
+    Example: Game Developer | Upwork | Remote
+    CRITICAL RULE: DO NOT write 'Here are the details', do not use markdown like **, and DO NOT add any conversational text. JUST the raw format."""
+    
     try:
-        results = DDGS().text(f"{task} jobs", max_results=3)
-        if not results:
-            print("No jobs found.")
-        for r in results:
-            print(f"\n📌 {r['title']}")
-            print(f"🔗 {r['href']}")
+        r = ollama.chat(model="llama3", messages=[{"role": "user", "content": prompt}])
+        ans = r["message"]["content"].strip()
+        
+        # 🛡️ فلتر أمان بايثون (عشان لو الموديل رغى برضه، نقص كلامه)
+        if ":" in ans:
+            ans = ans.split(":")[-1] # لو كتب نقطتين، بناخد اللي بعدهم بس
+        ans = ans.replace('**', '').replace('"', '').strip()
+        
+        parts = ans.split('|')
+        title = parts[0].strip() if len(parts) > 0 else "Game Developer"
+        platform = parts[1].strip().lower() if len(parts) > 1 else "upwork"
+        location = parts[2].strip() if len(parts) > 2 else "Remote"
+        
+        # تنظيف أخير للعنوان لو لسه فيه أي شوائب
+        if title.lower().startswith("here are") or title.lower().startswith("extracted"):
+            title = "Game Developer OR Python AI"
+            
+        print(f"🚀 Opening {platform.title()} for {title} roles...")
+        
+        title_encoded = urllib.parse.quote(title)
+        
+        if "upwork" in platform:
+            url = f"https://www.upwork.com/nx/search/jobs/?q={title_encoded}&sort=recency"
+        else:
+            loc_encoded = urllib.parse.quote(location)
+            url = f"https://www.linkedin.com/jobs/search/?keywords={title_encoded}&location={loc_encoded}"
+            
+        webbrowser.open(url)
+        print("✅ Browser opened with real-time job listings!")
+        
     except Exception as e:
-        print(f"Error searching jobs: {e}")
+        print(f"❌ Error setting up job search: {e}")
 
 # ================= CHAT (FULLY AUTONOMOUS) =================
 
 def self_correct(draft_response, user_query):
-    print("🧠 Reflection Layer: Reviewing and polishing the response...")
+    #print("🧠 Reflection Layer: Reviewing and polishing the response...")
     
     # رسالة تظهر وقت الـ (Idle) عشان تفهم إن التأخير ده بسبب تحميل الموديل
-    print("⏳ Swapping models in memory (Loading Llama 3)...", flush=True) 
+    #print("⏳ Swapping models in memory (Loading Llama 3)...", flush=True) 
     
-    prompt = f"""You are a professional Content Editor. You are reviewing a draft analysis of multiple images.
+    prompt = f"""You are a professional Content Editor. You are reviewing a draft response from an AI assistant.
     
     USER QUERY: "{user_query}"
-    DRAFT ANALYSIS: "{draft_response}"
+    DRAFT RESPONSE: "{draft_response}"
 
     YOUR STRICT MISSION:
-    1. Clean up the language and make it professional.
-    2. Keep the comparison between images as provided in the draft.
-    3. If the draft contains descriptions of images, DO NOT say you cannot see them. Trust the draft.
-    4. NEVER apologize or say "I am an AI" or "I have limitations". 
-    5. Just return the polished, final version of the analysis.
+    1. Clean up the language and make it sound natural and professional.
+    2. Keep the core information and meaning of the draft EXACTLY as it is. Do NOT fabricate or add new information.
+    3. If the draft describes files, images, or code, DO NOT say you cannot see them. Trust the draft completely.
+    4. NEVER apologize or say "I am an AI", "As an AI", or "I have limitations". 
+    5. Just return the polished, final version of the response directly.
 
-    FINAL OUTPUT ONLY. NO INTRODUCTIONS."""
+    FINAL OUTPUT ONLY. NO INTRODUCTIONS. NO CHATTY TEXT."""
     
     try:
         # 🔥 تفعيل خاصية الـ Streaming
@@ -329,51 +422,338 @@ def self_correct(draft_response, user_query):
         print(f"\n⚠️ Reflection failed: {e}")
         return draft_response
 
+def detect_programming_domain(code):
+    code_lower = code.lower()
+
+    if "uclass" in code_lower or "generated_body" in code_lower:
+        return "unreal"
+
+    if "using unityengine" in code_lower or "monobehaviour" in code_lower:
+        return "unity"
+
+    if "import " in code_lower or "def " in code_lower:
+        return "python"
+
+    if "#include" in code_lower:
+        return "cpp"
+
+    if "using system" in code_lower:
+        return "csharp"
+
+    return "unknown"
+
+def validate_unreal(code):
+    required = ["#include", "GENERATED_BODY"]
+    for r in required:
+        if r.lower() not in code.lower():
+            return False, f"Missing Unreal requirement: {r}"
+
+    if ".generated.h" not in code:
+        return False, "Missing .generated.h include"
+
+    # regex صح عشان مينفعش يعتبر UActorComponent كـ UComponent أو UObject
+    if re.search(r'public\s+UComponent\b', code):
+        return False, "Invalid Unreal inheritance: Use UActorComponent instead of UComponent"
+
+    if re.search(r'public\s+UObject\b', code):
+        return False, "Component must inherit from UActorComponent, not UObject"
+
+    return True, "Valid Unreal Header"
+
+def validate_unity(code):
+    if "MonoBehaviour" not in code:
+        return False, "Unity script must inherit from MonoBehaviour"
+
+    if "public class" not in code:
+        return False, "Unity script missing public class"
+
+    if "void Start" not in code and "void Update" not in code:
+        return False, "Unity script missing Start or Update method"
+
+    return True, "Valid Unity Code"
+
+def validate_python(code, task):
+    fixed_code, output = auto_run_and_fix(task, code)
+
+    if "Could not fix" in output:
+        return False, output
+
+    return True, fixed_code
+
+def validate_code(code, task):
+    domain = detect_programming_domain(code)
+
+    if domain == "unreal":
+        return validate_unreal(code)
+
+    if domain == "unity":
+        return validate_unity(code)
+
+    if domain == "python":
+        return validate_python(code, task)
+
+    return True, "Generic code assumed valid"
+
+def detect_requested_language(task):
+    t = task.lower()
+
+    if "unreal" in t:
+        return "unreal"
+
+    if "unity" in t or "يونتي" in t:
+        return "unity"
+
+    if "python" in t or "بايثون" in t:
+        return "python"
+
+    return "generic"
+
+LANGUAGE_RULES = {
+    "unreal": {
+        "type": "multi",
+        "extensions": [".h", ".cpp"],
+    },
+    "unity": {
+        "type": "single",
+        "extensions": [".cs"],
+    },
+    "python": {
+        "type": "single",
+        "extensions": [".py"],
+    },
+    "cpp": {
+        "type": "single",
+        "extensions": [".cpp"],
+    },
+    "csharp": {
+        "type": "single",
+        "extensions": [".cs"],
+    },
+}
+
+def auto_fix_unreal_header(header_code):
+    """
+    Inject missing .generated.h include if absent.
+    """
+    if ".generated.h" in header_code:
+        return header_code, False
+
+    # Extract class name
+    class_match = re.search(
+        r"class\s+(?:[A-Za-z0-9_]+\s+)?([A-Za-z_][A-Za-z0-9_]*)",
+        header_code
+    )
+
+    if not class_match:
+        return header_code, False
+
+    class_name = class_match.group(1)
+
+    include_line = f'#include "{class_name}.generated.h"\n'
+
+    # نحاول نحطه بعد آخر include
+    includes = list(re.finditer(r'#include\s+["<].*[">]', header_code))
+    if includes:
+        last_include = includes[-1]
+        insert_pos = last_include.end()
+        fixed_header = (
+            header_code[:insert_pos]
+            + "\n"
+            + include_line
+            + header_code[insert_pos:]
+        )
+    else:
+        # لو مفيش includes خالص
+        fixed_header = include_line + header_code
+
+    return fixed_header, True
+    
+def extract_and_save_scripts(text, project_name):
+
+    pattern = r"```(?:[a-zA-Z0-9+#]*)\n?(.*?)```"
+    matches = re.findall(pattern, text, re.DOTALL | re.IGNORECASE)
+
+    if not matches:
+        return False
+
+    safe_project_name = re.sub(r'[\\/*?:"<>|]', "", project_name).strip().replace(" ", "_")
+    folder_name = os.path.join("Generated_Scripts", safe_project_name)
+    os.makedirs(folder_name, exist_ok=True)
+
+    # ==========================================
+    # 🔥 Detect Domain From First Block
+    # ==========================================
+    first_domain = detect_programming_domain(matches[0])
+
+    if first_domain in LANGUAGE_RULES:
+        rule = LANGUAGE_RULES[first_domain]
+
+        # ==========================================
+        # 🚀 MULTI-FILE (Unreal)
+        # ==========================================
+        if rule["type"] == "multi":
+
+            if len(matches) < 2:
+                print("❌ Unreal requires header and cpp blocks.")
+                return False
+
+            header_code = matches[0].strip()
+            cpp_code = matches[1].strip()
+
+            # 🔒 Validate Header
+            is_valid_header, msg_header = validate_unreal(header_code)
+
+            if not is_valid_header and "generated.h" in msg_header:
+
+                print("⚠ Missing .generated.h — attempting auto-fix...")
+
+                header_code, fixed = auto_fix_unreal_header(header_code)
+
+                if fixed:
+                    # Re-validate after fix
+                    is_valid_header, msg_header = validate_unreal(header_code)
+
+            if not is_valid_header:
+                print(f"❌ Validation Failed: {msg_header}")
+                return False
+
+            # 🔒 Validate CPP
+            if "::" not in cpp_code:
+                print("❌ Unreal CPP missing implementation (:: not found)")
+                return False
+
+            # ==========================================
+            # 🔥 Structural Validation
+            # ==========================================
+
+            # كل أسماء الكلاسات الموجودة في الـ CPP (عشان نتجاهل Constructors بأي اسم)
+            cpp_class_names = set(re.findall(r'([A-Za-z_][A-Za-z0-9_]*)::', cpp_code))
+
+            # Overrides معروفة في Unreal
+            known_overrides = {
+                "BeginPlay", "TickComponent", "EndPlay",
+                "InitializeComponent", "GetLifetimeReplicatedProps",
+                "SetupInputComponent", "PostInitializeComponents"
+            }
+
+            # تنظيف الـ Macros قبل استخراج الـ declarations
+            header_clean = re.sub(r'\b(UFUNCTION|UPROPERTY|UCLASS|USTRUCT|UENUM)\s*\([^)]*\)', '', header_code)
+            declared_funcs = set(re.findall(
+                r'\b([A-Za-z_][A-Za-z0-9_]*)\s*\([^)]*\)\s*(?:const\s*)?;',
+                header_clean
+            ))
+
+            # استخراج الـ implementations من الـ CPP
+            implemented_funcs = re.findall(r'::\s*([A-Za-z_][A-Za-z0-9_]*)\s*\(', cpp_code)
+
+            for func in implemented_funcs:
+                # تجاهل Constructors/Destructors (اسمهم = اسم الكلاس)
+                if func in cpp_class_names or func.lstrip('~') in cpp_class_names:
+                    continue
+                # تجاهل Overrides المعروفة
+                if func in known_overrides:
+                    continue
+                if func not in declared_funcs:
+                    print(f"⚠ Note: '{func}' not in header — treating as override, continuing.")
+            
+            # 🔍 Extract Class Name From Header
+            class_match = re.search(
+                r"class\s+(?:[A-Za-z0-9_]+\s+)?([A-Za-z_][A-Za-z0-9_]*)",
+                header_code
+            )
+            class_name = class_match.group(1) if class_match else "UnrealClass"
+
+            header_path = os.path.join(folder_name, f"{class_name}.h")
+            cpp_path = os.path.join(folder_name, f"{class_name}.cpp")
+
+            with open(header_path, "w", encoding="utf-8") as f:
+                f.write(header_code)
+
+            with open(cpp_path, "w", encoding="utf-8") as f:
+                f.write(cpp_code)
+
+            print(f"\n💾 Script saved -> {header_path}")
+            print(f"💾 Script saved -> {cpp_path}")
+
+            return True
+
+    # ==========================================
+    # 📁 SINGLE FILE LANGUAGES
+    # ==========================================
+    all_valid = True
+
+    for i, code in enumerate(matches):
+        code = code.strip()
+
+        is_valid, message = validate_code(code, project_name)
+        if not is_valid:
+            print(f"\n❌ Validation Failed: {message}")
+            all_valid = False
+            continue
+
+        domain = detect_programming_domain(code)
+
+        if domain not in LANGUAGE_RULES:
+            extension = ".txt"
+        else:
+            rule = LANGUAGE_RULES[domain]
+            extension = rule["extensions"][0]
+
+        # 🔍 Extract Class Name
+        class_match = re.search(
+            r"class\s+(?:[A-Za-z0-9_]+\s+)?([A-Za-z_][A-Za-z0-9_]*)",
+            code
+        )
+        class_name = class_match.group(1) if class_match else f"Script_{i}"
+
+        file_name = f"{class_name}{extension}"
+        file_path = os.path.join(folder_name, file_name)
+
+        with open(file_path, "w", encoding="utf-8") as f:
+            f.write(code)
+
+        print(f"\n💾 Script saved -> {file_path}")
+
+    return all_valid
+
 def chat_tool(task):
-    global active_intent
+    global active_intent, chat_history, current_project_name, awaiting_project_name, pending_task
     
     if task:
         task = task.strip()
-    
-    # تحويل رسالة النظام الافتراضية لطلب فارغ
+        
     if task == "Analyze and describe the attached files in detail.":
         task = ""
 
     # =========================================================
-    # 🧠 NO AUTO-ANALYZE (وضع الانتظار والرسالة المجمعة)
+    if awaiting_project_name and task:
+        current_project_name = task
+        awaiting_project_name = False
+        print(f"\n🤖 Agent: عظيم! تم تحديد اسم البروجكت: '{current_project_name}'. جاري كتابة السكريبت...\n")
+        task = pending_task 
     # =========================================================
+
     if not task:
         count = len(project_context)
         file_word = "file" if count == 1 else "files"
-        
-        # 🔥 السطر ده هيطبع مرة واحدة بس بعد ما كل الملفات تترفع
         print(f"📎 Successfully attached {count} {file_word} to project context!")
-        
         if count >= 2:
             print("Tell me what you want to do with them (e.g., compare, summarize).")
         else:
             print("Ask a specific question about this file.")
-            
         active_intent = "default"
         return
 
-    # =========================================================
-    # 🤖 AUTONOMOUS EXECUTION (التنفيذ المستقل)
-    # =========================================================
-    
-    # 1. تشغيل طبقة اتخاذ القرار (المرحلة 1)
-    intent = active_intent
-    
-    # 2. تشغيل طبقة اختيار الملفات (المرحلة 2)
+    intent = detect_intent(task)
+    active_intent = intent
     working_context = select_relevant_files(task, project_context)
     
-    # فصل الصور والفيديوهات والنصوص من الملفات (اللي اتفلترت بس)
     images = [item["path"] for item in working_context if item["type"] == "image"]
-    videos = [item["path"] for item in working_context if item["type"] == "video"] # 🔥 السطر الجديد أهو
+    videos = [item["path"] for item in working_context if item["type"] == "video"]
     text_context = ""
     
     for item in working_context:
-        if item["type"] not in ["image", "video"]: # 🔥 الشرط الجديد أهو
+        if item["type"] not in ["image", "video"]:
             text_context += f"\n--- File: {os.path.basename(item['path'])} ---\n"
             if "data" in item:
                 text_context += json.dumps(item["data"])
@@ -384,20 +764,16 @@ def chat_tool(task):
                 except:
                     pass
 
-    # تحديد الموديل بناءً على الملفات المطلوبة
     model_name = "llava" if images else "llama3"
     
-    # تجهيز تقرير سريع عن اللي الموديل بيفكر فيه حالياً
     status_parts = []
     if images: status_parts.append(f"{len(images)} images")
     if videos: status_parts.append(f"{len(videos)} videos")
     
-    # حساب الملفات اللي مش صور ولا فيديوهات (زي الورد والأكسيل والكود)
     other_files_count = len(working_context) - len(images) - len(videos)
     if other_files_count > 0:
         status_parts.append(f"{other_files_count} text/data files")
 
-    # لو فيه أي حاجة، يطبعهم في سطر واحد شيك
     if status_parts:
         report = " and ".join(status_parts)
         print(f"🤔 Thinking about {report}...")
@@ -405,59 +781,198 @@ def chat_tool(task):
     # 3. توجيه الذكاء الاصطناعي بناءً على النية اللي اكتشفها
     if intent == "compare":
         if videos:
-            # لو الملفات فيها فيديوهات
-            final_prompt = """You are an expert video analyst. I have attached MULTIPLE videos (or extracted video frames). 
-                            You MUST look at ALL of them. Do NOT ignore any video.
-                            Please structure your response exactly like this:
-                            - Video 1: [Brief description of the first video's content and action]
-                            - Video 2: [Brief description of the second video's content and action]
-                            - Differences & Similarities: [Explicitly compare their events, subjects, or visuals]"""
-
+            system_prompt = "You are an expert video analyst. Compare the attached videos explicitly."
         elif images:
-                    # 🔥 بناء هيكل الوصف ديناميكياً على حسب عدد الصور
-            image_descriptions = "\n".join([f"- Image {i+1}: [Brief description of image {i+1}]" for i in range(len(images))])
-            
-            final_prompt = f"""You are an expert visual analyst. I have attached {len(images)} images. 
-                            You MUST look at ALL {len(images)} of them. Do NOT ignore any image.
-                            Please structure your response exactly like this:
-                            {image_descriptions}
-                            - Differences & Similarities: [Explicitly compare all {len(images)} images in detail]"""
-
+            system_prompt = "You are an expert visual analyst. Compare the attached images explicitly."
         else:
-                                        # لو الملفات نصوص/أكواد بس
-            final_prompt = """You are an expert data analyst. I have attached MULTIPLE text/code files. 
-                            You MUST read ALL of them. Do NOT ignore any file.
-                            Please structure your response exactly like this:
-                            - File 1: [Brief summary of the first file's content/purpose]
-                            - File 2: [Brief summary of the second file's content/purpose]
-                            - Differences & Similarities: [Explicitly compare their contents, logic, or structure]"""
-
+            system_prompt = "You are an expert data analyst. Compare the attached files explicitly."
     elif intent == "summarize":
-        final_prompt = "You are an expert summarizer. Provide a concise, highly accurate summary of the provided files."
+        system_prompt = "You are an expert summarizer. Provide a concise, highly accurate summary of the provided files."
     elif intent == "detect_issues":
-        final_prompt = "You are an expert debugger and reviewer. Analyze the provided files to find any bugs, errors, or issues."
+        system_prompt = "You are an expert debugger and reviewer. Analyze the provided files to find any bugs, errors, or issues."
     else:
-        # لو سؤال محدد، هنضطر نبعت كلام المستخدم
-        final_prompt = f"You are a helpful AI assistant. Answer the user's question accurately based on the provided files.\n\nUser Question: {task}"
+        if len(working_context) > 0:
+            system_prompt = "You are an elite Game Dev & AI assistant. Answer accurately based on the attached files."
+        else:
 
-    # دمج النصوص (لو فيه ملفات نصية) مع الأمر النهائي
+            language = detect_requested_language(task)
+
+            if language == "unity":
+                system_prompt = """
+                You are a senior Unity C# developer.
+                Generate ONLY valid Unity C# scripts.
+                Must inherit from MonoBehaviour.
+                No Unreal code.
+                No explanations outside code blocks.
+                """
+
+            elif language == "unreal":
+                system_prompt = """You are a senior Unreal Engine C++ developer.
+
+STRICT OUTPUT RULES:
+1) Return EXACTLY TWO ```cpp blocks. Nothing else outside them.
+2) First block = Header (.h), Second block = CPP (.cpp)
+3) Header MUST:
+   - Start with #pragma once
+   - #include "CoreMinimal.h"
+   - #include "Components/ActorComponent.h"
+   - #include "<ExactClassName>.generated.h"
+   - UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+   - class MYGAME_API <ClassName> : public UActorComponent
+   - GENERATED_BODY()
+   - Declare constructor, ALL functions, UPROPERTY, UFUNCTION, delegates
+4) CPP MUST:
+   - #include "<ExactClassName>.h" (SAME name as the class file)
+   - Implement constructor and ALL declared functions
+5) NO text or explanations outside the two code blocks.
+
+EXAMPLE:
+```cpp
+#pragma once
+#include "CoreMinimal.h"
+#include "Components/ActorComponent.h"
+#include "MyComp.generated.h"
+
+UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
+class MYGAME_API UMyComp : public UActorComponent
+{
+    GENERATED_BODY()
+public:
+    UMyComp();
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category="Stats")
+    float Value;
+    UFUNCTION(BlueprintCallable)
+    void DoSomething(float Amount);
+protected:
+    virtual void BeginPlay() override;
+};
+```
+```cpp
+#include "MyComp.h"
+
+UMyComp::UMyComp()
+{
+    PrimaryComponentTick.bCanEverTick = false;
+}
+void UMyComp::BeginPlay()
+{
+    Super::BeginPlay();
+}
+void UMyComp::DoSomething(float Amount)
+{
+    Value -= Amount;
+}
+```"""
+
+            elif language == "python":
+                system_prompt = """
+                You are a senior Python developer.
+                Generate clean runnable Python code only.
+                No markdown explanations.
+                """
+
+            else:
+                system_prompt = """
+                You are a senior software engineer.
+                Generate correct programming code only.
+                No explanations outside code blocks.
+                """
+
     if text_context:
-        final_prompt = f"Context from text files:\n{text_context}\n\n{final_prompt}"
+        task = f"Context from text files:\n{text_context}\n\nUser Task: {task}"
 
     try:
-        r = ollama.chat(
-            model=model_name,
-            messages=[{"role": "user", "content": final_prompt, "images": images if images else None}]
-        )
-        result = r["message"]["content"]
+        chat_history.append({"role": "user", "content": task})
+        # نحافظ على آخر 10 رسايل بس عشان منثقلش الموديل
+        if len(chat_history) > 10:
+            chat_history = chat_history[-10:]
+        messages_to_send = [{"role": "system", "content": system_prompt}] + chat_history
+
+        if not text_context and not images and not videos:
+            is_unity = any(word in task.lower() for word in ["unity", "c#", "combat", "game"])
+            is_python = any(word in task.lower() for word in ["python", "بايثون", "script"])
+
+            if is_python and not is_unity and any(word in task.lower() for word in ["code", "برنامج", "كود"]):
+                r = ollama.chat(model=model_name, messages=messages_to_send)
+                initial_code = r["message"]["content"].replace("```python", "").replace("```", "").strip()
+                
+                fixed_code, output = auto_run_and_fix(task, initial_code)
+                
+                chat_history.append({"role": "assistant", "content": f"```python\n{fixed_code}\n```"})
+                print(f"\n🤖 Agent (Python Verified):\n```python\n{fixed_code}\n```\n📝 Output: {output}\n")
+            
+            else:
+                is_script_request = any(word in task.lower() for word in [
+                    "script", "code", "سكريبت", "كود", "system", "برمج",
+                    "اكتب", "write", "component", "class"
+                ])
+                
+                if is_script_request:
+                    if not current_project_name:
+                        print("🤔 Checking project name...")
+                        name_check_prompt = f"Extract the game or project name from this text. If none is mentioned, reply ONLY with 'NONE'. Text: '{task}'"
+                        r = ollama.chat(model="llama3", messages=[{"role": "user", "content": name_check_prompt}])
+                        extracted_name = r["message"]["content"].strip()
+                        
+                        if "NONE" not in extracted_name.upper() and len(extracted_name) < 30:
+                            current_project_name = extracted_name
+                        else:
+                            awaiting_project_name = True
+                            pending_task = task
+                            chat_history.pop()
+                            print("\n🤖 Agent: حلو جداً! بس قبل ما أكتب الكود، إيه اسم اللعبة أو البروجكت بتاعك عشان أعمله فولدر مخصوص؟\n")
+                            sys.stdout.flush()
+                            return
+                    
+                    r = ollama.chat(model=model_name, messages=messages_to_send)
+                    full_response = r["message"]["content"]
+
+                    success = extract_and_save_scripts(full_response, current_project_name)
+
+                    if success:
+                        clean_text = f"""عاش يا هندسة! 🫡 الأكواد اتبرمجت واتقسمت صح.
+
+                    [ 💾 تم حفظ الملفات بنجاح في: Generated_Scripts/{current_project_name.replace(' ', '_')} ]
+                    """
+                        current_project_name = ""  # reset عشان المشروع الجاي ياخد اسمه الصح
+                    else:
+                        clean_text = "⚠️ تم إيقاف الحفظ بسبب أخطاء في الكود."
+
+                    print(f"\n🤖 Agent: {clean_text}\n\n")
+                    print("🏁 Done.", flush=True)
+                    chat_history.append({"role": "assistant", "content": clean_text})
+                    
+                else:
+                    stream = ollama.chat(model=model_name, messages=messages_to_send, stream=True)
+                    sys.stdout.write("\n🤖 Agent: ")
+                    sys.stdout.flush()
+                    
+                    full_response = ""
+                    for chunk in stream:
+                        word = chunk['message']['content']
+                        full_response += word
+                        sys.stdout.write(word)
+                        sys.stdout.flush()
+                    sys.stdout.write("\n\n")
+                    sys.stdout.flush()
+                    print("🏁 Done.", flush=True)
+                    chat_history.append({"role": "assistant", "content": full_response})
         
-        # 🔥 تشغيل طبقة المراجعة الذاتية (بتاخد الإجابة المبدئية وسؤال المستخدم)
-        final_result = self_correct(result, task)
-        
+        else:
+            chat_history[-1]["images"] = images if images else None
+            messages_with_files = [{"role": "system", "content": system_prompt}] + chat_history
+            r = ollama.chat(model=model_name, messages=messages_with_files)
+            result = r["message"]["content"]
+            chat_history.append({"role": "assistant", "content": result})
+            print(f"\n🤖 Agent: {result}\n")
+            print("🏁 Done.", flush=True)
+            
+        sys.stdout.flush()
+
     except Exception as e:
         print(f"❌ Error: {e}")
-        
-    active_intent = "default"
+        if chat_history:
+            chat_history.pop()
 
 # ================= FILE TYPE DETECTOR =================
 
@@ -503,52 +1018,50 @@ def detect_file_type(file_path):
 # ================= SMART HANDLERS =================
 
 def detect_intent(user_text):
-    if not user_text: return "default"
-    
-    # لو الأمر مجرد إرفاق ملف، اخرج فوراً
-    if user_text.strip().lower().startswith("attach"):
-        return "default"
-        
-    # 🔥 كاميرا المراقبة: خلينا نشوف التيرمنال بيبعت العربي سليم ولا متكسر!
-    print(f"👀 DEBUG - Python read this: '{user_text}'")
-    
-    print("🧠 Decision Layer: Analyzing user intent...")
     text_lower = user_text.lower()
     
-    # 🔥 فلترة بايثون السريعة (شاملة كل الأخطاء الإملائية والاحتمالات)
-    compare_words = ["فرق", "الفرق", "قارن", "مقارنة", "مقارنه", "اختلاف", "compare", "combare"]
+    # 🔥 1. كبرنا شبكة الدردشة عشان تشمل الهزار والأسئلة العامة
+    default_words = [
+        "help", "make", "create", "build", "unity", "code", "write", "game", 
+        "how", "what", "can you", "project", "budget", "develop",
+        "joke", "tell", "say", "yes", "no", "thanks", "who", "why", "where", "when",
+        "ازيك", "عامل", "هلو", "اهلا", "مرحبا", "hello", "hi", "hey", "good"
+    ]
+    if any(w in text_lower for w in default_words):
+        return "default"
+        
+    compare_words = ["فرق", "قارن", "مقارنة", "اختلاف", "compare", "difference"]
     if any(w in text_lower for w in compare_words):
-        print("🎯 Intent Detected (Fast Rule): compare")
         return "compare"
         
-    summarize_words = ["لخص", "الخلاصة", "باختصار", "الملخص", "summarize"]
+    summarize_words = ["لخص", "الخلاصة", "باختصار", "الملخص", "summarize", "summary"]
     if any(w in text_lower for w in summarize_words):
-        print("🎯 Intent Detected (Fast Rule): summarize")
         return "summarize"
         
-    issue_words = ["مشكلة", "غلطة", "خطأ", "ايرور", "bug", "issues"]
+    issue_words = ["مشكلة", "غلطة", "خطأ", "ايرور", "bug", "issue", "error", "fix"]
     if any(w in text_lower for w in issue_words):
-        print("🎯 Intent Detected (Fast Rule): detect_issues")
         return "detect_issues"
         
-    describe_words = ["اشرح", "ايه ده", "تفاصيل", "وصف", "فيها ايه", "describe"]
+    describe_words = ["اشرح", "ايه ده", "تفاصيل", "وصف", "فيها ايه", "describe", "explain"]
     if any(w in text_lower for w in describe_words):
-        print("🎯 Intent Detected (Fast Rule): describe")
         return "describe"
         
-    # 2. لو بايثون مفهمش، نسأل الذكاء الاصطناعي كحل أخير
+    # 🔥 2. قفلنا ثغرة التفكير الغبي للموديل
     try:
-        prompt = f"Categorize into exactly ONE: 'compare', 'summarize', 'detect_issues', 'describe', 'default'. User Request: '{user_text}'. Reply with one word only."
+        prompt = f"Categorize into ONE: 'compare', 'summarize', 'detect_issues', 'describe', 'default'. RULE: For coding, general questions, or jokes, YOU MUST pick 'default'. User Request: '{user_text}'. Reply with one word."
         r = ollama.chat(model="llama3", messages=[{"role": "user", "content": prompt}])
         ans = r["message"]["content"].strip().lower()
+        
+        # لو الموديل جاب سيرة default في كلامه، نعتبرها دردشة فوراً ومندورش على الباقي
+        if "default" in ans:
+            return "default"
+            
         for valid in ["compare", "summarize", "detect_issues", "describe"]:
             if valid in ans:
-                print(f"🎯 Intent Detected (AI): {valid}")
                 return valid
     except:
         pass
         
-    print("🎯 Intent Detected: default")
     return "default"
 
 def select_relevant_files(user_text, context_list):
@@ -951,8 +1464,8 @@ def handle_ppt_file(file_path):
         print(f"❌ PowerPoint error: {e}")
 
 # ================= ATTACH =================
-
 def attach_tool(file_path):
+    global project_context # 🔥 ضفنا دي عشان نقدر نعدل في الذاكرة
 
     if not os.path.exists(file_path):
         print("❌ File not found.")
@@ -960,20 +1473,17 @@ def attach_tool(file_path):
 
     file_type = detect_file_type(file_path)
 
-    # print(f"📎 Detected type: {file_type}")
+    # 🔥 السحر هنا: لو دي سكرين شوت لايف، امسح القديمة من الذاكرة الأول!
+    if "live_screen" in file_path:
+        project_context = [item for item in project_context if "live_screen" not in item["path"]]
 
-    # منع التكرار في الذاكرة
-    already_exists = any(
-        item["path"] == file_path
-        for item in project_context
-    )
+    already_exists = any(item["path"] == file_path for item in project_context)
 
     if not already_exists:
         project_context.append({
             "path": file_path,
             "type": file_type
         })
-        # print(f"🧠 Added to project context ({len(project_context)} files)")
     else:
         print("⚡ File already in context, skipped.")
 
@@ -998,8 +1508,9 @@ while True:
         if not user: continue
 
         mode = detect_mode(user)
-        if mode != "ATTACH":
-            print(f"Mode: {mode}")
+        # 🔥 التعديل الأول: وقفنا طباعة المود هنا عشان ننضف الشاشة
+        # if mode != "ATTACH":
+        #     print(f"Mode: {mode}")
 
         if mode == "RUN":
             last = load_last_project()
@@ -1030,6 +1541,8 @@ while True:
             print("🧹 Project context cleared.")
 
         else:
+            # 🔥 التعديل التاني: ضفنا رسالة التفكير هنا
+            print("\n💭 Thinking...", flush=True)
             chat_tool(user)
             
     except KeyboardInterrupt:

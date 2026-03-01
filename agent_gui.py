@@ -2,6 +2,8 @@ import sys
 import os
 from tkinter import filedialog
 import time
+from PIL import ImageGrab
+import glob
 
 # ===========================================
 # 🔥 FIX EXE LOOP
@@ -13,22 +15,26 @@ import threading
 import tkinter as tk
 
 # ===========================================
-# ⚙️ SETTINGS
+# ⚙️ MODERN & OLED SETTINGS
 # ===========================================
 
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
 
-BG_COLOR = "#1e1e1e"
-CHAT_BG_COLOR = "#121212"
-USER_BUBBLE = "#007acc"
-BOT_BUBBLE = "#2d2d2d"
+# ألوان احترافية (Deep Black Style)
+BG_COLOR = "#0b0b0b"        # أسود ملكي للخلفية الأساسية
+CHAT_BG_COLOR = "#121212"   # رمادي غامق جداً لمنطقة الشات
+USER_BUBBLE = "#1e88e5"     # أزرق زاهي لفقاعات المستخدم
+BOT_BUBBLE = "#262626"      # رمادي متوسط لفقاعات الـ Agent
+ACCENT_COLOR = "#00e676"    # أخضر نيون للحالة (Status)
+BORDER_COLOR = "#333333"    # لون الحدود (Borders)
 
 process = None
 current_status = "Idle"
 anim_step = 0
 full_chat_history = ""
-pending_attachments = [] # قائمة الملفات المعلقة
+pending_attachments = [] 
+is_screen_share_on = False  # حالة الشير سكرين
 
 # ===========================================
 # WINDOW SETUP
@@ -126,13 +132,13 @@ pending_frame = ctk.CTkScrollableFrame(
 )
 # (سيتم عمل Pack له داخل دالة التحديث)
 
-# 5. THE CAPSULE INPUT BAR (الكبسولة)
+# 5. THE CAPSULE INPUT BAR
 input_container = ctk.CTkFrame(
     footer, 
-    fg_color="#2f2f2f",      # لون رمادي غامق زي ChatGPT
-    corner_radius=25,        # تدويرة كبيرة
+    fg_color="#1e1e1e",      # أفتح قليلاً من الخلفية عشان تبرز
+    corner_radius=25,
     border_width=1, 
-    border_color="#444"      # حدود خفيفة
+    border_color=BORDER_COLOR
 )
 input_container.pack(fill="x", ipady=5)
 
@@ -163,6 +169,34 @@ attach_btn = ctk.CTkButton(
 )
 attach_btn.pack(side="left", padx=(10, 0))
 
+is_screen_share_on = False
+
+def toggle_screen_share():
+    global is_screen_share_on
+    is_screen_share_on = not is_screen_share_on
+    
+    if is_screen_share_on:
+        screen_btn.configure(text="💻 (ON)", text_color="#00ff00") # أخضر شغال
+        set_status("Screen Share Active")
+    else:
+        screen_btn.configure(text="💻 (OFF)", text_color="#aaaaaa") # رمادي مقفول
+        set_status("Idle")
+
+# زرار الشير سكرين
+screen_btn = ctk.CTkButton(
+    input_container, 
+    text="💻 (OFF)", 
+    width=60, 
+    height=40, 
+    fg_color="transparent", 
+    hover_color="#404040", 
+    text_color="#aaaaaa",
+    font=("Segoe UI", 13, "bold"),
+    corner_radius=20,
+    command=toggle_screen_share
+)
+screen_btn.pack(side="left", padx=(5, 0))
+
 # خانة الكتابة
 input_box = ctk.CTkEntry(
     input_container, 
@@ -177,19 +211,21 @@ input_box = ctk.CTkEntry(
 input_box.pack(side="left", fill="x", expand=True, padx=10)
 # (سيتم ربط زر Enter لاحقًا بعد تعريف دالة send_command)
 
-# زرار الإرسال (ستايل ChatGPT)
+# 2. زرار الإرسال ➢
 send_btn = ctk.CTkButton(
     input_container, 
-    text="➢",                # شكل طائرة ورقية أو سهم حاد
+    text="➢", 
     width=40, 
     height=40, 
-    fg_color=USER_BUBBLE,    # نفس لون رسايلك (الأزرق)
-    text_color="white",      # أيقونة بيضاء
-    hover_color="#005f99",   # أغمق سنة لما تقف عليه
-    corner_radius=20,        # دائرة كاملة
-    font=("Arial", 20, "bold"), # خط متناسق
-    command=lambda: None
+    fg_color=USER_BUBBLE, 
+    text_color="white", 
+    hover_color="#005f99", 
+    corner_radius=20, 
+    font=("Arial", 20, "bold"), 
+    command=lambda: send_command()
 )
+
+# 🔥 السطر السحري اللي هيظهر الزرار
 send_btn.pack(side="right", padx=(5, 10))
 
 # ===========================================
@@ -260,24 +296,31 @@ def update_context_counter(text):
 # ===========================================
 
 def set_status(s):
-    global current_status
+    global current_status, idle_timer
     current_status = s
-    if s=="Idle":
+    
+    # لو دخل في التفكير، نلغي أي تايمر قديم عشان ميفصلش في النص
+    if s == "Thinking" and idle_timer is not None:
+        app.after_cancel(idle_timer)
+        idle_timer = None
+
+    if s == "Idle":
         status_label.configure(text_color="#00ff00")
     else:
         status_label.configure(text_color="#ffcc00")
+    app.update_idletasks()
 
 def animate_status():
     global anim_step
     anim_step += 1
-    if current_status=="Idle":
+    if current_status == "Idle":
         status_label.configure(text=f"● Idle{' .'*(anim_step%3)}")
-    elif current_status=="Running":
+    elif current_status == "Running":
         frames=["Running ◐","Running ◓","Running ◑","Running ◒"]
         status_label.configure(text=frames[anim_step%4])
-    elif current_status=="Thinking":
+    elif current_status == "Thinking":
         status_label.configure(text=f"● Thinking{' .'*(anim_step%4)}")
-    app.after(400,animate_status)
+    app.after(400, animate_status)
 
 # ===========================================
 # 🚦 QUEUE & ANIMATION SYSTEM (نظام الطابور والكتابة)
@@ -306,8 +349,12 @@ def show_bubble_sequentially(text, is_user):
     wrapper = ctk.CTkFrame(chat_area, fg_color="transparent")
     wrapper.pack(fill="x", pady=6, padx=15)
 
-    bubble = ctk.CTkFrame(wrapper, fg_color=color, corner_radius=20)
+    # تعديل شكل الفقاعات لتكون أنعم
+    bubble = ctk.CTkFrame(wrapper, fg_color=color, corner_radius=15) # تدويرة أقل شوية بتبان احترافية أكتر
     bubble.pack(anchor=align)
+    # إضافة حدود خفيفة لفقاعة الـ Agent عشان تبان على الخلفية السودة
+    if not is_user:
+        bubble.configure(border_width=1, border_color="#333")
 
     ctk.CTkLabel(bubble, text=icon).pack(side="left", padx=(12,5), pady=8)
     ctk.CTkLabel(bubble, text=f"{sender}:", font=("Segoe UI", 13, "bold")).pack(side="left", pady=8)
@@ -370,7 +417,13 @@ def attach_file():
 idle_timer = None
 
 def make_idle():
+    global active_bot_label
     set_status("Idle")
+    
+    # 🔥 أول ما يخلص تفكير وكتابة، نقص أي سطور فاضية (Enters) في آخر البالونة
+    if active_bot_label:
+        clean_text = active_bot_label.cget("text").strip()
+        active_bot_label.configure(text=clean_text)
 
 # ===========================================
 # 🔥 STREAMING ENGINE (محرك الكتابة الحية)
@@ -380,7 +433,6 @@ active_bot_label = None
 
 def start_new_bot_bubble():
     global active_bot_label, full_chat_history
-    
     wrapper = ctk.CTkFrame(chat_area, fg_color="transparent")
     wrapper.pack(fill="x", pady=6, padx=15)
 
@@ -402,29 +454,36 @@ def stream_to_bubble(text_chunk):
         active_bot_label.configure(text=current + text_chunk)
         full_chat_history += text_chunk
         
-        # بنعمل سكرول لتحت مع المسافات والسطور بس عشان الواجهة متهنجش
         if text_chunk in [" ", "\n"]:
             chat_area._parent_canvas.yview_moveto(1)
 
 def reset_idle_timer():
     global idle_timer
+    # 🔥 أول ما الموديل يبدأ ينطق حرف، نكسر التفكير ونقلبه Running فوراً
     set_status("Running")
+    
+    # ونجدد التايمر، بحيث أول ما يسكت ثانيتين يرجع Idle
     if idle_timer is not None:
         app.after_cancel(idle_timer)
     idle_timer = app.after(2000, make_idle)
 
 def process_line(line):
     clean_lower = line.lower()
-    # تحديث الحالة بناءً على الكلمات المفتاحية
+    
+    # لو لقى كلمات التفكير، يقلب الشريط Thinking
     if any(word in clean_lower for word in ["analyzing", "comparing", "thinking", "reading", "processing", "swapping", "loading"]):
         set_status("Thinking")
-    else:
-        set_status("Running")
-        # يرجع Idle بعد ثانيتين لو مفيش جديد
-        app.after(2000, lambda: set_status("Idle"))
         
-    update_context_counter(line) # تحديث العداد
-    add_bot_message(line)        # إضافة الرسالة للطابور
+    update_context_counter(line)
+    
+    # إخفاء رسايل الكواليس من الشات
+    if not any(icon in line for icon in ["💭", "🧠", "👀", "⏳", "🤖"]):
+        add_bot_message(line)
+    
+    # جوا دالة قراءة السطور في agent_gui.py
+    if "🏁 Done." in line:
+        app.after(100, make_idle)
+        return # 🔥 الـ return دي هي اللي هتمنع الكلمة إنها تنزل في الشات
 
 def read_output():
     global process, is_streaming_mode, is_typing, msg_queue
@@ -463,7 +522,7 @@ def read_output():
                 app.after(0, reset_idle_timer)
                 
                 # سرعة الـ Streaming للإجابة النهائية
-                subprocess.time.sleep(0.02)
+                time.sleep(0.02)
                 
     except Exception as e:
         print("Read output error:", e)
@@ -496,7 +555,7 @@ def start_agent():
             cwd=base_dir,
             startupinfo=startupinfo
         )
-        add_bot_message("Hello! System ready.")
+        add_bot_message("Hello! I'm ready.")
 
         # 🔥 Sync context counter on startup
         try:
@@ -538,27 +597,44 @@ def _send_to_agent(cmd, files):
             print("Error sending:", e)
 
 def send_command(event=None):
-    global pending_attachments, is_streaming_mode
+    global pending_attachments, is_streaming_mode, is_screen_share_on
     cmd = input_box.get().strip()
 
-    # لو مفيش نص ومفيش ملفات، متبعتش حاجة
-    if not cmd and not pending_attachments:
+    if not cmd and not pending_attachments and not is_screen_share_on:
         return
 
-    is_streaming_mode = False # 🔥 إيقاف وضع الـ Streaming مع كل رسالة جديدة
+    is_streaming_mode = False 
 
-    # 1. إظهار رسالة للمستخدم في الشات
     if cmd:
         add_user_message(cmd)
     elif pending_attachments:
-        # لو باعت ملفات بس من غير كلام، بنكتب رسالة تلقائية إننا طلبنا تحليل
         count = len(pending_attachments)
         add_user_message(f"📂 Auto-Analyze Request ({count} files)")
 
-    set_status("Thinking")
+    set_status("Thinking") 
     input_box.delete(0, "end")
+    app.update_idletasks()
 
     files_copy = pending_attachments.copy()
+
+    ## 🔥 لو الشير سكرين شغال، صور الشاشة باسم جديد وابعتها!
+    if is_screen_share_on:
+        app.iconify() 
+        app.update()
+        time.sleep(0.2) 
+        
+        # مسح أي سكرين شوت قديمة من الهارد عشان منسحمش مساحتك
+        for old_file in glob.glob("live_screen_*.jpg"):
+            try: os.remove(old_file)
+            except: pass
+            
+        screen = ImageGrab.grab()
+        # 🔥 اسم جديد بالثانية عشان نكسر الـ Cache بتاع الموديل
+        save_path = os.path.join(os.getcwd(), f"live_screen_{int(time.time())}.jpg")
+        screen.save(save_path, quality=100)
+        
+        app.deiconify() 
+        files_copy.append(save_path)
 
     threading.Thread(
         target=_send_to_agent,
@@ -568,14 +644,6 @@ def send_command(event=None):
 
     pending_attachments.clear()
     refresh_file_chips()
-
-
-# تأكد من ربط زرار الإنتر
-input_box.bind("<Return>", send_command)
-
-# ربط زرار الإرسال والإنتر بدالة الإرسال
-input_box.bind("<Return>", send_command)
-send_btn.configure(command=send_command)
 
 # ===========================================
 # SHORTCUT FIX
@@ -621,4 +689,6 @@ def on_closing():
 app.protocol("WM_DELETE_WINDOW",on_closing)
 app.after(1000,start_agent)
 animate_status()
+# ربط زرار Enter بالإرسال
+input_box.bind("<Return>", send_command)
 app.mainloop()
