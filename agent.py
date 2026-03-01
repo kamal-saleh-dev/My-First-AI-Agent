@@ -28,13 +28,13 @@ sys.stdin.reconfigure(encoding="utf-8") # 🔥 السطر ده هو اللي ه�
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 MEMORY_FILE = os.path.join(BASE_DIR, "agent_memory.txt")
 CONTEXT_FILE = os.path.join(BASE_DIR, "project_context.json")
+HISTORY_FILE = os.path.join(BASE_DIR, "chat_sessions.json")
 
 # ================= PROJECT CONTEXT =================
 project_context = []
-
 last_user_input = ""
-
 active_intent = "default"
+current_session_id = None
 
 # ================= MODE =================
 
@@ -79,18 +79,79 @@ def save_project_context():
 
 def load_project_context():
     global project_context
-
     if not os.path.exists(CONTEXT_FILE):
         return
-
     try:
         with open(CONTEXT_FILE, "r", encoding="utf-8") as f:
             project_context = json.load(f)
-
         print(f"🧠 Loaded project context ({len(project_context)} files)")
-
     except Exception as e:
         print("⚠ Context load error:", e)
+
+# ================= SMART TRIM =================
+def estimate_tokens(text):
+    return len(text) // 4
+
+def smart_trim_history(history, max_tokens=3000):
+    if not history:
+        return history
+    if sum(estimate_tokens(m.get("content","")) for m in history) <= max_tokens:
+        return history
+    MIN_KEEP = 4
+    trimmed = list(history)
+    while len(trimmed) > MIN_KEEP:
+        if sum(estimate_tokens(m.get("content","")) for m in trimmed) <= max_tokens:
+            break
+        removed = False
+        for i, msg in enumerate(trimmed[:-MIN_KEEP]):
+            if not any(k in msg.get("content","") for k in ["```","Generated_Scripts","💾"]):
+                trimmed.pop(i)
+                removed = True
+                break
+        if not removed:
+            trimmed.pop(0)
+    return trimmed
+
+# ================= SESSION HISTORY (صامتة - بدون stdout) =================
+import time as _time
+
+def _session_title(msg):
+    words = msg.strip().split()[:6]
+    t = " ".join(words)
+    return (t[:45]+"...") if len(t)>45 else t or "New Chat"
+
+def load_all_sessions():
+    if not os.path.exists(HISTORY_FILE):
+        return []
+    try:
+        with open(HISTORY_FILE,"r",encoding="utf-8") as f:
+            return json.load(f)
+    except:
+        return []
+
+def save_session():
+    global current_session_id
+    if not chat_history:
+        return
+    if not current_session_id:
+        current_session_id = str(int(_time.time()))
+    sessions = load_all_sessions()
+    title = _session_title(next((m["content"] for m in chat_history if m["role"]=="user"),"New Chat"))
+    for s in sessions:
+        if s["id"] == current_session_id:
+            s["messages"] = chat_history
+            s["title"] = title
+            break
+    else:
+        sessions.append({"id":current_session_id,"title":title,"timestamp":current_session_id,"messages":chat_history})
+    if len(sessions) > 30:
+        sessions = sessions[-30:]
+    try:
+        with open(HISTORY_FILE,"w",encoding="utf-8") as f:
+            json.dump(sessions, f, ensure_ascii=False, indent=2)
+        # بدون أي print هنا — الـ GUI بيقرأ الملف مباشرة
+    except Exception as e:
+        pass  # صمت تام
 
 # ================= HELPERS =================
 
@@ -883,9 +944,7 @@ void UMyComp::DoSomething(float Amount)
 
     try:
         chat_history.append({"role": "user", "content": task})
-        # نحافظ على آخر 10 رسايل بس عشان منثقلش الموديل
-        if len(chat_history) > 10:
-            chat_history = chat_history[-10:]
+        chat_history[:] = smart_trim_history(chat_history, max_tokens=3000)
         messages_to_send = [{"role": "system", "content": system_prompt}] + chat_history
 
         if not text_context and not images and not videos:
@@ -934,13 +993,15 @@ void UMyComp::DoSomething(float Amount)
 
                     [ 💾 تم حفظ الملفات بنجاح في: Generated_Scripts/{current_project_name.replace(' ', '_')} ]
                     """
-                        current_project_name = ""  # reset عشان المشروع الجاي ياخد اسمه الصح
                     else:
                         clean_text = "⚠️ تم إيقاف الحفظ بسبب أخطاء في الكود."
 
                     print(f"\n🤖 Agent: {clean_text}\n\n")
-                    print("🏁 Done.", flush=True)
+                    sys.stdout.flush()
                     chat_history.append({"role": "assistant", "content": clean_text})
+                    save_session()
+                    print("🏁 Done.")
+                    sys.stdout.flush()
                     
                 else:
                     stream = ollama.chat(model=model_name, messages=messages_to_send, stream=True)
@@ -955,17 +1016,22 @@ void UMyComp::DoSomething(float Amount)
                         sys.stdout.flush()
                     sys.stdout.write("\n\n")
                     sys.stdout.flush()
-                    print("🏁 Done.", flush=True)
                     chat_history.append({"role": "assistant", "content": full_response})
+                    save_session()
+                    print("🏁 Done.")
+                    sys.stdout.flush()
         
         else:
             chat_history[-1]["images"] = images if images else None
             messages_with_files = [{"role": "system", "content": system_prompt}] + chat_history
             r = ollama.chat(model=model_name, messages=messages_with_files)
             result = r["message"]["content"]
+            print(f"\n🤖 Agent: {result}\n\n")
+            sys.stdout.flush()
             chat_history.append({"role": "assistant", "content": result})
-            print(f"\n🤖 Agent: {result}\n")
-            print("🏁 Done.", flush=True)
+            save_session()
+            print("🏁 Done.")
+            sys.stdout.flush()
             
         sys.stdout.flush()
 
@@ -1506,6 +1572,22 @@ while True:
         
         if user.lower() == "exit": break
         if not user: continue
+
+        # ===== SESSION COMMANDS =====
+        if user.startswith("load_session "):
+            sid = user.replace("load_session ","").strip()
+            for s in load_all_sessions():
+                if s["id"] == sid:
+                    chat_history.clear()
+                    chat_history.extend(s["messages"])
+                    current_session_id = sid
+                    break
+            continue
+        if user == "new_chat":
+            chat_history.clear()
+            current_session_id = None
+            continue
+        # ============================
 
         mode = detect_mode(user)
         # 🔥 التعديل الأول: وقفنا طباعة المود هنا عشان ننضف الشاشة

@@ -34,18 +34,108 @@ current_status = "Idle"
 anim_step = 0
 full_chat_history = ""
 pending_attachments = [] 
-is_screen_share_on = False  # حالة الشير سكرين
+is_screen_share_on = False
+sessions_data = []
+
+def poll_sessions():
+    """بيقرأ chat_sessions.json كل 3 ثواني ويحدث الـ sidebar"""
+    global sessions_data
+    try:
+        if getattr(sys, 'frozen', False):
+            base = os.path.dirname(sys.executable)
+        else:
+            base = os.path.dirname(os.path.abspath(__file__))
+        history_file = os.path.join(base, "chat_sessions.json")
+        if os.path.exists(history_file):
+            import json as _j
+            with open(history_file, "r", encoding="utf-8") as f:
+                all_s = _j.load(f)
+            new_data = [{"id":s["id"],"title":s["title"],"timestamp":s["timestamp"]} for s in all_s]
+            if new_data != sessions_data:
+                sessions_data = new_data
+                refresh_sidebar()
+    except:
+        pass
+    app.after(3000, poll_sessions)
 
 # ===========================================
 # WINDOW SETUP
 # ===========================================
 
 app = ctk.CTk(fg_color=BG_COLOR)
-app.geometry("950x700")
+app.geometry("1200x700")
 app.title("AI Agent")
 
-# 1. HEADER (TOP)
-header = ctk.CTkFrame(app, fg_color="transparent")
+# ===== MAIN LAYOUT =====
+main_container = ctk.CTkFrame(app, fg_color="transparent")
+main_container.pack(fill="both", expand=True)
+
+# ===== SIDEBAR =====
+sidebar = ctk.CTkFrame(main_container, fg_color="#0f0f0f", width=230, corner_radius=0)
+sidebar.pack(side="left", fill="y")
+sidebar.pack_propagate(False)
+
+ctk.CTkLabel(sidebar, text="🤖 AI Agent", font=("Segoe UI",16,"bold")).pack(pady=(20,10), padx=15, anchor="w")
+
+def new_chat_action():
+    if process:
+        try:
+            process.stdin.write("new_chat\n")
+            process.stdin.flush()
+        except: pass
+    for w in chat_area.winfo_children():
+        w.destroy()
+    add_bot_message("Hello! I'm ready.")
+
+ctk.CTkButton(sidebar, text="＋  New Chat", font=("Segoe UI",13),
+    fg_color="#1e88e5", hover_color="#1565c0", corner_radius=10, height=36,
+    command=new_chat_action).pack(padx=12, pady=(0,12), fill="x")
+
+ctk.CTkLabel(sidebar, text="Recent Chats", font=("Segoe UI",10), text_color="#555").pack(padx=15, anchor="w")
+
+sessions_list_frame = ctk.CTkScrollableFrame(sidebar, fg_color="transparent", corner_radius=0)
+sessions_list_frame.pack(fill="both", expand=True, padx=5, pady=5)
+
+def load_session_ui(session_id):
+    if process:
+        try:
+            process.stdin.write(f"load_session {session_id}\n")
+            process.stdin.flush()
+        except: pass
+    try:
+        if getattr(sys,'frozen',False):
+            base = os.path.dirname(sys.executable)
+        else:
+            base = os.path.dirname(os.path.abspath(__file__))
+        import json as _j
+        with open(os.path.join(base,"chat_sessions.json"),"r",encoding="utf-8") as f:
+            all_s = _j.load(f)
+        for s in all_s:
+            if s["id"] == session_id:
+                for w in chat_area.winfo_children(): w.destroy()
+                for msg in s["messages"]:
+                    if msg.get("role") == "user": add_user_message(msg.get("content",""))
+                    elif msg.get("role") == "assistant": add_bot_message(msg.get("content",""))
+                break
+    except: pass
+
+def refresh_sidebar():
+    for w in sessions_list_frame.winfo_children(): w.destroy()
+    for s in reversed(sessions_data):
+        ctk.CTkButton(sessions_list_frame,
+            text=f"💬  {s.get('title','Chat')}",
+            font=("Segoe UI",12), fg_color="transparent",
+            hover_color="#1e1e1e", text_color="#cccccc",
+            anchor="w", corner_radius=8, height=34,
+            command=lambda i=s["id"]: load_session_ui(i)
+        ).pack(fill="x", pady=2, padx=3)
+
+# ===== CONTENT AREA =====
+content_frame = ctk.CTkFrame(main_container, fg_color="transparent")
+content_frame.pack(side="left", fill="both", expand=True)
+
+# HEADER داخل الـ content_frame
+header = ctk.CTkFrame(content_frame, fg_color="transparent")
 header.pack(pady=(15,10), fill="x", padx=20, side="top")
 
 title = ctk.CTkLabel(
@@ -88,7 +178,7 @@ copy_btn.pack(side="right")
 # 1. Main Chat Area (منطقة الشات)
 # وضعناها هنا لأنها يجب أن تكون قبل الـ Footer
 chat_area = ctk.CTkScrollableFrame(
-    app,
+    content_frame,
     width=900,
     corner_radius=15,
     fg_color=CHAT_BG_COLOR
@@ -96,8 +186,7 @@ chat_area = ctk.CTkScrollableFrame(
 chat_area.pack(pady=10, padx=20, fill="both", expand=True)
 
 # 2. Main Footer Container
-# ده الفريم الكبير اللي شايل كل حاجة تحت
-footer = ctk.CTkFrame(app, fg_color="transparent")
+footer = ctk.CTkFrame(content_frame, fg_color="transparent")
 footer.pack(side="bottom", fill="x", padx=40, pady=(0, 25))
 
 # 3. Status Bar (شريط الحالة صغير فوق)
@@ -469,61 +558,74 @@ def reset_idle_timer():
 
 def process_line(line):
     clean_lower = line.lower()
-    
-    # لو لقى كلمات التفكير، يقلب الشريط Thinking
-    if any(word in clean_lower for word in ["analyzing", "comparing", "thinking", "reading", "processing", "swapping", "loading"]):
-        set_status("Thinking")
-        
-    update_context_counter(line)
-    
-    # إخفاء رسايل الكواليس من الشات
-    if not any(icon in line for icon in ["💭", "🧠", "👀", "⏳", "🤖"]):
-        add_bot_message(line)
-    
-    # جوا دالة قراءة السطور في agent_gui.py
+
+    # تجاهل أي سطر نظام تماماً
+    if line.startswith("SESSIONS_UPDATED:"):
+        return
     if "🏁 Done." in line:
         app.after(100, make_idle)
-        return # 🔥 الـ return دي هي اللي هتمنع الكلمة إنها تنزل في الشات
+        return
+
+    if any(word in clean_lower for word in ["analyzing","comparing","thinking","reading","processing","swapping","loading"]):
+        set_status("Thinking")
+
+    update_context_counter(line)
+
+    if not any(icon in line for icon in ["💭","🧠","👀","⏳","🤖"]):
+        add_bot_message(line)
 
 def read_output():
     global process, is_streaming_mode, is_typing, msg_queue
-    
-    buffer = ""
+
+    line_buffer = ""
+    prev_char = ""
+
     try:
         while True:
             if process is None: break
-            
             char = process.stdout.read(1)
             if not char: break
-            
-            buffer += char
-            
-            if not is_streaming_mode:
+
+            if is_streaming_mode:
+                # خروج من الـ streaming عند \n\n
+                if char == '\n' and prev_char == '\n':
+                    is_streaming_mode = False
+                    line_buffer = ""
+                    prev_char = ""
+                    continue
+                prev_char = char
+                # تجاهل أي سطر نظام في الـ streaming
+                line_buffer += char
                 if char == '\n':
-                    line = buffer.strip()
-                    buffer = ""
+                    if line_buffer.strip().startswith("SESSIONS_UPDATED:") or "🏁 Done." in line_buffer:
+                        is_streaming_mode = False
+                        line_buffer = ""
+                        prev_char = ""
+                    else:
+                        line_buffer = ""
+                    continue
+                app.after(0, lambda c=char: stream_to_bubble(c))
+                app.after(0, reset_idle_timer)
+                time.sleep(0.02)
+            else:
+                prev_char = char
+                if char == '\n':
+                    line = line_buffer.strip()
+                    line_buffer = ""
                     if line:
                         app.after(0, lambda l=line: process_line(l))
                 else:
-                    if "🤖 Agent:" in buffer:
-                        # 🔥 الانتظار لحد ما كل بالونات النظام تخلص كتابة حرف حرف
+                    line_buffer += char
+                    if "🤖 Agent:" in line_buffer:
                         while is_typing or msg_queue:
-                            time.sleep(0.1) 
-                        
+                            time.sleep(0.1)
                         is_streaming_mode = True
-                        buffer = buffer.split("🤖 Agent:")[1]
+                        after = line_buffer.split("🤖 Agent:")[1]
+                        line_buffer = ""
                         app.after(0, start_new_bot_bubble)
-                        if buffer:
-                            app.after(0, lambda c=buffer: stream_to_bubble(c))
-                        buffer = ""
-            else:
-                app.after(0, lambda c=char: stream_to_bubble(c))
-                buffer = ""
-                app.after(0, reset_idle_timer)
-                
-                # سرعة الـ Streaming للإجابة النهائية
-                time.sleep(0.02)
-                
+                        if after:
+                            app.after(0, lambda c=after: stream_to_bubble(c))
+
     except Exception as e:
         print("Read output error:", e)
 
@@ -688,6 +790,7 @@ def on_closing():
 
 app.protocol("WM_DELETE_WINDOW",on_closing)
 app.after(1000,start_agent)
+app.after(1500, poll_sessions)
 animate_status()
 # ربط زرار Enter بالإرسال
 input_box.bind("<Return>", send_command)
