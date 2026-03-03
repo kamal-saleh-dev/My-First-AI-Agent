@@ -105,14 +105,12 @@ def smart_trim_history(history, max_tokens=3000):
         removed = False
         for i, msg in enumerate(trimmed[:-MIN_KEEP]):
             if not any(k in msg.get("content","") for k in ["```","Generated_Scripts","💾"]):
-                trimmed.pop(i)
-                removed = True
-                break
+                trimmed.pop(i); removed = True; break
         if not removed:
             trimmed.pop(0)
     return trimmed
 
-# ================= SESSION HISTORY (صامتة - بدون stdout) =================
+# ================= SESSION HISTORY =================
 import time as _time
 
 def _session_title(msg):
@@ -131,27 +129,21 @@ def load_all_sessions():
 
 def save_session():
     global current_session_id
-    if not chat_history:
-        return
+    if not chat_history: return
     if not current_session_id:
         current_session_id = str(int(_time.time()))
     sessions = load_all_sessions()
     title = _session_title(next((m["content"] for m in chat_history if m["role"]=="user"),"New Chat"))
     for s in sessions:
         if s["id"] == current_session_id:
-            s["messages"] = chat_history
-            s["title"] = title
-            break
+            s["messages"] = chat_history; s["title"] = title; break
     else:
         sessions.append({"id":current_session_id,"title":title,"timestamp":current_session_id,"messages":chat_history})
-    if len(sessions) > 30:
-        sessions = sessions[-30:]
+    if len(sessions) > 30: sessions = sessions[-30:]
     try:
         with open(HISTORY_FILE,"w",encoding="utf-8") as f:
             json.dump(sessions, f, ensure_ascii=False, indent=2)
-        # بدون أي print هنا — الـ GUI بيقرأ الملف مباشرة
-    except Exception as e:
-        pass  # صمت تام
+    except: pass
 
 # ================= HELPERS =================
 
@@ -522,16 +514,23 @@ def validate_unreal(code):
     return True, "Valid Unreal Header"
 
 def validate_unity(code):
+    # لو missing using UnityEngine، نحطها تلقائياً
+    if "using UnityEngine" not in code:
+        code = "using UnityEngine;\nusing System.Collections;\n\n" + code
+
     if "MonoBehaviour" not in code:
         return False, "Unity script must inherit from MonoBehaviour"
 
     if "public class" not in code:
         return False, "Unity script missing public class"
 
-    if "void Start" not in code and "void Update" not in code:
-        return False, "Unity script missing Start or Update method"
+    # Manager/System سكريبتات ممكن متبقاش فيها Start/Update
+    has_lifecycle = any(m in code for m in ["void Start", "void Update", "void Awake", "void OnEnable", "void FixedUpdate"])
+    is_manager = any(w in code for w in ["Manager", "System", "Controller", "Handler", "Database", "UI", "Menu", "Screen", "Panel", "Dialogue"])
+    if not has_lifecycle and not is_manager:
+        return False, "Unity script missing lifecycle method (Start/Update/Awake)"
 
-    return True, "Valid Unity Code"
+    return True, code
 
 def validate_python(code, task):
     fixed_code, output = auto_run_and_fix(task, code)
@@ -746,11 +745,15 @@ def extract_and_save_scripts(text, project_name):
     for i, code in enumerate(matches):
         code = code.strip()
 
-        is_valid, message = validate_code(code, project_name)
+        is_valid, result = validate_code(code, project_name)
         if not is_valid:
-            print(f"\n❌ Validation Failed: {message}")
+            print(f"\n❌ Validation Failed: {result}")
             all_valid = False
             continue
+
+        # لو validate_unity رجعت الكود المصلوح، استخدمه
+        if isinstance(result, str) and len(result) > 10:
+            code = result
 
         domain = detect_programming_domain(code)
 
@@ -933,11 +936,7 @@ void UMyComp::DoSomething(float Amount)
                 """
 
             else:
-                system_prompt = """
-                You are a senior software engineer.
-                Generate correct programming code only.
-                No explanations outside code blocks.
-                """
+                system_prompt = "You are a helpful AI assistant. Answer naturally and clearly in the same language the user is speaking."
 
     if text_context:
         task = f"Context from text files:\n{text_context}\n\nUser Task: {task}"
@@ -965,23 +964,106 @@ void UMyComp::DoSomething(float Amount)
                     "script", "code", "سكريبت", "كود", "system", "برمج",
                     "اكتب", "write", "component", "class"
                 ])
-                
-                if is_script_request:
+
+                # ========== COMPLETE GAME DETECTION ==========
+                is_complete_game = any(w in task.lower() for w in [
+                    "complete", "full game", "كاملة", "كامل", "all scripts",
+                    "كل السكريبتات", "whole game"
+                ])
+
+                if is_complete_game and is_script_request:
+                    # استخرج اسم البروجكت
                     if not current_project_name:
-                        print("🤔 Checking project name...")
+                        name_prompt = f"Extract the game or project name from this text. If none, reply ONLY with 'NONE'. Text: '{task}'"
+                        r = ollama.chat(model="llama3", messages=[{"role": "user", "content": name_prompt}])
+                        extracted = r["message"]["content"].strip()
+                        current_project_name = extracted if ("NONE" not in extracted.upper() and len(extracted) < 30) else "MyGame"
+
+                    # اطلب من الـ LLM يقرر السكريبتات المطلوبة
+                    print("\n🎮 Planning game scripts...", flush=True)
+                    plan_prompt = f"""List 4-5 essential Unity C# script names for this game. 
+RULES:
+- Each script must have a DIFFERENT role (Player, Enemy, Manager, UI, etc.)
+- NO duplicate roles — don't write PlayerX and PlayerY
+- Reply ONLY with comma-separated names, no extensions, no explanation
+- Example for RPG: PlayerMovement, EnemyAI, GameManager, InventorySystem, UIManager
+Request: {task}"""
+                    r = ollama.chat(model="llama3", messages=[{"role": "user", "content": plan_prompt}])
+                    scripts_raw = r["message"]["content"].strip()
+                    script_names = [s.strip() for s in scripts_raw.split(",") if s.strip() and len(s.strip()) < 40]
+                    script_names = script_names[:6]  # حد أقصى 6 سكريبتات
+
+                    print(f"📋 Scripts to generate: {', '.join(script_names)}", flush=True)
+
+                    saved = []
+                    failed = []
+
+                    for script_name in script_names:
+                        print(f"\n⚙️ Writing {script_name}.cs ...", flush=True)
+                        single_prompt = f"""Write a complete Unity C# script named {script_name} for a simple RPG game.
+
+STRICT RULES:
+1. Start with: using UnityEngine; using System.Collections; using System.Collections.Generic;
+2. Class: public class {script_name} : MonoBehaviour
+3. EVERY method must have REAL working code — NO placeholders, NO comments like "// add logic here", NO empty methods
+4. NO TODO comments, NO "Replace with your logic", NO /* ... */ inside if conditions
+5. Use simple, realistic game logic (floats, bools, Debug.Log, GetComponent, etc.)
+6. Return ONLY one ```csharp block, absolutely nothing outside it
+
+Task context: {task}"""
+
+                        system_unity = """You are a senior Unity C# developer.
+CRITICAL: Write COMPLETE working code. NEVER use placeholders or TODO comments.
+Every if-statement must have real condition. Every method must have real implementation.
+Return ONLY one ```csharp code block."""
+
+                        r = ollama.chat(model=model_name, messages=[
+                            {"role": "system", "content": system_unity},
+                            {"role": "user", "content": single_prompt}
+                        ])
+                        code_response = r["message"]["content"]
+
+                        # شيك على placeholders — لو لقينا، نطلب إعادة الكتابة مرة واحدة
+                        placeholder_signs = ["// add", "// todo", "// replace", "/* ", "your logic", "your code", "implement here", "add logic"]
+                        has_placeholder = any(p in code_response.lower() for p in placeholder_signs)
+
+                        if has_placeholder:
+                            print(f"⚠️ Placeholder detected in {script_name}, regenerating...", flush=True)
+                            fix_prompt = f"""The previous code had placeholders. Rewrite {script_name} with COMPLETE real logic.
+NO placeholders. NO empty implementations. Every line must be real working Unity C# code.
+Previous code:
+{code_response}"""
+                            r2 = ollama.chat(model=model_name, messages=[
+                                {"role": "system", "content": system_unity},
+                                {"role": "user", "content": fix_prompt}
+                            ])
+                            code_response = r2["message"]["content"]
+
+                        success = extract_and_save_scripts(code_response, current_project_name)
+                        if success:
+                            saved.append(script_name)
+                        else:
+                            failed.append(script_name)
+
+                    # ملخص النتيجة
+                    summary = f"🎮 تم إنشاء لعبة {current_project_name}!\n\n"
+                    summary += "".join([f"   ✅ {s}.cs\n" for s in saved])
+                    if failed:
+                        summary += "".join([f"   ❌ {s}.cs فشل\n" for s in failed])
+                    summary += f"\n[ 💾 الملفات في: Generated_Scripts/{current_project_name.replace(' ', '_')} ]"
+
+                    print(f"\n🤖 Agent: {summary}\n\n", flush=True)
+                    chat_history.append({"role": "assistant", "content": summary})
+                    current_project_name = ""
+                    save_session()
+
+                # ========== SINGLE SCRIPT ==========
+                elif is_script_request:
+                    if not current_project_name:
                         name_check_prompt = f"Extract the game or project name from this text. If none is mentioned, reply ONLY with 'NONE'. Text: '{task}'"
                         r = ollama.chat(model="llama3", messages=[{"role": "user", "content": name_check_prompt}])
                         extracted_name = r["message"]["content"].strip()
-                        
-                        if "NONE" not in extracted_name.upper() and len(extracted_name) < 30:
-                            current_project_name = extracted_name
-                        else:
-                            awaiting_project_name = True
-                            pending_task = task
-                            chat_history.pop()
-                            print("\n🤖 Agent: حلو جداً! بس قبل ما أكتب الكود، إيه اسم اللعبة أو البروجكت بتاعك عشان أعمله فولدر مخصوص؟\n")
-                            sys.stdout.flush()
-                            return
+                        current_project_name = extracted_name if ("NONE" not in extracted_name.upper() and len(extracted_name) < 30) else "MyGame"
                     
                     r = ollama.chat(model=model_name, messages=messages_to_send)
                     full_response = r["message"]["content"]
@@ -999,9 +1081,8 @@ void UMyComp::DoSomething(float Amount)
                     print(f"\n🤖 Agent: {clean_text}\n\n")
                     sys.stdout.flush()
                     chat_history.append({"role": "assistant", "content": clean_text})
+                    current_project_name = ""
                     save_session()
-                    print("🏁 Done.")
-                    sys.stdout.flush()
                     
                 else:
                     stream = ollama.chat(model=model_name, messages=messages_to_send, stream=True)
@@ -1018,8 +1099,6 @@ void UMyComp::DoSomething(float Amount)
                     sys.stdout.flush()
                     chat_history.append({"role": "assistant", "content": full_response})
                     save_session()
-                    print("🏁 Done.")
-                    sys.stdout.flush()
         
         else:
             chat_history[-1]["images"] = images if images else None
@@ -1030,8 +1109,6 @@ void UMyComp::DoSomething(float Amount)
             sys.stdout.flush()
             chat_history.append({"role": "assistant", "content": result})
             save_session()
-            print("🏁 Done.")
-            sys.stdout.flush()
             
         sys.stdout.flush()
 

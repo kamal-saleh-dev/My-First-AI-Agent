@@ -38,7 +38,7 @@ is_screen_share_on = False
 sessions_data = []
 
 def poll_sessions():
-    """بيقرأ chat_sessions.json كل 3 ثواني ويحدث الـ sidebar"""
+    """بيقرأ chat_sessions.json كل 3 ثواني ويحدث الـ sidebar بدون stdout"""
     global sessions_data
     try:
         if getattr(sys, 'frozen', False):
@@ -66,7 +66,6 @@ app = ctk.CTk(fg_color=BG_COLOR)
 app.geometry("1200x700")
 app.title("AI Agent")
 
-# ===== MAIN LAYOUT =====
 main_container = ctk.CTkFrame(app, fg_color="transparent")
 main_container.pack(fill="both", expand=True)
 
@@ -134,7 +133,7 @@ def refresh_sidebar():
 content_frame = ctk.CTkFrame(main_container, fg_color="transparent")
 content_frame.pack(side="left", fill="both", expand=True)
 
-# HEADER داخل الـ content_frame
+# HEADER
 header = ctk.CTkFrame(content_frame, fg_color="transparent")
 header.pack(pady=(15,10), fill="x", padx=20, side="top")
 
@@ -185,7 +184,6 @@ chat_area = ctk.CTkScrollableFrame(
 )
 chat_area.pack(pady=10, padx=20, fill="both", expand=True)
 
-# 2. Main Footer Container
 footer = ctk.CTkFrame(content_frame, fg_color="transparent")
 footer.pack(side="bottom", fill="x", padx=40, pady=(0, 25))
 
@@ -424,10 +422,51 @@ def process_queue():
         next_msg = msg_queue.pop(0)
         show_bubble_sequentially(next_msg['text'], next_msg['is_user'])
 
+def make_selectable_textbox(parent, text, is_user):
+    """CTkTextbox بدل CTkLabel — بيسمح بـ select ونسخ بـ Ctrl+C"""
+    fg = USER_BUBBLE if is_user else BOT_BUBBLE
+    txt = ctk.CTkTextbox(
+        parent, font=("Segoe UI", 14), fg_color=fg,
+        text_color="white", border_width=0, wrap="word",
+        activate_scrollbars=False,
+    )
+    if text:
+        txt.insert("1.0", text)
+    txt.configure(state="disabled")
+    _resize_textbox(txt, text)
+
+    def show_menu(event):
+        menu = tk.Menu(app, tearoff=0)
+        menu.add_command(label="Copy", command=lambda: _copy(txt))
+        menu.add_command(label="Select All", command=lambda: txt._textbox.tag_add("sel","1.0","end"))
+        menu.tk_popup(event.x_root, event.y_root)
+    def _copy(t):
+        try:
+            sel = t._textbox.get("sel.first","sel.last")
+            app.clipboard_clear(); app.clipboard_append(sel)
+        except: pass
+    txt._textbox.bind("<Button-3>", show_menu)
+    return txt
+
+def _resize_textbox(txt, text):
+    """حساب حجم الـ textbox بدقة بناءً على النص الفعلي"""
+    if not text:
+        txt.configure(height=32, width=80)
+        return
+    lines = text.split("\n")
+    # كل سطر بيتقسم على 55 حرف تقريباً في الـ wrap
+    total_lines = sum(max(1, (len(l) + 54) // 55) for l in lines)
+    # العرض = أقل سطر بـ 55 أو أطول سطر
+    max_chars = max(len(l) for l in lines)
+    width_chars = min(max_chars + 2, 55)
+    width_px = max(80, width_chars * 9)
+    height_px = max(32, total_lines * 22 + 8)
+    txt.configure(height=height_px, width=width_px)
+
 def show_bubble_sequentially(text, is_user):
     global is_typing, full_chat_history
     is_typing = True
-    
+
     sender = "YOU" if is_user else "AGENT"
     icon = "👤" if is_user else "🤖"
     full_chat_history += f"[{sender}]: {text}\n"
@@ -438,38 +477,33 @@ def show_bubble_sequentially(text, is_user):
     wrapper = ctk.CTkFrame(chat_area, fg_color="transparent")
     wrapper.pack(fill="x", pady=6, padx=15)
 
-    # تعديل شكل الفقاعات لتكون أنعم
-    bubble = ctk.CTkFrame(wrapper, fg_color=color, corner_radius=15) # تدويرة أقل شوية بتبان احترافية أكتر
+    bubble = ctk.CTkFrame(wrapper, fg_color=color, corner_radius=15)
     bubble.pack(anchor=align)
-    # إضافة حدود خفيفة لفقاعة الـ Agent عشان تبان على الخلفية السودة
     if not is_user:
         bubble.configure(border_width=1, border_color="#333")
 
     ctk.CTkLabel(bubble, text=icon).pack(side="left", padx=(12,5), pady=8)
     ctk.CTkLabel(bubble, text=f"{sender}:", font=("Segoe UI", 13, "bold")).pack(side="left", pady=8)
-    
-    msg_label = ctk.CTkLabel(bubble, text="", wraplength=500, justify="left", font=("Segoe UI", 14))
-    msg_label.pack(side="left", padx=(8,15), pady=8)
 
-    # تشغيل تأثير الكتابة
-    type_text_effect(msg_label, text, 0)
+    msg_box = make_selectable_textbox(bubble, "", is_user)
+    msg_box.pack(side="left", padx=(8,15), pady=8)
 
-def type_text_effect(label, text, index=0):
+    type_text_effect(msg_box, text, 0)
+
+def type_text_effect(widget, text, index=0):
     global is_typing
     if index < len(text):
-        current_text = label.cget("text")
-        label.configure(text=current_text + text[index])
-        
-        # سرعة الكتابة (20 مللي ثانية)
-        app.after(20, type_text_effect, label, text, index + 1)
-        
+        widget.configure(state="normal")
+        widget._textbox.insert("end", text[index])
+        widget.configure(state="disabled")
+        current = widget._textbox.get("1.0","end-1c")
+        _resize_textbox(widget, current)
+        app.after(20, type_text_effect, widget, text, index + 1)
         if text[index] == " " or index == len(text)-1:
             chat_area._parent_canvas.yview_moveto(1)
     else:
-        # 🔥 هنا السر: بنقول للسيستم أنا خلصت كتابة البالونة دي
         is_typing = False
         chat_area._parent_canvas.yview_moveto(1)
-        # استدعاء الرسالة اللي بعدها من الطابور بعد 100 مللي ثانية
         app.after(100, process_queue)
 
 def add_bubble(text, is_user=False):
@@ -509,10 +543,16 @@ def make_idle():
     global active_bot_label
     set_status("Idle")
     
-    # 🔥 أول ما يخلص تفكير وكتابة، نقص أي سطور فاضية (Enters) في آخر البالونة
+    # تنظيف السطور الفاضية في آخر الـ CTkTextbox
     if active_bot_label:
-        clean_text = active_bot_label.cget("text").strip()
-        active_bot_label.configure(text=clean_text)
+        try:
+            active_bot_label.configure(state="normal")
+            current = active_bot_label._textbox.get("1.0", "end-1c").rstrip()
+            active_bot_label._textbox.delete("1.0", "end")
+            active_bot_label._textbox.insert("1.0", current)
+            active_bot_label.configure(state="disabled")
+        except:
+            pass
 
 # ===========================================
 # 🔥 STREAMING ENGINE (محرك الكتابة الحية)
@@ -524,27 +564,24 @@ def start_new_bot_bubble():
     global active_bot_label, full_chat_history
     wrapper = ctk.CTkFrame(chat_area, fg_color="transparent")
     wrapper.pack(fill="x", pady=6, padx=15)
-
     bubble = ctk.CTkFrame(wrapper, fg_color=BOT_BUBBLE, corner_radius=20)
     bubble.pack(anchor="w")
-
     ctk.CTkLabel(bubble, text="🤖").pack(side="left", padx=(12,5), pady=8)
     ctk.CTkLabel(bubble, text="AGENT:", font=("Segoe UI", 13, "bold")).pack(side="left", pady=8)
-    
-    active_bot_label = ctk.CTkLabel(bubble, text="", wraplength=500, justify="left", font=("Segoe UI", 14))
+    active_bot_label = make_selectable_textbox(bubble, "", is_user=False)
     active_bot_label.pack(side="left", padx=(8,15), pady=8)
-    
     full_chat_history += "[AGENT]: "
 
 def stream_to_bubble(text_chunk):
     global active_bot_label, full_chat_history
     if active_bot_label:
-        current = active_bot_label.cget("text")
-        active_bot_label.configure(text=current + text_chunk)
+        active_bot_label.configure(state="normal")
+        active_bot_label._textbox.insert("end", text_chunk)
+        active_bot_label.configure(state="disabled")
         full_chat_history += text_chunk
-        
-        if text_chunk in [" ", "\n"]:
-            chat_area._parent_canvas.yview_moveto(1)
+        current = active_bot_label._textbox.get("1.0","end-1c")
+        _resize_textbox(active_bot_label, current)
+        chat_area._parent_canvas.yview_moveto(1)
 
 def reset_idle_timer():
     global idle_timer
@@ -559,13 +596,6 @@ def reset_idle_timer():
 def process_line(line):
     clean_lower = line.lower()
 
-    # تجاهل أي سطر نظام تماماً
-    if line.startswith("SESSIONS_UPDATED:"):
-        return
-    if "🏁 Done." in line:
-        app.after(100, make_idle)
-        return
-
     if any(word in clean_lower for word in ["analyzing","comparing","thinking","reading","processing","swapping","loading"]):
         set_status("Thinking")
 
@@ -576,55 +606,37 @@ def process_line(line):
 
 def read_output():
     global process, is_streaming_mode, is_typing, msg_queue
-
-    line_buffer = ""
-    prev_char = ""
-
+    
+    buffer = ""
     try:
         while True:
             if process is None: break
             char = process.stdout.read(1)
             if not char: break
+            
+            buffer += char
 
-            if is_streaming_mode:
-                # خروج من الـ streaming عند \n\n
-                if char == '\n' and prev_char == '\n':
-                    is_streaming_mode = False
-                    line_buffer = ""
-                    prev_char = ""
-                    continue
-                prev_char = char
-                # تجاهل أي سطر نظام في الـ streaming
-                line_buffer += char
+            if not is_streaming_mode:
                 if char == '\n':
-                    if line_buffer.strip().startswith("SESSIONS_UPDATED:") or "🏁 Done." in line_buffer:
-                        is_streaming_mode = False
-                        line_buffer = ""
-                        prev_char = ""
-                    else:
-                        line_buffer = ""
-                    continue
-                app.after(0, lambda c=char: stream_to_bubble(c))
-                app.after(0, reset_idle_timer)
-                time.sleep(0.02)
-            else:
-                prev_char = char
-                if char == '\n':
-                    line = line_buffer.strip()
-                    line_buffer = ""
+                    line = buffer.strip()
+                    buffer = ""
                     if line:
                         app.after(0, lambda l=line: process_line(l))
                 else:
-                    line_buffer += char
-                    if "🤖 Agent:" in line_buffer:
+                    if "🤖 Agent:" in buffer:
                         while is_typing or msg_queue:
                             time.sleep(0.1)
                         is_streaming_mode = True
-                        after = line_buffer.split("🤖 Agent:")[1]
-                        line_buffer = ""
+                        buffer = buffer.split("🤖 Agent:")[1]
                         app.after(0, start_new_bot_bubble)
-                        if after:
-                            app.after(0, lambda c=after: stream_to_bubble(c))
+                        if buffer:
+                            app.after(0, lambda c=buffer: stream_to_bubble(c))
+                        buffer = ""
+            else:
+                app.after(0, lambda c=char: stream_to_bubble(c))
+                buffer = ""
+                app.after(0, reset_idle_timer)
+                time.sleep(0.02)
 
     except Exception as e:
         print("Read output error:", e)
@@ -790,7 +802,7 @@ def on_closing():
 
 app.protocol("WM_DELETE_WINDOW",on_closing)
 app.after(1000,start_agent)
-app.after(1500, poll_sessions)
+app.after(2000, poll_sessions)
 animate_status()
 # ربط زرار Enter بالإرسال
 input_box.bind("<Return>", send_command)
