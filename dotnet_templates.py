@@ -421,14 +421,11 @@ public class {name} : Controller
     {{
         var item = await _context.Set<{entity_name}>().FindAsync(id);
         if (item == null) return NotFound();
-        ViewData["Title"] = "{entity_name} Details";
-        ViewData["IsReadOnly"] = true;
-        return View("Create", item);
+        return View(item);
     }}
 
     public IActionResult Create()
     {{
-        ViewData["Title"] = "Create {entity_name}";
         return View(new {entity_name}());
     }}
 
@@ -451,7 +448,6 @@ public class {name} : Controller
     {{
         var item = await _context.Set<{entity_name}>().FindAsync(id);
         if (item == null) return NotFound();
-        ViewData["Title"] = "Edit {entity_name}";
         return View("Create", item);
     }}
 
@@ -512,7 +508,6 @@ public class {name} : Controller
                             <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
                             <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
                             <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
-                                @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-sm btn-danger"
                                         onclick="return confirm('Delete?')">Delete</button>
                             </form>
@@ -527,9 +522,8 @@ public class {name} : Controller
 
     "view_form": """@model {entity_name}
 @{{
-    ViewData["Title"] = ViewData["Title"] ?? "{entity_name} Form";
+    ViewData["Title"] = "{name} Form";
     var formAction = Model?.Id > 0 ? "Edit" : "Create";
-    var isReadOnly = (ViewData["IsReadOnly"] as bool?) ?? false;
 }}
 
 <div class="container mt-4">
@@ -546,13 +540,13 @@ public class {name} : Controller
 
                 <div class="mb-3">
                     <label asp-for="Name" class="form-label"></label>
-                    <input asp-for="Name" class="form-control" readonly="@isReadOnly" />
+                    <input asp-for="Name" class="form-control" />
                     <span asp-validation-for="Name" class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">
                     <label asp-for="Description" class="form-label"></label>
-                    <textarea asp-for="Description" class="form-control" rows="3" readonly="@isReadOnly"></textarea>
+                    <textarea asp-for="Description" class="form-control" rows="3"></textarea>
                     <span asp-validation-for="Description" class="text-danger"></span>
                 </div>
 
