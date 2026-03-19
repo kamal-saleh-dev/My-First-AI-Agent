@@ -32,7 +32,46 @@ BORDER_COLOR = "#333333"    # لون الحدود (Borders)
 process = None
 current_status = "Idle"
 anim_step = 0
-full_chat_history = ""
+_chat_history_parts = []  # ✅ list instead of str — O(1) append, join only when needed
+_user_scrolled_up = False   # True = user is reading history → pause auto-scroll
+def get_full_chat_history() -> str:
+    """Join parts only when actually needed (copy button) — not on every char."""
+    return "".join(_chat_history_parts)
+
+
+def _auto_scroll():
+    """Scroll to bottom only if user hasn't scrolled up."""
+    if not _user_scrolled_up:
+        chat_area._parent_canvas.yview_moveto(1)
+
+_restarting = False  # suppresses health poll during intentional restart
+
+def _poll_process_health():
+    """Poll agent process every 3s — detect unexpected death."""
+    global process
+    try:
+        if not app.winfo_exists(): return
+    except Exception: return
+    if not _restarting and process and process.poll() is not None:
+        set_status("Agent stopped ⚠")
+        show_send_btn()
+        add_bot_message("⚠️ Agent process stopped unexpectedly. Click Send to restart.")
+        process = None
+    app.after(3000, _poll_process_health)
+
+def _poll_scroll_position():
+    """Poll yview every 150ms — no event interception, no bind_all conflicts."""
+    global _user_scrolled_up
+    try:
+        _, bottom = chat_area._parent_canvas.yview()
+        # If user scrolled up (bottom < 0.99), pause auto-scroll
+        # If they scrolled back down, re-enable it
+        _user_scrolled_up = bottom < 0.99
+    except Exception:
+        pass
+    app.after(150, _poll_scroll_position)
+
+
 pending_attachments = [] 
 is_screen_share_on = False
 sessions_data = []
@@ -54,8 +93,8 @@ def poll_sessions():
             if new_data != sessions_data:
                 sessions_data = new_data
                 refresh_sidebar()
-    except:
-        pass
+    except Exception as e:
+        print(f"⚠ error: {e}")
     app.after(3000, poll_sessions)
 
 # ===========================================
@@ -77,11 +116,14 @@ sidebar.pack_propagate(False)
 ctk.CTkLabel(sidebar, text="🤖 AI Agent", font=("Segoe UI",16,"bold")).pack(pady=(20,10), padx=15, anchor="w")
 
 def new_chat_action():
+    global _chat_history_parts
+    _chat_history_parts.clear()  # ✅ reset history on new chat
     if process:
         try:
             process.stdin.write("new_chat\n")
             process.stdin.flush()
-        except: pass
+        except Exception as e:
+            print(f"⚠ error: {e}")
     for w in chat_area.winfo_children():
         w.destroy()
     add_bot_message("Hello! I'm ready.")
@@ -96,11 +138,14 @@ sessions_list_frame = ctk.CTkScrollableFrame(sidebar, fg_color="transparent", co
 sessions_list_frame.pack(fill="both", expand=True, padx=5, pady=5)
 
 def load_session_ui(session_id):
+    global _chat_history_parts
+    _chat_history_parts.clear()  # ✅ reset history before loading session
     if process:
         try:
             process.stdin.write(f"load_session {session_id}\n")
             process.stdin.flush()
-        except: pass
+        except Exception as e:
+            print(f"⚠ error: {e}")
     try:
         if getattr(sys,'frozen',False):
             base = os.path.dirname(sys.executable)
@@ -116,7 +161,8 @@ def load_session_ui(session_id):
                     if msg.get("role") == "user": add_user_message(msg.get("content",""))
                     elif msg.get("role") == "assistant": add_bot_message(msg.get("content",""))
                 break
-    except: pass
+    except Exception as e:
+        print(f"⚠ error: {e}")
 
 def refresh_sidebar():
     for w in sessions_list_frame.winfo_children(): w.destroy()
@@ -154,7 +200,7 @@ def copy_to_clipboard(text):
     app.update()
 
 def copy_all_history():
-    copy_to_clipboard(full_chat_history)
+    copy_to_clipboard(get_full_chat_history())
     copy_btn.configure(text="Copied! ✅", fg_color="green")
     app.after(2000, lambda:
         copy_btn.configure(text="Copy History 📋",
@@ -183,6 +229,12 @@ chat_area = ctk.CTkScrollableFrame(
     fg_color=CHAT_BG_COLOR
 )
 chat_area.pack(pady=10, padx=20, fill="both", expand=True)
+# ✅ Match canvas bg to chat bg — eliminates black flash on new bubbles
+chat_area._parent_canvas.configure(bg=CHAT_BG_COLOR)
+chat_area._parent_frame.configure(fg_color=CHAT_BG_COLOR)
+
+# ── Smart scroll: poll yview instead of intercepting events ──
+app.after(500, _poll_scroll_position)
 
 footer = ctk.CTkFrame(content_frame, fg_color="transparent")
 footer.pack(side="bottom", fill="x", padx=40, pady=(0, 25))
@@ -300,20 +352,73 @@ input_box.pack(side="left", fill="x", expand=True, padx=10)
 
 # 2. زرار الإرسال ➢
 send_btn = ctk.CTkButton(
-    input_container, 
-    text="➢", 
-    width=40, 
-    height=40, 
-    fg_color=USER_BUBBLE, 
-    text_color="white", 
-    hover_color="#005f99", 
-    corner_radius=20, 
-    font=("Arial", 20, "bold"), 
+    input_container,
+    text="➢",
+    width=40, height=40,
+    fg_color=USER_BUBBLE,
+    text_color="white",
+    hover_color="#005f99",
+    corner_radius=20,
+    font=("Arial", 20, "bold"),
     command=lambda: send_command()
 )
-
-# 🔥 السطر السحري اللي هيظهر الزرار
 send_btn.pack(side="right", padx=(5, 10))
+
+# 3. زرار Stop ■ — يظهر بدل Send وقت التشغيل
+_stop_requested = False  # flag يتشيك عليه الـ agent
+
+def stop_agent():
+    """Kill the running agent process and restart it immediately."""
+    global process, is_streaming_mode, is_typing, msg_queue, _stop_requested, _restarting
+    _stop_requested = True
+    _restarting = True
+    is_streaming_mode = False
+    is_typing = False
+    msg_queue.clear()
+
+    if process:
+        try:
+            process.kill()
+            process = None
+        except Exception as e:
+            gui_log(f"⚠ stop error: {e}")
+
+    show_send_btn()
+    set_status("Idle")
+    add_bot_message("⛔ Stopped.")
+
+    def _do_restart():
+        global _restarting
+        _restarting = False
+        start_agent()
+        app.after(200, lambda: add_bot_message("✅ Agent restarted."))
+
+    app.after(600, _do_restart)
+
+stop_btn = ctk.CTkButton(
+    input_container,
+    text="■",
+    width=40, height=40,
+    fg_color="#e53935",
+    text_color="white",
+    hover_color="#b71c1c",
+    corner_radius=20,
+    font=("Arial", 18, "bold"),
+    command=stop_agent
+)
+# مش بيتعمل pack هنا — بيظهر ويختفي برمجياً
+
+def show_stop_btn():
+    """إظهار Stop وإخفاء Send."""
+    send_btn.pack_forget()
+    stop_btn.pack(side="right", padx=(5, 10))
+
+def show_send_btn():
+    """إظهار Send وإخفاء Stop."""
+    global _stop_requested
+    _stop_requested = False
+    stop_btn.pack_forget()
+    send_btn.pack(side="right", padx=(5, 10))
 
 # ===========================================
 # 🔄 UI HELPER FUNCTIONS
@@ -369,12 +474,14 @@ def update_context_counter(text):
         try:
             num = text.split("(")[1].split("files")[0].strip()
             context_label.configure(text=f"🧠 Context: {num} files")
-        except: pass
+        except Exception as e:
+            print(f"⚠ error: {e}")
     if "Added to project context" in text:
         try:
             num = text.split("(")[1].split("files")[0].strip()
             context_label.configure(text=f"🧠 Context: {num} files")
-        except: pass
+        except Exception as e:
+            print(f"⚠ error: {e}")
     if "Project context cleared" in text:
         context_label.configure(text="🧠 Context: 0 files")
 
@@ -422,18 +529,20 @@ def process_queue():
         next_msg = msg_queue.pop(0)
         show_bubble_sequentially(next_msg['text'], next_msg['is_user'])
 
-def make_selectable_textbox(parent, text, is_user):
-    """CTkTextbox بدل CTkLabel — بيسمح بـ select ونسخ بـ Ctrl+C"""
+def make_selectable_textbox(parent, text, is_user, preset_w=80, preset_h=32):
+    """CTkTextbox — selectable text. preset_w/h set size before content to avoid flash."""
     fg = USER_BUBBLE if is_user else BOT_BUBBLE
     txt = ctk.CTkTextbox(
         parent, font=("Segoe UI", 14), fg_color=fg,
         text_color="white", border_width=0, wrap="word",
         activate_scrollbars=False,
+        width=preset_w, height=preset_h,
     )
     if text:
         txt.insert("1.0", text)
+        w, h = _calc_size(text)
+        txt.configure(width=w, height=h)
     txt.configure(state="disabled")
-    _resize_textbox(txt, text)
 
     def show_menu(event):
         menu = tk.Menu(app, tearoff=0)
@@ -444,67 +553,98 @@ def make_selectable_textbox(parent, text, is_user):
         try:
             sel = t._textbox.get("sel.first","sel.last")
             app.clipboard_clear(); app.clipboard_append(sel)
-        except: pass
+        except Exception as e:
+            print(f"⚠ error: {e}")
     txt._textbox.bind("<Button-3>", show_menu)
     return txt
 
-def _resize_textbox(txt, text):
-    """حساب حجم الـ textbox بدقة بناءً على النص الفعلي"""
+def _calc_size(text):
+    """Calculate widget size from text WITHOUT touching any widget."""
     if not text:
-        txt.configure(height=32, width=80)
-        return
+        return 80, 32
     lines = text.split("\n")
-    # كل سطر بيتقسم على 55 حرف تقريباً في الـ wrap
     total_lines = sum(max(1, (len(l) + 54) // 55) for l in lines)
-    # العرض = أقل سطر بـ 55 أو أطول سطر
-    max_chars = max(len(l) for l in lines)
-    width_chars = min(max_chars + 2, 55)
-    width_px = max(80, width_chars * 9)
-    height_px = max(32, total_lines * 22 + 8)
-    txt.configure(height=height_px, width=width_px)
+    max_chars   = max(len(l) for l in lines)
+    width_px    = max(80, min(max_chars + 2, 55) * 9)
+    height_px   = max(32, total_lines * 22 + 8)
+    return width_px, height_px
+
+def _resize_textbox(txt, text):
+    """Resize widget to fit text."""
+    w, h = _calc_size(text)
+    txt.configure(height=h, width=w)
+
+def type_text_effect(widget, text, index=0):
+    """Set correct size first, then insert text — prevents black flash."""
+    global is_typing
+    # ✅ Size first, then insert — widget never too small for content
+    _resize_textbox(widget, text)
+    widget.configure(state="normal")
+    widget._textbox.insert("end", text)
+    widget.configure(state="disabled")
+    _auto_scroll()
+    is_typing = False
+    app.after(50, process_queue)
+
+def type_text_effect(widget, text, index=0):
+    """Word-by-word reveal. Instantly completes if user is scrolling."""
+    global is_typing
+    # ✅ If user is scrolling — complete instantly, no animation
+    if _user_scrolled_up:
+        widget.configure(state="normal")
+        widget._textbox.delete("1.0", "end")
+        widget._textbox.insert("1.0", text)
+        widget.configure(state="disabled")
+        _resize_textbox(widget, text)
+        is_typing = False
+        app.after(50, process_queue)
+        return
+
+    words = text.split(" ")
+    if index < len(words):
+        widget.configure(state="normal")
+        widget._textbox.delete("1.0", "end")
+        widget._textbox.insert("1.0", " ".join(words[:index+1]))
+        widget.configure(state="disabled")
+        if index == len(words) - 1:
+            _resize_textbox(widget, text)
+        app.after(18, type_text_effect, widget, text, index + 1)
+        _auto_scroll()
+    else:
+        is_typing = False
+        _resize_textbox(widget, text)
+        _auto_scroll()
+        app.after(50, process_queue)
 
 def show_bubble_sequentially(text, is_user):
-    global is_typing, full_chat_history
+    global is_typing, _chat_history_parts
     is_typing = True
 
     sender = "YOU" if is_user else "AGENT"
-    icon = "👤" if is_user else "🤖"
-    full_chat_history += f"[{sender}]: {text}\n"
+    icon   = "👤" if is_user else "🤖"
+    _chat_history_parts.append(f"[{sender}]: {text}\n")
 
     color = USER_BUBBLE if is_user else BOT_BUBBLE
     align = "e" if is_user else "w"
 
     wrapper = ctk.CTkFrame(chat_area, fg_color="transparent")
-    wrapper.pack(fill="x", pady=6, padx=15)
 
     bubble = ctk.CTkFrame(wrapper, fg_color=color, corner_radius=15)
-    bubble.pack(anchor=align)
     if not is_user:
         bubble.configure(border_width=1, border_color="#333")
 
     ctk.CTkLabel(bubble, text=icon).pack(side="left", padx=(12,5), pady=8)
     ctk.CTkLabel(bubble, text=f"{sender}:", font=("Segoe UI", 13, "bold")).pack(side="left", pady=8)
 
-    msg_box = make_selectable_textbox(bubble, "", is_user)
+    # Start with correct width but small height — grows as words appear
+    w, _ = _calc_size(text)
+    msg_box = make_selectable_textbox(bubble, "", is_user, preset_w=w, preset_h=32)
     msg_box.pack(side="left", padx=(8,15), pady=8)
 
-    type_text_effect(msg_box, text, 0)
+    bubble.pack(anchor=align)
+    wrapper.pack(fill="x", pady=6, padx=15)
 
-def type_text_effect(widget, text, index=0):
-    global is_typing
-    if index < len(text):
-        widget.configure(state="normal")
-        widget._textbox.insert("end", text[index])
-        widget.configure(state="disabled")
-        current = widget._textbox.get("1.0","end-1c")
-        _resize_textbox(widget, current)
-        app.after(20, type_text_effect, widget, text, index + 1)
-        if text[index] == " " or index == len(text)-1:
-            chat_area._parent_canvas.yview_moveto(1)
-    else:
-        is_typing = False
-        chat_area._parent_canvas.yview_moveto(1)
-        app.after(100, process_queue)
+    type_text_effect(msg_box, text, 0)
 
 def add_bubble(text, is_user=False):
     global msg_queue
@@ -519,19 +659,7 @@ def add_bot_message(t):
 def add_user_message(t):
     add_bubble(t,True)
 
-# ===========================================
-# ATTACH LOGIC (UPDATED)
-# ===========================================
-def attach_file():
-    global pending_attachments
-    file_paths = filedialog.askopenfilenames(title="Select files")
-    if not file_paths: return
-
-    for fp in file_paths:
-        if fp not in pending_attachments:
-            pending_attachments.append(fp)
-    
-    refresh_file_chips() # تحديث واجهة الملفات
+# (attach_file defined above — duplicate removed)
 
 # ===========================================
 # AGENT LOGIC
@@ -542,46 +670,51 @@ idle_timer = None
 def make_idle():
     global active_bot_label
     set_status("Idle")
-    
-    # تنظيف السطور الفاضية في آخر الـ CTkTextbox
+    show_send_btn()          # ← Stop يختفي، Send يرجع
     if active_bot_label:
         try:
-            active_bot_label.configure(state="normal")
+            # ✅ Single resize when streaming ends — no resize during stream
             current = active_bot_label._textbox.get("1.0", "end-1c").rstrip()
+            _resize_textbox(active_bot_label, current)
+            active_bot_label.configure(state="normal")
             active_bot_label._textbox.delete("1.0", "end")
             active_bot_label._textbox.insert("1.0", current)
             active_bot_label.configure(state="disabled")
-        except:
-            pass
+            _auto_scroll()
+        except Exception as e:
+            print(f"⚠ make_idle error: {e}")
 
 # ===========================================
 # 🔥 STREAMING ENGINE (محرك الكتابة الحية)
 # ===========================================
 is_streaming_mode = False
 active_bot_label = None
+_stream_char_count = 0  # throttle resize calls during streaming
 
 def start_new_bot_bubble():
-    global active_bot_label, full_chat_history
+    global active_bot_label, _chat_history_parts, _stream_char_count
+    _stream_char_count = 0  # reset counter for new bubble
     wrapper = ctk.CTkFrame(chat_area, fg_color="transparent")
     wrapper.pack(fill="x", pady=6, padx=15)
     bubble = ctk.CTkFrame(wrapper, fg_color=BOT_BUBBLE, corner_radius=20)
     bubble.pack(anchor="w")
     ctk.CTkLabel(bubble, text="🤖").pack(side="left", padx=(12,5), pady=8)
     ctk.CTkLabel(bubble, text="AGENT:", font=("Segoe UI", 13, "bold")).pack(side="left", pady=8)
-    active_bot_label = make_selectable_textbox(bubble, "", is_user=False)
+    active_bot_label = make_selectable_textbox(bubble, "", is_user=False, preset_w=400, preset_h=32)
     active_bot_label.pack(side="left", padx=(8,15), pady=8)
-    full_chat_history += "[AGENT]: "
+    _chat_history_parts.append("[AGENT]: ")
 
 def stream_to_bubble(text_chunk):
-    global active_bot_label, full_chat_history
+    global active_bot_label, _chat_history_parts, _stream_char_count
     if active_bot_label:
         active_bot_label.configure(state="normal")
         active_bot_label._textbox.insert("end", text_chunk)
         active_bot_label.configure(state="disabled")
-        full_chat_history += text_chunk
-        current = active_bot_label._textbox.get("1.0","end-1c")
-        _resize_textbox(active_bot_label, current)
-        chat_area._parent_canvas.yview_moveto(1)
+        _chat_history_parts.append(text_chunk)
+        _stream_char_count += 1
+        # ✅ No resize during streaming — only scroll
+        # Resize happens once in make_idle when stream ends
+        _auto_scroll()
 
 def reset_idle_timer():
     global idle_timer
@@ -601,8 +734,27 @@ def process_line(line):
 
     update_context_counter(line)
 
+    # لو الـ agent بيسأل سؤال (❓) — اعرض input dialog
+    if line.startswith("❓"):
+        add_bot_message(line)
+        app.after(0, lambda q=line: ask_user_question(q))
+        return
+
     if not any(icon in line for icon in ["💭","🧠","👀","⏳","🤖"]):
         add_bot_message(line)
+
+def ask_user_question(question):
+    """بيفتح dialog ويبعت الإجابة مباشرة لـ stdin بتاع الـ agent"""
+    import tkinter.simpledialog as sd
+    answer = sd.askstring("Agent Question", question.replace("❓","").strip())
+    reply = answer.strip() if answer and answer.strip() else "MyGame"
+    # بعت مباشرة لـ stdin من غير ما تعدي على send_command
+    if process and process.stdin:
+        try:
+            process.stdin.write(reply + "\n")
+            process.stdin.flush()
+        except Exception as e:
+            print("stdin write error:", e)
 
 def read_output():
     global process, is_streaming_mode, is_typing, msg_queue
@@ -679,10 +831,11 @@ def start_agent():
                 with open(context_file, "r", encoding="utf-8") as f:
                     data = json.load(f)
                     context_label.configure(text=f"🧠 Context: {len(data)} files")
-        except:
-            pass
+        except Exception as e:
+            print(f"⚠ error: {e}")
 
         threading.Thread(target=read_output,daemon=True).start()
+        app.after(3000, _poll_process_health)  # start health monitor
     except Exception as e:
         add_bot_message(f"Error starting agent: {e}")
 
@@ -725,7 +878,8 @@ def send_command(event=None):
         count = len(pending_attachments)
         add_user_message(f"📂 Auto-Analyze Request ({count} files)")
 
-    set_status("Thinking") 
+    set_status("Thinking")
+    show_stop_btn()          # ← Send يختفي، Stop يظهر
     input_box.delete(0, "end")
     app.update_idletasks()
 
@@ -740,7 +894,8 @@ def send_command(event=None):
         # مسح أي سكرين شوت قديمة من الهارد عشان منسحمش مساحتك
         for old_file in glob.glob("live_screen_*.jpg"):
             try: os.remove(old_file)
-            except: pass
+            except Exception as e:
+                print(f"⚠ remove screenshot error: {e}")
             
         screen = ImageGrab.grab()
         # 🔥 اسم جديد بالثانية عشان نكسر الـ Cache بتاع الموديل
