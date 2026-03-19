@@ -1767,13 +1767,32 @@ Script to fix:
                         # Ensure AppDbContext.cs exists
                         _db_path = _os2.path.join(_pf2, "AppDbContext.cs")
                         if not _os2.path.exists(_db_path):
+                            _entity_names = []
+                            for _fn in list(_os2.listdir(_pf2)):
+                                if not _fn.endswith(".cs"):
+                                    continue
+                                if _fn in ("AppDbContext.cs", "Program.cs"):
+                                    continue
+                                if _fn.endswith(("Controller.cs", "Service.cs", "Repository.cs", "Dto.cs", "Middleware.cs")):
+                                    continue
+                                _base = _fn[:-3]
+                                if _base.endswith("ViewModel") or _base.startswith("I"):
+                                    continue
+                                _entity_names.append(_base)
+                            _dbsets = "\n".join(
+                                f"    public DbSet<{_ename}> {_ename if _ename.endswith('s') else _ename + 's'} {{ get; set; }} = null!;"
+                                for _ename in sorted(dict.fromkeys(_entity_names))
+                            )
+                            if _dbsets:
+                                _dbsets = "\n" + _dbsets + "\n"
                             with open(_db_path, "w", encoding="utf-8") as _f:
                                 _f.write("""using Microsoft.EntityFrameworkCore;
 public class AppDbContext : DbContext
 {
     public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+%s
 }
-""")
+""" % _dbsets)
                             print("📄 Auto-created: AppDbContext.cs", flush=True)
 
                         # Move .cshtml view files into correct MVC Views/ControllerName/ folders

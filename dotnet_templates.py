@@ -318,6 +318,21 @@ DOTNET_ROLE_KEYWORDS = {
     "program":    ["program", "startup", "main", "app"],
 }
 
+def _singularize_dotnet_name(name: str) -> str:
+    """Best-effort singularization for generated MVC entity names."""
+    base = (name.replace("Controller", "")
+                .replace("ViewModel", "")
+                .replace("Model", "")
+                .replace("Form", "")
+                .replace("Index", ""))
+    if base.endswith("ies") and len(base) > 3:
+        return base[:-3] + "y"
+    if base.endswith("ses") and len(base) > 3:
+        return base[:-2]
+    if base.endswith("s") and not base.endswith("ss") and len(base) > 1:
+        return base[:-1]
+    return base
+
 def get_dotnet_role(name: str) -> str:
     """Infer role from script name."""
     nl = name.lower()
@@ -344,7 +359,9 @@ def get_dotnet_template(name: str, role: str = None) -> str:
     if role is None:
         role = get_dotnet_role(name)
     tpl = DOTNET_TEMPLATES.get(role, DOTNET_TEMPLATES["controller"])
-    return tpl.format(name=name)
+    entity_name = _singularize_dotnet_name(name)
+    entity_collection = entity_name + ("es" if entity_name.endswith("s") else "s")
+    return tpl.format(name=name, entity_name=entity_name, entity_collection=entity_collection)
 
 
 # ─── Frontend / MVC / Razor Pages ─────────────────────────────────────────────
@@ -383,7 +400,6 @@ app.Run();
 
     "mvc_controller": """using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
-using System.Collections.Generic;
 using System.Threading.Tasks;
 
 public class {name} : Controller
@@ -397,56 +413,78 @@ public class {name} : Controller
 
     public async Task<IActionResult> Index()
     {{
-        var items = new List<object>();
+        var items = await _context.Set<{entity_name}>().ToListAsync();
         return View(items);
     }}
 
     public async Task<IActionResult> Details(int id)
     {{
-        return View(new object());
+        var item = await _context.Set<{entity_name}>().FindAsync(id);
+        if (item == null) return NotFound();
+        ViewData["Title"] = "{entity_name} Details";
+        ViewData["IsReadOnly"] = true;
+        return View("Create", item);
     }}
 
     public IActionResult Create()
     {{
-        return View(new object());
+        ViewData["Title"] = "Create {entity_name}";
+        return View(new {entity_name}());
     }}
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Create([FromForm] object model)
+    public async Task<IActionResult> Create([Bind("Name,Description")] {entity_name} model)
     {{
-        if (ModelState.IsValid)
-            return RedirectToAction(nameof(Index));
-        return View(model);
+        if (!ModelState.IsValid) return View(model);
+
+        model.CreatedAt = DateTime.UtcNow;
+        model.IsActive = true;
+
+        _context.Set<{entity_name}>().Add(model);
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
     }}
 
     public async Task<IActionResult> Edit(int id)
     {{
-        return View(new object());
+        var item = await _context.Set<{entity_name}>().FindAsync(id);
+        if (item == null) return NotFound();
+        ViewData["Title"] = "Edit {entity_name}";
+        return View("Create", item);
     }}
 
     [HttpPost]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Edit(int id, [FromForm] object model)
+    public async Task<IActionResult> Edit(int id, [Bind("Id,Name,Description,CreatedAt,IsActive")] {entity_name} model)
     {{
-        if (ModelState.IsValid)
-            return RedirectToAction(nameof(Index));
-        return View(model);
+        if (id != model.Id) return BadRequest();
+        if (!ModelState.IsValid) return View("Create", model);
+
+        _context.Update(model);
+        await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
     }}
 
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {{
+        var item = await _context.Set<{entity_name}>().FindAsync(id);
+        if (item == null) return NotFound();
+        _context.Set<{entity_name}>().Remove(item);
+        await _context.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
     }}
 }}
 """,
 
-    "view_index": """@model IEnumerable<object>
+    "view_index": """@model IEnumerable<{entity_name}>
 @{{
     ViewData["Title"] = "{name}";
-    var items = Model ?? new List<object>();
+    var items = Model ?? new List<{entity_name}>();
 }}
 
 <div class="container mt-4">
@@ -465,15 +503,16 @@ public class {name} : Controller
                 </tr>
             </thead>
             <tbody>
-                @foreach (var item in Model)
+                @foreach (var item in items)
                 {{
                     <tr>
-                        <td>@item</td>
-                        <td>@item</td>
+                        <td>@item.Id</td>
+                        <td>@item.Name</td>
                         <td>
-                            <a asp-action="Edit" asp-route-id="@item" class="btn btn-sm btn-warning">Edit</a>
-                            <a asp-action="Details" asp-route-id="@item" class="btn btn-sm btn-info">Details</a>
-                            <form asp-action="Delete" asp-route-id="@item" method="post" class="d-inline">
+                            <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-warning">Edit</a>
+                            <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Details</a>
+                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline">
+                                @Html.AntiForgeryToken()
                                 <button type="submit" class="btn btn-sm btn-danger"
                                         onclick="return confirm('Delete?')">Delete</button>
                             </form>
@@ -486,9 +525,11 @@ public class {name} : Controller
 </div>
 """,
 
-    "view_form": """@model object
+    "view_form": """@model {entity_name}
 @{{
-    ViewData["Title"] = "{name} Form";
+    ViewData["Title"] = ViewData["Title"] ?? "{entity_name} Form";
+    var formAction = Model?.Id > 0 ? "Edit" : "Create";
+    var isReadOnly = (ViewData["IsReadOnly"] as bool?) ?? false;
 }}
 
 <div class="container mt-4">
@@ -497,22 +538,29 @@ public class {name} : Controller
 
     <div class="row">
         <div class="col-md-6">
-            <form asp-action="Create" method="post">
-                <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+            <form asp-action="@formAction" method="post">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger"></div>
+                <input asp-for="Id" type="hidden" />
+                <input asp-for="CreatedAt" type="hidden" />
+                <input asp-for="IsActive" type="hidden" />
 
                 <div class="mb-3">
-                    <label class="form-label">Name</label>
-                    <input asp-for="@Model" class="form-control" />
-                    <span asp-validation-for="@Model" class="text-danger"></span>
+                    <label asp-for="Name" class="form-label"></label>
+                    <input asp-for="Name" class="form-control" readonly="@isReadOnly" />
+                    <span asp-validation-for="Name" class="text-danger"></span>
                 </div>
 
                 <div class="mb-3">
-                    <label class="form-label">Description</label>
-                    <textarea asp-for="@Model" class="form-control" rows="3"></textarea>
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="3" readonly="@isReadOnly"></textarea>
+                    <span asp-validation-for="Description" class="text-danger"></span>
                 </div>
 
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    @if (!isReadOnly)
+                    {{
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    }}
                     <a asp-action="Index" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
@@ -520,9 +568,6 @@ public class {name} : Controller
     </div>
 </div>
 
-@section Scripts {{
-    @{{await Html.RenderPartialAsync("_ValidationScriptsPartial");}}
-}}
 """,
 
     "layout": """<!DOCTYPE html>
