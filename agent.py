@@ -880,7 +880,11 @@ def extract_and_save_scripts(text, project_name, forced_name=None, forced_ext=No
             )
             class_name = class_match.group(1) if class_match else f"Script_{i}"
 
-        file_name = f"{class_name}{extension}"
+        # Don't double-add extension if forced_name already has it
+        if forced_name and class_name.lower().endswith(extension.lower()):
+            file_name = class_name
+        else:
+            file_name = f"{class_name}{extension}"
         file_path = os.path.join(folder_name, file_name)
 
         with open(file_path, "w", encoding="utf-8") as f:
@@ -1749,6 +1753,67 @@ Script to fix:
                     print(f"\n🤖 Agent: {summary}\n\n", flush=True)
                     chat_history.append({"role": "assistant", "content": summary})
 
+                    # ✅ Post-process dotnet scripts
+                    if detected_engine == "dotnet":
+                        import os as _os2, shutil as _sh, re as _re4
+                        _pf2 = _os2.path.join("Generated_Scripts", _state.current_project_name.replace(" ","_"))
+
+                        # Remove any Program.*.cs duplicates
+                        for _fn in list(_os2.listdir(_pf2)) if _os2.path.exists(_pf2) else []:
+                            if _fn.lower().startswith("program.") and _fn.lower() != "program.cs":
+                                _os2.remove(_os2.path.join(_pf2, _fn))
+                                print(f"🗑 Removed duplicate: {_fn}", flush=True)
+
+                        # Ensure AppDbContext.cs exists
+                        _db_path = _os2.path.join(_pf2, "AppDbContext.cs")
+                        if not _os2.path.exists(_db_path):
+                            with open(_db_path, "w", encoding="utf-8") as _f:
+                                _f.write("""using Microsoft.EntityFrameworkCore;
+public class AppDbContext : DbContext
+{
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
+}
+""")
+                            print("📄 Auto-created: AppDbContext.cs", flush=True)
+
+                        # Move .cshtml view files into correct MVC Views/ControllerName/ folders
+                        # Find all controllers and their names
+                        _ctrl_map = {}  # "Products" -> ["Index", "Form", ...]
+                        for _fn in list(_os2.listdir(_pf2)):
+                            if _fn.endswith("Controller.cs"):
+                                _cname = _fn.replace("Controller.cs","")
+                                _ctrl_map[_cname.lower()] = _cname
+                        # Default controller name from project
+                        _default_ctrl = list(_ctrl_map.values())[0] if _ctrl_map else "Home"
+
+                        # Move/rename loose .cshtml files into Views/ControllerName/
+                        for _fn in list(_os2.listdir(_pf2)):
+                            if not _fn.endswith(".cshtml"): continue
+                            if _fn.startswith("_"): continue  # skip _Layout, _ViewStart
+                            _src = _os2.path.join(_pf2, _fn)
+                            # Detect which controller this view belongs to
+                            _dest_ctrl = _default_ctrl
+                            _fn_lower = _fn.lower().replace(".cshtml","")
+                            for _ck, _cv in _ctrl_map.items():
+                                if _ck in _fn_lower:
+                                    _dest_ctrl = _cv
+                                    break
+                            # Determine action name (Index, Create, Edit, Details, etc.)
+                            _action = "Index"
+                            for _act in ["index","form","create","edit","details","delete","list"]:
+                                if _act in _fn_lower:
+                                    _action = _act.capitalize()
+                                    if _action == "Form": _action = "Create"
+                                    break
+                            _views_ctrl_dir = _os2.path.join(_pf2, "Views", _dest_ctrl)
+                            _os2.makedirs(_views_ctrl_dir, exist_ok=True)
+                            _dest = _os2.path.join(_views_ctrl_dir, f"{_action}.cshtml")
+                            if not _os2.path.exists(_dest):
+                                _sh.move(_src, _dest)
+                                print(f"📁 Moved {_fn} → Views/{_dest_ctrl}/{_action}.cshtml", flush=True)
+                            else:
+                                _os2.remove(_src)  # already exists, remove duplicate
+
                     # ✅ Create .csproj for dotnet projects if missing
                     if detected_engine == "dotnet":
                         import os as _os
@@ -1796,13 +1861,15 @@ app.UseAuthorization();
 // Auto-create DB on startup
 using (var scope = app.Services.CreateScope())
 {
-    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.EnsureCreated();
+    try {
+        var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+        db.Database.EnsureCreated();
+    } catch { }
 }
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Products}/{action=Index}/{id?}");
+    pattern: "{controller=Home}/{action=Index}/{id?}");
 
 app.Run();
 """
@@ -1813,9 +1880,64 @@ app.Run();
                                 if not _os.path.exists(_prog):
                                     with open(_prog, "w", encoding="utf-8") as _f:
                                         _f.write(_program_cs)
-                                # Create minimal Views structure so dotnet build doesn't fail
+                                # Create minimal Views structure + HomeController
                                 _views_dir = _os.path.join(_proj_folder, "Views", "Shared")
                                 _os.makedirs(_views_dir, exist_ok=True)
+                                _os.makedirs(_os.path.join(_proj_folder, "Views", "Home"), exist_ok=True)
+                                _os.makedirs(_os.path.join(_proj_folder, "Controllers"), exist_ok=True)
+
+                                # HomeController
+                                _home_ctrl = _os.path.join(_proj_folder, "Controllers", "HomeController.cs")
+                                if not _os.path.exists(_home_ctrl):
+                                    with open(_home_ctrl, "w", encoding="utf-8") as _f:
+                                        _f.write("""using Microsoft.AspNetCore.Mvc;
+public class HomeController : Controller
+{
+    public IActionResult Index() { return View(); }
+}
+""")
+                                # Home/Index.cshtml — dashboard with links to all controllers
+                                _home_view = _os.path.join(_proj_folder, "Views", "Home", "Index.cshtml")
+                                if not _os.path.exists(_home_view):
+                                    _proj_display = _state.current_project_name.replace("_"," ")
+                                    # Find all Controller files and extract route names
+                                    _ctrl_links = ""
+                                    import re as _re3
+                                    for _fn in sorted(_os.listdir(_proj_folder)) if _os.path.exists(_proj_folder) else []:
+                                        if _fn.endswith("Controller.cs") or _fn.endswith("MvcController.cs"):
+                                            # Extract C# class name from file
+                                            try:
+                                                with open(_os.path.join(_proj_folder, _fn), encoding="utf-8") as _cf:
+                                                    _src = _cf.read()
+                                                _cm = _re3.search(r'public class (\w+)\s*:\s*Controller', _src)
+                                                if _cm:
+                                                    _cname = _cm.group(1).replace("Controller","")
+                                                    _ctrl_links += f"""
+      <div class="col-md-4 mb-3">
+        <div class="card shadow-sm h-100">
+          <div class="card-body text-center">
+            <h5 class="card-title">{_cname}</h5>
+            <a href="/{_cname}" class="btn btn-primary">Open</a>
+          </div>
+        </div>
+      </div>"""
+                                            except Exception:
+                                                pass
+                                    if not _ctrl_links:
+                                        _ctrl_links = '<div class="col"><p class="text-muted">No controllers found</p></div>'
+                                    with open(_home_view, "w", encoding="utf-8") as _f:
+                                        _f.write(f"""@{{
+    ViewData["Title"] = "Home";
+}}
+<div class="container mt-5">
+  <div class="text-center mb-5">
+    <h1 class="display-4">{_proj_display}</h1>
+    <p class="lead text-muted">Generated by AI Agent</p>
+  </div>
+  <div class="row justify-content-center">{_ctrl_links}
+  </div>
+</div>
+""")
                                 _layout_path = _os.path.join(_views_dir, "_Layout.cshtml")
                                 if not _os.path.exists(_layout_path):
                                     _layout_html = """<!DOCTYPE html>

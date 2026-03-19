@@ -92,11 +92,11 @@ def detect_requested_language(task):
 def _get_dotnet_ext(name: str, role: str) -> str:
     """Return correct file extension for a .NET file based on name/role."""
     nl = name.lower()
-    # If name already has a known extension — don't add another one
+    # Strip any existing extension from name before deciding
     for ext in (".cs", ".cshtml", ".css", ".js", ".json", ".html"):
         if nl.endswith(ext):
-            return ext
-    if role in ("view_index", "view_form", "layout", "page"):    return ".cshtml"
+            return ext  # already has correct extension
+    if role in ("view_index", "view_form", "layout", "page", "page_model"): return ".cshtml"
     if role == "css"  or "css"  in nl:  return ".css"
     if role == "javascript" or nl in ("site", "app", "main"):    return ".js"
     return ".cs"  # default for C# files

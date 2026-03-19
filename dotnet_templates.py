@@ -18,16 +18,20 @@ List the files needed to build: {task}
 Output ONLY this format (one per line):
 FileName:role
 
-Roles: controller, model, service, repository, dbcontext, interface, middleware, program, dto
+Roles: mvc_controller, model, service, repository, viewmodel, view_index, view_form, css
 
-Examples:
-ProductController:controller
+STRICT RULES:
+- Controller names MUST end with "Controller" only — NEVER "MvcController" or "ApiController"
+- NEVER include Program, AppDbContext, or Layout — they are auto-generated
+- Max 6 files
+
+Example for "products website":
+ProductsController:mvc_controller
 Product:model
-IProductService:interface
-ProductService:service
-ProductRepository:repository
-AppDbContext:dbcontext
-Program:program
+ProductViewModel:viewmodel
+ProductIndex:view_index
+ProductForm:view_form
+site.css:css
 """
 
 # ─── Templates ────────────────────────────────────────────────────────────────
@@ -378,6 +382,9 @@ app.Run();
 """,
 
     "mvc_controller": """using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 public class {name} : Controller
 {{
@@ -388,55 +395,45 @@ public class {name} : Controller
         _context = context;
     }}
 
-    // GET: /Home/Index
     public async Task<IActionResult> Index()
     {{
-        return View();
+        var items = new List<object>();
+        return View(items);
     }}
 
-    // GET: /Home/Details/5
     public async Task<IActionResult> Details(int id)
     {{
-        return View();
+        return View(new object());
     }}
 
-    // GET: /Home/Create
     public IActionResult Create()
     {{
-        return View();
+        return View(new object());
     }}
 
-    // POST: /Home/Create
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create([FromForm] object model)
     {{
         if (ModelState.IsValid)
-        {{
             return RedirectToAction(nameof(Index));
-        }}
         return View(model);
     }}
 
-    // GET: /Home/Edit/5
     public async Task<IActionResult> Edit(int id)
     {{
-        return View();
+        return View(new object());
     }}
 
-    // POST: /Home/Edit/5
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, [FromForm] object model)
     {{
         if (ModelState.IsValid)
-        {{
             return RedirectToAction(nameof(Index));
-        }}
         return View(model);
     }}
 
-    // POST: /Home/Delete/5
     [HttpPost, ActionName("Delete")]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
@@ -449,6 +446,7 @@ public class {name} : Controller
     "view_index": """@model IEnumerable<object>
 @{{
     ViewData["Title"] = "{name}";
+    var items = Model ?? new List<object>();
 }}
 
 <div class="container mt-4">
@@ -724,17 +722,17 @@ Frontend: view_index, view_form, layout, css, javascript, page_model
 
 RULES:
 - Include BOTH backend AND frontend files
-- Always include: program_mvc, _Layout:layout, site.css:css, site.js:javascript
-- For each entity: model + mvc_controller + view_index + view_form
-- Max 8 files
+- Controller names MUST end with exactly "Controller" — NEVER "MvcController", "ApiController"
+- NEVER include Program or program files — those are auto-generated
+- NEVER include AppDbContext — it is auto-generated
+- For each entity: model + controller + view_index
+- Max 6 files
 
 Example for "products website":
 ProductsController:mvc_controller
 Product:model
-AppDbContext:dbcontext
-ProductService:service
+ProductViewModel:viewmodel
 ProductIndex:view_index
 ProductForm:view_form
-_Layout:layout
-Program:program_mvc
+site.css:css
 """
