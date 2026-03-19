@@ -468,6 +468,10 @@ public class {name} : Controller
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {{
+        var item = await _context.Set<{entity_name}>().FindAsync(id);
+        if (item == null) return NotFound();
+        _context.Set<{entity_name}>().Remove(item);
+        await _context.SaveChangesAsync();
         return RedirectToAction(nameof(Index));
     }}
 }}
@@ -547,7 +551,10 @@ public class {name} : Controller
                 </div>
 
                 <div class="d-flex gap-2">
-                    <button type="submit" class="btn btn-primary">Save</button>
+                    @if (!isReadOnly)
+                    {{
+                        <button type="submit" class="btn btn-primary">Save</button>
+                    }}
                     <a asp-action="Index" class="btn btn-secondary">Cancel</a>
                 </div>
             </form>
