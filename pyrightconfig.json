@@ -1,0 +1,19 @@
+{
+  "pythonVersion": "3.11",
+  "venvPath": ".",
+  "venv": "venv",
+  "typeCheckingMode": "off",
+  "exclude": [
+    "**/node_modules",
+    "**/.git",
+    "**/.venv",
+    "**/venv",
+    "**/__pycache__",
+    "**/*.pyc",
+    "**/Generated_Scripts",
+    "**/.mypy_cache",
+    "**/.pytest_cache",
+    "**/.ruff_cache",
+    "**/.*"
+  ]
+}

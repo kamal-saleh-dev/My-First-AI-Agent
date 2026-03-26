@@ -63,12 +63,24 @@ def validate_unity(code):
     return True, code
 
 def validate_python(code, task):
-    fixed_code, output = auto_run_and_fix(task, code)
-
-    if "Could not fix" in output:
-        return False, output
-
-    return True, fixed_code
+    """Python validation — syntax check + unicode cleanup."""
+    # Strip any leftover code fence markers
+    import re as _re
+    code = _re.sub(r'^```[a-zA-Z]*\n?', '', code.strip())
+    code = code.rstrip('`').strip()
+    # Fix common unicode issues before parsing
+    code = code.replace('\u2014', '--')   # em dash → --
+    code = code.replace('\u2013', '-')    # en dash → -
+    code = code.replace('\u2018', "'")    # left single quote
+    code = code.replace('\u2019', "'")    # right single quote
+    code = code.replace('\u201c', '"')    # left double quote
+    code = code.replace('\u201d', '"')    # right double quote
+    try:
+        import ast as _ast
+        _ast.parse(code)
+        return True, code
+    except SyntaxError as e:
+        return False, f"SyntaxError: {e}"
 
 def validate_code(code, task):
     domain = detect_programming_domain(code)

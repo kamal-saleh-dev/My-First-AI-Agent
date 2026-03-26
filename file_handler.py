@@ -14,6 +14,7 @@ def _import_pil():
 
 # Globals injected by agent.py via inject_globals()
 safe_chat = get_response = DEFAULT_MODEL = log = _state = project_context = safe_print = None
+save_project_context = None  # injected from agent.py via inject_globals()
 
 def inject_globals(**kwargs):
     """Called once by agent.py after imports."""
@@ -22,10 +23,13 @@ def inject_globals(**kwargs):
         g[k] = v
 
 def _require_injected():
-    """Guard — raises if inject_globals() was never called."""
-    if safe_chat is None:
+    """Guard — validates ALL required globals are injected."""
+    required = {"safe_chat": safe_chat, "get_response": get_response,
+                "DEFAULT_MODEL": DEFAULT_MODEL, "log": log}
+    missing = [k for k, v in required.items() if v is None]
+    if missing:
         raise RuntimeError(
-            "file_handler globals not injected — call inject_globals() before using handlers"
+            f"file_handler globals not injected: {missing} — call inject_globals() first"
         )
 
 def detect_file_type(file_path):
@@ -342,6 +346,9 @@ def handle_pdf_file(file_path):
                 last_page=2,
                 poppler_path=r"C:\poppler\Library\bin"
             )
+
+            ImageEnhance, ImageFilter = _import_pil()
+            pytesseract = _import_pytesseract()
 
             for img in images:
 

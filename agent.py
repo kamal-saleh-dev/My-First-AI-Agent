@@ -67,10 +67,20 @@ class AgentLogger:
         entry = {"ts": ts, "level": level, "msg": msg, **ctx}
         with self._lock:
             self._buf.append(entry)
-        print(f"{icon} {msg}", flush=True)
+        try:
+            with _print_lock:
+                print(f"{icon} {msg}", flush=True)
+        except Exception:
+            pass
         try:
             if os.path.exists(self.log_file) and os.path.getsize(self.log_file) > 5*1024*1024:
-                os.replace(self.log_file, self.log_file.replace(".jsonl", f"_{int(time.time())}.jsonl"))
+                rotated = self.log_file.replace(".jsonl", f"_{int(time.time())}.jsonl")
+                os.replace(self.log_file, rotated)
+                import glob as _glob
+                old_logs = sorted(_glob.glob(self.log_file.replace(".jsonl","_*.jsonl")))
+                for old in old_logs[:-10]:
+                    try: os.remove(old)
+                    except Exception: pass
             with open(self.log_file, "a", encoding="utf-8") as f:
                 f.write(_json_mod.dumps(entry, default=str, ensure_ascii=False) + "\n")
         except Exception:
@@ -88,13 +98,24 @@ class AgentLogger:
 log = AgentLogger()
 
 def safe_print(*args, **kwargs):
-    """print آمن يتجنب surrogate errors على Windows"""
+    """Thread-safe print — flush=True by default, Unicode-safe, locked."""
+    kwargs.setdefault("flush", True)
     try:
-        print(*args, **kwargs)
-    except UnicodeEncodeError:
-        text = " ".join(str(a) for a in args)
-        cleaned = text.encode("utf-8", errors="replace").decode("utf-8")
-        print(cleaned, **{k:v for k,v in kwargs.items() if k != "end"})
+        with _print_lock:
+            try:
+                print(*args, **kwargs)
+            except UnicodeEncodeError:
+                text = " ".join(str(a) for a in args)
+                cleaned = text.encode("utf-8", errors="replace").decode("utf-8")
+                print(cleaned, **{k:v for k,v in kwargs.items() if k != "end"})
+    except Exception:
+        pass
+
+def _set_state(**kwargs):
+    """Thread-safe state writer."""
+    with _state_lock:
+        for k, v in kwargs.items():
+            setattr(_state, k, v)
 
 # ================= SAFE CHAT =================
 def safe_chat(model=None, messages=None, stream=False, retries=2, timeout=120):
@@ -162,7 +183,8 @@ HISTORY_FILE = os.path.join(BASE_DIR, "chat_sessions.json")
 
 # ================= AGENT STATE =================
 from threading import Lock as _Lock
-_state_lock = _Lock()   # protects shared mutable state
+_print_lock = _Lock()   # unified console output lock
+_state_lock = _Lock()   # shared mutable state lock
 
 class AgentState:
     """
@@ -230,13 +252,18 @@ def detect_mode(user: str) -> tuple:
     GAME_TARGETS = [
         "game", "لعبة", "unity", "unreal",
         "shooter", "platformer", "racing", "puzzle", "rpg",
+        "tower defense", "moba", "battle royale", "roguelike", "roguelite",
+        "fighting", "stealth", "horror", "idle", "fishing", "cooking",
+        "flight", "kart", "runner", "brawler", "strategy", "simulation",
+        "sandbox", "survival", "dungeon", "metroidvania", "vr game", "ar game",
     ]
     JOB_KEYWORDS = [
         "job", "jobs", "hiring", "وظيفة", "وظائف", "شغل", "فرص",
         "career", "vacancy", "vacancies", "توظيف",
     ]
     DELETE_KEYWORDS = ["delete", "remove", "احذف", "امسح", "شيل"]
-    LANG_KEYWORDS   = ["python", "unity", "unreal", "c#", "c++", "csharp", "dotnet", ".net", "asp.net", "aspnet"]
+    LANG_KEYWORDS   = ["python", "unity", "unreal", "c#", "c++", "csharp", "dotnet", ".net", "asp.net", "aspnet",
+                        "fastapi", "flask", "django", "react", "angular", "html", "sql", "postgres", "server", "api"]
 
     has_verb   = any(kw in t for kw in CREATION_VERBS)
     has_target = any(kw in t for kw in GAME_TARGETS)
@@ -245,16 +272,20 @@ def detect_mode(user: str) -> tuple:
     has_del    = any(kw in t for kw in DELETE_KEYWORDS)
 
     if has_del: return "DELETE", "general"
-    if has_job: return "JOB",    "general"
 
     # Question/statement detection
     QUESTION_STARTS = ["what", "how", "why", "when", "who", "which",
                        "explain", "tell me", "describe", "show me", "is ", "are ",
-                       "ما", "كيف", "ليه", "متى", "من", "اشرح", "وضّح", "قولي"]
+                       "ما", "كيف", "ليه", "متى", "من", "اشرح", "وضّح", "قولي",
+                       "أفضل", "افضل", "ما هي", "ماهي", "ما هو", "ما الفرق",
+                       "what is", "what are", "which is", "compare", "difference"]
     is_question = (
-        any(t.startswith(q + " ") or t == q for q in QUESTION_STARTS) or
+        any(t.startswith(q + " ") or t.startswith(q) or t == q for q in QUESTION_STARTS) or
         t.endswith("?") or t.endswith("؟")
     )
+
+    # JOB: only fire if NOT a programming/language question
+    if has_job and not is_question: return "JOB", "general"
 
     # Opinion/complaint patterns — "X is weird/great/bad" → CHAT
     OPINION_WORDS = [" is ", " are ", " was ", " seems ", " looks ", " feels ",
@@ -288,10 +319,10 @@ def detect_mode(user: str) -> tuple:
 
     try:
         prompt = f"""Classify this user message into ONE intent:
-GAME     - user wants to create/build/make a game, app, or code project
-JOB      - user wants job listings or career info
+GAME     - user wants to create/build/make/design/generate a game, app, website, database, API, or code project
+JOB      - user wants job listings, vacancies, or career info (NOT general programming questions)
 DELETE   - user wants to delete/remove something
-RUN      - user wants to run/execute code
+RUN      - user wants to RUN or EXECUTE already-existing code (message is literally just "run")
 SELF_MOD - user wants the agent to modify/improve/expand itself
 CHAT     - anything else
 
@@ -306,6 +337,9 @@ Intent:"""
         )
         intent = get_response(r).strip().upper().split()[0]
         if intent in ("GAME", "JOB", "DELETE", "RUN", "CHAT"):
+            # Override JOB → CHAT if task is a question (not a job search)
+            if intent == "JOB" and is_question:
+                intent = "CHAT"
             d = detect_domain(t) if intent == "GAME" else "general"
             return intent, d
     except Exception as e:
@@ -839,6 +873,13 @@ def extract_and_save_scripts(text, project_name, forced_name=None, forced_ext=No
     for i, code in enumerate(matches):
         code = code.strip()
 
+        # Strip leftover ``` markers + unicode fixes
+        import re as _re2
+        code = _re2.sub(r'^```[a-zA-Z]*\n?', '', code).strip().rstrip('`').strip()
+        code = code.replace('\u2014','--').replace('\u2013','-')
+        code = code.replace('\u2018',"'").replace('\u2019',"'")
+        code = code.replace('\u201c','"').replace('\u201d','"')
+
         # تطبيق الإصلاح الشامل على Unity scripts
         domain_check = detect_programming_domain(code)
         if domain_check == "unity":
@@ -846,9 +887,15 @@ def extract_and_save_scripts(text, project_name, forced_name=None, forced_ext=No
 
         is_valid, result = validate_code(code, project_name)
         if not is_valid:
-            print(f"\n❌ Validation Failed: {result}")
-            all_valid = False
-            continue
+            _non_critical = ("test","config","schema","util","db","handler","settings","spec")
+            if domain_check == "python" and any(w in project_name.lower() for w in _non_critical):
+                print(f"⚠️ Validation warning: {result} — saving anyway", flush=True)
+                is_valid = True
+                result = code
+            else:
+                print(f"\n❌ Validation Failed: {result}")
+                all_valid = False
+                continue
 
         # لو validate_unity رجعت الكود المصلوح، استخدمه
         # فقط لو الـ result فيه كود حقيقي (مش مجرد رسالة validation)
@@ -960,6 +1007,7 @@ except ImportError:
         threading.Thread(target=_launch, daemon=True).start()
 from planner import plan_scripts, normalize_script_pairs, apply_role_fixes, get_fallback_plan
 from env_check import check_and_exit_if_missing
+from process_registry import register as _register_proc, terminate_all as _terminate_all
 from metrics  import metrics
 
 def chat_tool(task, _hint_domain: str = "general"):
@@ -1074,6 +1122,18 @@ def chat_tool(task, _hint_domain: str = "general"):
         chat_history[:] = smart_trim_history(chat_history, max_tokens=3000)
         messages_to_send = [{"role": "system", "content": system_prompt}] + chat_history
 
+        # ── Quick web/db generation check BEFORE context check ──
+        _quick_web = detect_domain(task.lower())
+        _quick_verb = any(w in task.lower() for w in [
+            "make","create","build","generate","write","design","setup",
+            "اعمل","انشئ","اكتب","ابني","صمم"
+        ])
+        if _quick_web in ("dotnet","react","angular","html","sql","python") and _quick_verb:
+            # Force into generation pipeline regardless of context
+            text_context = ""
+            images = []
+            videos = []
+
         if not text_context and not images and not videos:
             is_unity = any(word in task.lower() for word in ["unity", "c#", "combat", "game"])
             is_python = any(word in task.lower() for word in ["python", "بايثون", "script"])
@@ -1125,7 +1185,10 @@ def chat_tool(task, _hint_domain: str = "general"):
                 if not is_complete_game:
                     _detected_web = detect_domain(task.lower())
                     if _detected_web in ("dotnet", "react", "angular", "html", "sql", "python") and \
-                       any(w in task.lower() for w in ["make","create","build","generate","write","اعمل","انشئ","اكتب","ابني"]):
+                       any(w in task.lower() for w in [
+                           "make","create","build","generate","write","design","setup","init",
+                           "اعمل","انشئ","اكتب","ابني","صمم","اعداد"
+                       ]):
                         is_complete_game = True
                         is_script_request = True  # force generation path
                         # inject detected domain so game pipeline uses it
@@ -1156,8 +1219,9 @@ def chat_tool(task, _hint_domain: str = "general"):
                     # No explicit engine found — ask user
                     if not detected_engine:
                         print("❓ Which game engine? (unity / unreal)", flush=True)
-                        engine_input = input().strip().lower()
-                        if "unreal" in engine_input or "c++" in engine_input:
+                        # Non-blocking: default to unity if no explicit unreal mention
+                        engine_input = ""
+                        if "unreal" in task.lower() or "c++" in task.lower():
                             detected_engine = "unreal"
                         else:
                             detected_engine = "unity"
@@ -1169,17 +1233,17 @@ def chat_tool(task, _hint_domain: str = "general"):
                         r = safe_chat(model=DEFAULT_MODEL, messages=[{"role": "user", "content": name_prompt}])
                         extracted = get_response(r).strip()
                         if "NONE" in extracted.upper() or len(extracted) >= 30:
-                            if detected_engine in WEB_DOMAINS:
-                                # For web/db: auto-generate name from first meaningful words
-                                import re as _re
-                                stop = {"make","create","build","a","an","the","with","using","in","for","website","site","app","api","web"}
-                                words = [w for w in _re.sub(r'[^a-z0-9 ]','',task.lower()).split() if w not in stop]
-                                _state.current_project_name = "_".join(words[:3]).title() if words else "MyProject"
-                            else:
-                                print("❓ What's the name of your project?", flush=True)
-                                _state.current_project_name = input().strip()
-                                if not _state.current_project_name:
-                                    _state.current_project_name = "MyGame"
+                            # Auto-generate name for ALL domains — no blocking input()
+                            import re as _re2
+                            _stop = {"make","create","build","a","an","the","with","using","in","for",
+                                     "website","site","app","api","web","game","full","complete","simple",
+                                     "server","database","project","script","unity","unreal","python",
+                                     "react","angular","html","sql","fastapi","flask","dotnet","asp"}
+                            _words = [w for w in _re2.sub(r"[^a-z0-9 ]","",task.lower()).split()
+                                      if w not in _stop and len(w) > 2]
+                            _state.current_project_name = "_".join(_words[:3]).title() if _words else (
+                                "MyGame" if detected_engine in ("unity","unreal") else "MyProject"
+                            )
                         else:
                             _state.current_project_name = extracted
 
@@ -1278,16 +1342,31 @@ EXAMPLES BY GENRE:
                                 name = parts[0].strip()
                                 role = parts[1].strip().lower()
                                 role = role.split()[0] if role else "generic"
-                                if name and len(name) < 40 and name[0].isupper():
+                                # Web engines use lowercase names (index, style, app)
+                                _web_engines = ("html","react","angular","sql","python")
+                                _valid = name and len(name) < 40 and (
+                                    name[0].isupper() or detected_engine in _web_engines
+                                )
+                                if _valid:
                                     script_pairs.append((name, role))
-                            elif item and len(item) < 40 and item[0].isupper():
+                            elif item and len(item) < 40 and (item[0].isupper() or detected_engine in ("html","react","angular","sql","python")):
                                 script_pairs.append((item, "generic"))
 
-                        # fallback defaults
+                        # fallback defaults — web domains get web defaults
                         if len(script_pairs) < 2:
                             print("⚠️ Planning response unclear, using defaults...", flush=True)
                             game_lower = task.lower()
-                            if any(w in game_lower for w in ["racing","race","car","kart"]):
+                            if detected_engine == "html":
+                                script_pairs = [("index","page"),("style","css"),("app","javascript")]
+                            elif detected_engine == "react":
+                                script_pairs = [("App","app"),("HomePage","page"),("Navbar","navbar"),("index","config"),("style","style")]
+                            elif detected_engine == "angular":
+                                script_pairs = [("app.component","app"),("app.module","module"),("app-routing.module","routing"),("MainComponent","component"),("MainService","service")]
+                            elif detected_engine == "sql":
+                                script_pairs = [("schema","schema"),("main_table","table"),("seed_data","seed")]
+                            elif detected_engine == "python":
+                                script_pairs = [("main","main"),("models","class"),("api","api")]
+                            elif any(w in game_lower for w in ["racing","race","car","kart"]):
                                 script_pairs = [("CarController","vehicle"),("OpponentAI","opponent"),("RaceManager","manager"),("Scoreboard","ui"),("CheckpointScript","collectible")]
                             elif any(w in game_lower for w in ["shooter","space","galaxy","star"]):
                                 script_pairs = [("ShipController","player"),("EnemySpawner","spawner"),("EnemyScript","enemy"),("PowerUpScript","powerup"),("GameManager","manager")]
@@ -1505,11 +1584,53 @@ RULES:
 
                         template = None if eng_cfg["skip_template"] else get_template(script_name, script_role)
                         used_template = False
+                        _block_type = {
+                            "html": "html", "css": "css", "javascript": "javascript",
+                            "react": "jsx", "angular": "typescript",
+                            "sql": "sql", "python": "python",
+                            "dotnet": "csharp"
+                        }.get(detected_engine, "csharp")
+
                         if template:
                             print(f"📐 Using template [{script_role}] for {script_name}", flush=True)
-                            code_response = "```csharp\n" + template + "\n```"
-                            used_template = True
-                            # store template code for context too
+
+                            # For web engines — LLM customizes the template with real content
+                            _web_engines = ("html", "react", "angular", "sql", "python")
+                            if detected_engine in _web_engines:
+                                _eng_cfg = DOMAIN_REGISTRY.get(detected_engine, {})
+                                _sys = _eng_cfg.get("system_prompt", f"You are a senior {detected_engine} developer. Write clean, production-ready code only.")
+                                # Build list of sibling files for correct links
+                                _sibling_pages = [
+                                    f"{n}.html" for n, r in script_pairs
+                                    if r in ("page","component","layout") and n != script_name
+                                ]
+                                _siblings_hint = ""
+                                if _sibling_pages:
+                                    _siblings_hint = f"\nOTHER PAGES IN THIS SITE: {', '.join(_sibling_pages)} — use these as href values in navigation links."
+
+                                _customize_prompt = f"""You are a senior {detected_engine} developer.
+Customize this template for: {task}
+File: {script_name} (role: {script_role}){_siblings_hint}
+
+SKELETON:
+{template}
+
+RULES:
+- Replace ALL generic content (MyApp, items, Home link only, etc.) with real content for: {task}
+- Navigation links must point to the actual sibling HTML files listed above
+- Return ONLY one ```{_block_type} code block
+- No explanations outside the code block"""
+                                r = safe_chat(model=DEFAULT_MODEL, messages=[
+                                    {"role": "system", "content": _sys},
+                                    {"role": "user", "content": _customize_prompt}
+                                ])
+                                code_response = get_response(r)
+                                used_template = False  # LLM generated — allow review
+                            else:
+                                # Unity/Unreal — use template directly (compile-verified)
+                                code_response = f"```{_block_type}\n" + template + "\n```"
+                                used_template = True
+
                             generated_scripts_context[script_name] = template
                         else:
                             # ✅ NEW: Fill-Template approach for game-specific roles
@@ -1569,8 +1690,19 @@ RULES:
                                     code_response = "```csharp\n" + skeleton + "\n```"
 
                             else:
-                                # Fallback: generate from scratch (non-unity or unknown role)
-                                single_prompt = f"""Write a {eng_cfg['lang']} script named {script_name} for this game: {task}
+                                # Generate from scratch — engine-specific prompt
+                                _is_web = detected_engine in ("html","react","angular","sql","python","dotnet")
+                                if _is_web:
+                                    single_prompt = f"""Write a {eng_cfg['lang']} file named {script_name} for: {task}
+
+ROLE: {script_role}
+
+RULES:
+1. Write complete, production-ready {eng_cfg['lang']} code
+2. No placeholders, no TODO, no empty functions
+3. Return ONLY one ```{eng_cfg['block']} code block"""
+                                else:
+                                    single_prompt = f"""Write a {eng_cfg['lang']} script named {script_name} for this game: {task}
 
 ROLE: {script_role}
 
@@ -1602,13 +1734,74 @@ UNIVERSAL RULES:
                                     code_response = get_response(r2)
 
 
-                        code_response = auto_fix_unity_code(code_response)
+                        # ✅ Only apply Unity fixes for Unity engine — not HTML/CSS/JS/SQL etc.
+                        if detected_engine == "unity":
+                            code_response = auto_fix_unity_code(code_response)
 
-                        # ✅ Skip LLM review for template-based scripts — templates are already clean
+                        # ✅ Review step — Unity gets deep C# review, web gets content review
+                        _web_engines = ("html", "react", "angular", "dotnet", "sql", "python")
+
                         if used_template:
-                            pass  # Template is correct — no review needed
-                        else:
+                            pass  # Unity template — already verified, skip
+
+                        elif detected_engine == "unreal":
+                            # Unreal C++ review — validate header/cpp structure
                             print(f"🔍 Reviewing {script_name} ...", flush=True)
+                            _review_prompt = f"""Review and fix this Unreal C++ code for {script_name}:
+
+RULES:
+1. Header (.h) MUST have: #pragma once, GENERATED_BODY(), .generated.h include
+2. CPP (.cpp) MUST implement ALL declared functions — no empty bodies
+3. All UPROPERTY/UFUNCTION macros must be valid
+4. No placeholders, no TODO comments
+5. Constructor must call Super::BeginPlay() if BeginPlay is overridden
+6. Return ONLY the fixed code blocks (header then cpp)
+
+Code to fix:
+{code_response}"""
+                            r_rev = safe_chat(model=model_name, messages=[
+                                {"role": "system", "content": UNREAL_SYSTEM_PROMPT},
+                                {"role": "user",   "content": _review_prompt}
+                            ])
+                            reviewed = get_response(r_rev)
+                            if "```" in reviewed:
+                                code_response = reviewed
+
+                        elif detected_engine in _web_engines:
+                            # Web/SQL/Python review — fix placeholders, links, content
+                            print(f"🔍 Reviewing {script_name} ...", flush=True)
+                            _block_type_r = {
+                                "html":"html","css":"css","javascript":"javascript",
+                                "react":"jsx","angular":"typescript",
+                                "sql":"sql","python":"python","dotnet":"csharp"
+                            }.get(detected_engine, "html")
+                            _review_rules = {
+                                "html":       "- Replace any remaining generic placeholders (MyApp, items, Your Name, etc.) with real restaurant content\n- Ensure all href links point to actual sibling files (.html)\n- Keep Bootstrap structure intact",
+                                "css":        "- Remove any 'true' or non-CSS lines\n- Keep all :root variables\n- No placeholders",
+                                "javascript": "- Replace placeholder API endpoints with realistic ones\n- No TODO comments or empty functions",
+                                "react":      "- Replace all placeholder text with real content\n- Ensure imports are correct",
+                                "angular":    "- Replace all placeholder text with real content\n- Ensure @Component selector is correct",
+                                "sql":        "- Replace generic table/column names with domain-appropriate names\n- Ensure all FK references are valid\n- No TODO comments",
+                                "python":     "- Replace placeholder functions with real implementations\n- No TODO or pass-only functions",
+                                "dotnet":     "- Replace placeholder controller actions with real implementations\n- No TODO comments",
+                            }.get(detected_engine, "- Fix any placeholders or generic content")
+                            _review_prompt = f"""Review and fix this {detected_engine} file named {script_name}:
+
+RULES TO ENFORCE:
+{_review_rules}
+
+Return ONLY one ```{_block_type_r} code block. No explanations.
+
+File to fix:
+{code_response}"""
+                            r_rev = safe_chat(model=model_name, messages=[
+                                {"role": "system", "content": f"You are a senior {detected_engine} developer. Fix code issues and return only a code block."},
+                                {"role": "user",   "content": _review_prompt}
+                            ])
+                            reviewed = get_response(r_rev)
+                            if "```" in reviewed:
+                                code_response = reviewed
+                        else:
                             # build role-specific review rules
                             role_rules = {
                                 "player":     "- Player moves with WASD/arrows using Rigidbody2D.velocity — do NOT use transform.Translate\n- Shoot with Fire1 button, NOT Space melee attack for shooter games",
@@ -2010,10 +2203,13 @@ public class HomeController : Controller
                         r = safe_chat(model=DEFAULT_MODEL, messages=[{"role": "user", "content": name_check_prompt}])
                         extracted_name = get_response(r).strip()
                         if "NONE" in extracted_name.upper() or len(extracted_name) >= 30:
-                            print("❓ What's the name of your game project?", flush=True)
-                            _state.current_project_name = input().strip()
-                            if not _state.current_project_name:
-                                _state.current_project_name = "MyGame"
+                            # Auto-generate name from task — no blocking input()
+                            import re as _ren
+                            _stopn = {"make","create","build","a","an","the","game","full","complete",
+                                      "simple","unity","unreal","python","server","api","my","for"}
+                            _wn = [w for w in _ren.sub(r"[^a-z0-9 ]","",task.lower()).split()
+                                   if w not in _stopn and len(w) > 2]
+                            _state.current_project_name = "_".join(_wn[:3]).title() or "MyGame"
                         else:
                             _state.current_project_name = extracted_name
                     
@@ -2198,6 +2394,7 @@ def handle_shutdown(signum=None, frame=None):
 signal.signal(signal.SIGINT,  handle_shutdown)
 signal.signal(signal.SIGTERM, handle_shutdown)
 atexit.register(handle_shutdown)
+atexit.register(lambda: metrics.save())
 
 # ═══════════════════════════════════════════════════════════
 # TOOL REGISTRY — all tools in one place

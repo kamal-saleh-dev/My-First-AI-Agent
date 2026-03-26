@@ -97,27 +97,64 @@ def normalize_script_pairs(raw: str, engine: str = "unity") -> list:
 
 # ─── Fallback plans ────────────────────────────────────────────
 FALLBACK_PLANS = {
-    "racing":    [("CarController","vehicle"),("OpponentAI","opponent"),
-                  ("RaceManager","manager"),("RaceHUD","ui"),("CheckpointScript","collectible")],
-    "shooter":   [("ShipController","player"),("EnemySpawner","spawner"),
-                  ("EnemyScript","enemy"),("PowerUpScript","powerup"),("GameManager","manager")],
-    "runner":    [("RunnerController","player"),("ObstacleSpawner","spawner"),
-                  ("BackgroundScroller","background"),("UIManager","ui"),("HealthBar","health")],
-    "rpg":       [("PlayerController","player"),("EnemyScript","enemy"),
-                  ("GameManager","manager"),("HealthBar","health"),("UIManager","ui")],
-    "zombie":    [("SurvivorController","player"),("ZombieSpawner","spawner"),
-                  ("ZombieScript","enemy"),("HealthBar","health"),("GameManager","manager")],
-    "default":   [("PlayerController","player"),("EnemySpawner","spawner"),
-                  ("EnemyScript","enemy"),("GameManager","manager"),("UIManager","ui")],
+    "racing":       [("CarController","vehicle"),("OpponentAI","opponent"),
+                     ("RaceManager","manager"),("RaceHUD","ui"),("CheckpointScript","collectible")],
+    "kart":         [("KartController","vehicle"),("KartOpponent","opponent"),
+                     ("RaceItem","powerup"),("LapManager","manager"),("KartHUD","ui")],
+    "shooter":      [("ShipController","player"),("EnemySpawner","spawner"),
+                     ("EnemyScript","enemy"),("PowerUpScript","powerup"),("GameManager","manager")],
+    "runner":       [("LaneSwitcher","lane_switcher"),("ObstacleSpawner","spawner"),
+                     ("BackgroundScroller","background"),("UIManager","ui"),("GameManager","manager")],
+    "rpg":          [("PlayerController","player"),("EnemyScript","enemy"),
+                     ("GameManager","manager"),("HealthBar","health"),("UIManager","ui")],
+    "zombie":       [("SurvivorController","player"),("ZombieSpawner","spawner"),
+                     ("ZombieScript","enemy"),("HealthBar","health"),("GameManager","manager")],
+    "tower":        [("Tower","tower"),("PathFollower","path_follower"),
+                     ("WaveManager","wave_manager"),("GameManager","manager"),("UIManager","ui")],
+    "platformer":   [("PlatformerPlayer","platformer_player"),("EnemyScript","enemy"),
+                     ("CheckpointSystem","checkpoint_system"),("GameManager","manager"),("UIManager","ui")],
+    "fighting":     [("PlayerController","player"),("ComboSystem","combo_system"),
+                     ("EnemyScript","enemy"),("HealthBar","health"),("GameManager","manager")],
+    "stealth":      [("StealthPlayer","stealth_player"),("GuardAI","guard_ai"),
+                     ("GameManager","manager"),("UIManager","ui"),("InteractionSystem","interaction")],
+    "horror":       [("PlayerController","player"),("MonsterAI","monster_ai"),
+                     ("FlashlightBattery","flashlight_battery"),("GameManager","manager"),("UIManager","ui")],
+    "roguelike":    [("PlayerController","player"),("RoguelikeRoom","roguelike_room"),
+                     ("GameManager","manager"),("HealthBar","health"),("UIManager","ui")],
+    "moba":         [("MobaHero","moba_hero"),("MobaTower","moba_tower"),
+                     ("EnemyScript","enemy"),("HealthBar","health"),("UIManager","ui")],
+    "battle_royale":[("PlayerController","player"),("ZoneShrink","zone_shrink"),
+                     ("LootSpawner","loot_spawner"),("HealthBar","health"),("UIManager","ui")],
+    "idle":         [("IdleManager","idle_manager"),("UIManager","ui"),("GameManager","manager")],
+    "fishing":      [("FishingController","fishing"),("GameManager","manager"),("UIManager","ui")],
+    "cooking":      [("CookingSystem","cooking"),("GameManager","manager"),("UIManager","ui")],
+    "flight":       [("FlightController","flight"),("EnemySpawner","spawner"),
+                     ("GameManager","manager"),("UIManager","ui"),("HealthBar","health")],
+    "default":      [("PlayerController","player"),("EnemySpawner","spawner"),
+                     ("EnemyScript","enemy"),("GameManager","manager"),("UIManager","ui")],
 }
 
 def get_fallback_plan(task: str) -> list:
     t = task.lower()
-    if any(w in t for w in ["racing","race","car","kart"]):     return FALLBACK_PLANS["racing"]
-    if any(w in t for w in ["shooter","space","galaxy","star"]): return FALLBACK_PLANS["shooter"]
-    if any(w in t for w in ["runner","endless","temple"]):       return FALLBACK_PLANS["runner"]
-    if any(w in t for w in ["rpg","adventure","quest","dungeon"]):return FALLBACK_PLANS["rpg"]
-    if any(w in t for w in ["zombie","survival","dead"]):         return FALLBACK_PLANS["zombie"]
+    if any(w in t for w in ["kart","mario kart"]): return FALLBACK_PLANS["kart"]
+    if any(w in t for w in ["racing","race","car","drift"]): return FALLBACK_PLANS["racing"]
+    if any(w in t for w in ["shooter","space","galaxy","star","shmup"]): return FALLBACK_PLANS["shooter"]
+    if any(w in t for w in ["endless runner","subway","temple run","lane"]): return FALLBACK_PLANS["runner"]
+    if any(w in t for w in ["tower defense","tower","turret"]): return FALLBACK_PLANS["tower"]
+    if any(w in t for w in ["platformer","platform","jump","side scroll"]): return FALLBACK_PLANS["platformer"]
+    if any(w in t for w in ["fighting","beat em up","brawler","hack and slash","combat"]): return FALLBACK_PLANS["fighting"]
+    if any(w in t for w in ["stealth","sneak","guard"]): return FALLBACK_PLANS["stealth"]
+    if any(w in t for w in ["horror","scary","monster","fear","survival horror"]): return FALLBACK_PLANS["horror"]
+    if any(w in t for w in ["roguelike","roguelite","dungeon run","rogue"]): return FALLBACK_PLANS["roguelike"]
+    if any(w in t for w in ["moba","league","dota","hero"]): return FALLBACK_PLANS["moba"]
+    if any(w in t for w in ["battle royale","pubg","fortnite","br"]): return FALLBACK_PLANS["battle_royale"]
+    if any(w in t for w in ["idle","clicker","incremental"]): return FALLBACK_PLANS["idle"]
+    if any(w in t for w in ["fishing","fish","rod"]): return FALLBACK_PLANS["fishing"]
+    if any(w in t for w in ["cooking","chef","kitchen","recipe"]): return FALLBACK_PLANS["cooking"]
+    if any(w in t for w in ["flight","airplane","fly","pilot","dogfight"]): return FALLBACK_PLANS["flight"]
+    if any(w in t for w in ["rpg","adventure","quest","dungeon","dungeon crawler"]): return FALLBACK_PLANS["rpg"]
+    if any(w in t for w in ["zombie","survival","dead","apocalypse"]): return FALLBACK_PLANS["zombie"]
+    if any(w in t for w in ["runner","endless","temple"]): return FALLBACK_PLANS["runner"]
     return FALLBACK_PLANS["default"]
 
 

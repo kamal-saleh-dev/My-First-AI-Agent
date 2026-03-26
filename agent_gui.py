@@ -44,6 +44,11 @@ def _auto_scroll():
     if not _user_scrolled_up:
         chat_area._parent_canvas.yview_moveto(1)
 
+def gui_log(msg: str, level: str = "warn"):
+    """Unified GUI log — single point for redirect/silent mode."""
+    print(msg, flush=True)
+
+
 _restarting = False  # suppresses health poll during intentional restart
 
 def _poll_process_health():
@@ -94,7 +99,7 @@ def poll_sessions():
                 sessions_data = new_data
                 refresh_sidebar()
     except Exception as e:
-        print(f"⚠ error: {e}")
+        gui_log(f"⚠ error: {e}")
     app.after(3000, poll_sessions)
 
 # ===========================================
@@ -123,7 +128,7 @@ def new_chat_action():
             process.stdin.write("new_chat\n")
             process.stdin.flush()
         except Exception as e:
-            print(f"⚠ error: {e}")
+            gui_log(f"⚠ error: {e}")
     for w in chat_area.winfo_children():
         w.destroy()
     add_bot_message("Hello! I'm ready.")
@@ -145,7 +150,7 @@ def load_session_ui(session_id):
             process.stdin.write(f"load_session {session_id}\n")
             process.stdin.flush()
         except Exception as e:
-            print(f"⚠ error: {e}")
+            gui_log(f"⚠ error: {e}")
     try:
         if getattr(sys,'frozen',False):
             base = os.path.dirname(sys.executable)
@@ -162,7 +167,7 @@ def load_session_ui(session_id):
                     elif msg.get("role") == "assistant": add_bot_message(msg.get("content",""))
                 break
     except Exception as e:
-        print(f"⚠ error: {e}")
+        gui_log(f"⚠ error: {e}")
 
 def refresh_sidebar():
     for w in sessions_list_frame.winfo_children(): w.destroy()
@@ -475,13 +480,13 @@ def update_context_counter(text):
             num = text.split("(")[1].split("files")[0].strip()
             context_label.configure(text=f"🧠 Context: {num} files")
         except Exception as e:
-            print(f"⚠ error: {e}")
+            gui_log(f"⚠ error: {e}")
     if "Added to project context" in text:
         try:
             num = text.split("(")[1].split("files")[0].strip()
             context_label.configure(text=f"🧠 Context: {num} files")
         except Exception as e:
-            print(f"⚠ error: {e}")
+            gui_log(f"⚠ error: {e}")
     if "Project context cleared" in text:
         context_label.configure(text="🧠 Context: 0 files")
 
@@ -554,7 +559,7 @@ def make_selectable_textbox(parent, text, is_user, preset_w=80, preset_h=32):
             sel = t._textbox.get("sel.first","sel.last")
             app.clipboard_clear(); app.clipboard_append(sel)
         except Exception as e:
-            print(f"⚠ error: {e}")
+            gui_log(f"⚠ error: {e}")
     txt._textbox.bind("<Button-3>", show_menu)
     return txt
 
@@ -682,7 +687,7 @@ def make_idle():
             active_bot_label.configure(state="disabled")
             _auto_scroll()
         except Exception as e:
-            print(f"⚠ make_idle error: {e}")
+            gui_log(f"⚠ make_idle error: {e}")
 
 # ===========================================
 # 🔥 STREAMING ENGINE (محرك الكتابة الحية)
@@ -754,7 +759,7 @@ def ask_user_question(question):
             process.stdin.write(reply + "\n")
             process.stdin.flush()
         except Exception as e:
-            print("stdin write error:", e)
+            gui_log(f"⚠ stdin write error: {e}")
 
 def read_output():
     global process, is_streaming_mode, is_typing, msg_queue
@@ -791,7 +796,7 @@ def read_output():
                 time.sleep(0.02)
 
     except Exception as e:
-        print("Read output error:", e)
+        gui_log(f"⚠ read output error: {e}")
 
 def start_agent():
     global process
@@ -832,7 +837,7 @@ def start_agent():
                     data = json.load(f)
                     context_label.configure(text=f"🧠 Context: {len(data)} files")
         except Exception as e:
-            print(f"⚠ error: {e}")
+            gui_log(f"⚠ error: {e}")
 
         threading.Thread(target=read_output,daemon=True).start()
         app.after(3000, _poll_process_health)  # start health monitor
@@ -861,7 +866,7 @@ def _send_to_agent(cmd, files):
             process.stdin.flush()
 
         except Exception as e:
-            print("Error sending:", e)
+            gui_log(f"⚠ send error: {e}")
 
 def send_command(event=None):
     global pending_attachments, is_streaming_mode, is_screen_share_on
@@ -895,7 +900,7 @@ def send_command(event=None):
         for old_file in glob.glob("live_screen_*.jpg"):
             try: os.remove(old_file)
             except Exception as e:
-                print(f"⚠ remove screenshot error: {e}")
+                gui_log(f"⚠ remove screenshot error: {e}")
             
         screen = ImageGrab.grab()
         # 🔥 اسم جديد بالثانية عشان نكسر الـ Cache بتاع الموديل
