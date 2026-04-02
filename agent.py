@@ -668,7 +668,7 @@ def delete_tool(task):
 # ================= PROJECT =================
 
 def project_tool(task):
-    folder_name = task.replace("build", "").strip().replace(" ", "_").lower()
+    folder_name = "_".join(w.capitalize() for w in task.replace("build","").strip().split())[:40].replace(" ","_")
     if not folder_name: folder_name = "project"
 
     # إنشاء المشروع في المكان الحالي اللي اليوزر واقف فيه
@@ -817,7 +817,7 @@ from compiler_tools import (
     LANGUAGE_RULES
 )
 from unity_pipeline import auto_fix_unity_code, auto_clean_unity_code
-from unreal_templates import validate_unreal, auto_fix_unreal_header, UNREAL_SYSTEM_PROMPT, save_unreal_scripts
+from unreal_templates import validate_unreal, auto_fix_unreal_header, UNREAL_SYSTEM_PROMPT, save_unreal_scripts, UNREAL_GAME_TEMPLATES, UNREAL_GAME_KEYWORDS, get_unreal_template as _get_unreal_template
 from unity_templates import (UNIVERSAL_TEMPLATES, TEMPLATED_ROLES, GAME_SPECIFIC_ROLES,
     FILL_TEMPLATES, ROLE_FILL_RULES)
 from dotnet_templates import (DOTNET_TEMPLATES, DOTNET_TEMPLATED_ROLES,
@@ -1005,7 +1005,7 @@ except ImportError:
                     out = proc.stderr.read().decode()[:300] if proc.poll() is not None else "timeout"
                     print(f"❌ dotnet run failed: {out}", flush=True)
         threading.Thread(target=_launch, daemon=True).start()
-from planner import plan_scripts, normalize_script_pairs, apply_role_fixes, get_fallback_plan
+from planner import plan_scripts, normalize_script_pairs, apply_role_fixes, get_fallback_plan, get_unreal_fallback
 from env_check import check_and_exit_if_missing
 from process_registry import register as _register_proc, terminate_all as _terminate_all
 from metrics  import metrics
@@ -1245,7 +1245,7 @@ def chat_tool(task, _hint_domain: str = "general"):
                                 "MyGame" if detected_engine in ("unity","unreal") else "MyProject"
                             )
                         else:
-                            _state.current_project_name = extracted
+                            _state.current_project_name = "_".join(w.capitalize() for w in extracted.strip().split())[:40]
 
                     # اطلب من الـ LLM يقرر السكريبتات المطلوبة
                     _p_icon  = "🌐" if detected_engine in WEB_DOMAINS else "🎮"
@@ -1461,7 +1461,22 @@ EXAMPLES BY GENRE:
                         fixed_pairs.append((name, role))
                     script_pairs = fixed_pairs
 
-                    script_pairs = script_pairs[:6]
+                    # ── Unity: always inject GameManager + HealthBar ──
+                    if detected_engine == "unity":
+                        _NON_ESS = ["powerup","background","collectible","generic"]
+                        _has_gm = any("gamemanager" in n.lower() for n,r in script_pairs)
+                        _has_hb = any("healthbar" in n.lower() or r=="health" for n,r in script_pairs)
+                        if not _has_gm:
+                            _drop = next((i for i,(n,r) in enumerate(script_pairs) if r in _NON_ESS), -1)
+                            if _drop >= 0: script_pairs.pop(_drop)
+                            script_pairs.append(("GameManager", "game_manager"))
+                        _has_hb = any("healthbar" in n.lower() or r=="health" for n,r in script_pairs)
+                        if not _has_hb:
+                            _drop = next((i for i,(n,r) in enumerate(script_pairs) if r in _NON_ESS), -1)
+                            if _drop >= 0: script_pairs.pop(_drop)
+                            script_pairs.append(("HealthBar", "health"))
+
+                    script_pairs = script_pairs[:8]
                     script_names = [p[0] for p in script_pairs]
 
                     # ===== Universal Role Templates =====
@@ -1480,6 +1495,11 @@ EXAMPLES BY GENRE:
                             return get_sql_template(sname, role)
                         if detected_engine == "python":
                             return get_python_template(sname, role)
+                        if detected_engine == "unreal":
+                            # Try Unreal-specific templates
+                            tpl = _get_unreal_template(sname, role)
+                            if tpl: return tpl
+                            return None  # Unreal always goes to LLM if no template
                         if role in TEMPLATED_ROLES:
                             tpl = UNIVERSAL_TEMPLATES.get(role)
                             if tpl:

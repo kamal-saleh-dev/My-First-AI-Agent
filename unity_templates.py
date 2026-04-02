@@ -202,9 +202,13 @@ public class {name} : MonoBehaviour
     }}
     void OnTriggerEnter2D(Collider2D other)
     {{
-        IDamageable t = other.GetComponent<IDamageable>();
-        if (t != null) {{ t.TakeDamage(damage); Destroy(gameObject); }}
-        else if (!other.CompareTag("Player")) Destroy(gameObject);
+        if (other.CompareTag("Player")) return;
+        EnemyScript e = other.GetComponent<EnemyScript>();
+        if (e != null) {{ e.TakeDamage(damage); Destroy(gameObject); return; }}
+        // Fallback: any component with TakeDamage
+        var dmg = other.GetComponent<HealthBar>();
+        if (dmg != null) {{ dmg.TakeDamage(damage); Destroy(gameObject); return; }}
+        Destroy(gameObject);
     }}
 }}""",
 
@@ -346,12 +350,14 @@ public class {name} : MonoBehaviour
                 if (hb != null) hb.Heal(value);
                 break;
             case PowerType.Speed:
-                PlayerController pc = player.GetComponent<PlayerController>();
-                if (pc != null) pc.moveSpeed += value;
+                ShipController sc = player.GetComponent<ShipController>();
+                if (sc == null) sc = player.GetComponent<MonoBehaviour>() as ShipController;
+                if (sc != null) sc.moveSpeed += value;
                 break;
             case PowerType.Shield:
-                Shield sh = player.GetComponent<Shield>();
-                if (sh != null) sh.ActivateShield(value);
+                // Shield bonus: heal player instead if no Shield component
+                HealthBar shHb = player.GetComponent<HealthBar>();
+                if (shHb != null) shHb.Heal(value / 2);
                 break;
             case PowerType.Score:
                 if (GameManager.Instance != null) GameManager.Instance.AddScore(value);
@@ -5760,3 +5766,571 @@ Common patterns:
 - fill_methods: all public methods other scripts call
 Return ONLY the completed ```csharp code block with all FILL markers replaced by real code.""",
 }
+UNIVERSAL_TEMPLATES["game_manager"] = """using UnityEngine;
+using UnityEngine.SceneManagement;
+public class {name} : MonoBehaviour
+{{
+    public static {name} Instance {{ get; private set; }}
+
+    [Header("Game State")]
+    public int score = 0;
+    public int lives = 3;
+    public bool isGameOver = false;
+    public bool isPaused = false;
+
+    [Header("Settings")]
+    public int scorePerKill = 100;
+    public int nextSceneIndex = 1;
+
+    void Awake()
+    {{
+        if (Instance == null) {{ Instance = this; DontDestroyOnLoad(gameObject); }}
+        else Destroy(gameObject);
+    }}
+
+    public void AddScore(int amount)
+    {{
+        score += amount;
+        UIManager ui = FindObjectOfType<UIManager>();
+        if (ui != null) ui.UpdateScore(score);
+    }}
+
+    public void OnEnemyKilled() {{ AddScore(scorePerKill); }}
+
+    public void LoseLife()
+    {{
+        lives = Mathf.Max(0, lives - 1);
+        UIManager ui = FindObjectOfType<UIManager>();
+        if (ui != null) ui.UpdateLives(lives);
+        if (lives <= 0) GameOver();
+    }}
+
+    public void GameOver()
+    {{
+        if (isGameOver) return;
+        isGameOver = true;
+        Time.timeScale = 0f;
+        UIManager ui = FindObjectOfType<UIManager>();
+        if (ui != null) ui.ShowGameOver(score);
+    }}
+
+    public void Win()
+    {{
+        Time.timeScale = 0f;
+        UIManager ui = FindObjectOfType<UIManager>();
+        if (ui != null) ui.ShowWin(score);
+    }}
+
+    public void RestartGame()
+    {{
+        isGameOver = false;
+        Time.timeScale = 1f;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+    }}
+
+    public void NextLevel() {{ SceneManager.LoadScene(nextSceneIndex); }}
+
+    public void TogglePause()
+    {{
+        isPaused = !isPaused;
+        Time.timeScale = isPaused ? 0f : 1f;
+    }}
+}}"""
+
+
+# ── SaveSystem + more missing Unity templates ──────────────────
+
+UNIVERSAL_TEMPLATES["save_system"] = """using UnityEngine;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+[System.Serializable]
+public class SaveData
+{{
+    public int score;
+    public int level;
+    public float[] playerPosition = new float[3];
+    public int lives;
+    public string[] unlockedAbilities;
+}}
+public class {name} : MonoBehaviour
+{{
+    public static {name} Instance {{ get; private set; }}
+    private static string SavePath => Application.persistentDataPath + "/save.dat";
+    void Awake() {{ if (Instance == null) {{ Instance = this; DontDestroyOnLoad(gameObject); }} else Destroy(gameObject); }}
+    public void Save(SaveData data)
+    {{
+        try {{
+            BinaryFormatter bf = new BinaryFormatter();
+            using (FileStream fs = File.Open(SavePath, FileMode.Create))
+                bf.Serialize(fs, data);
+            Debug.Log("Game saved!");
+        }} catch (System.Exception e) {{ Debug.LogError("Save failed: " + e.Message); }}
+    }}
+    public SaveData Load()
+    {{
+        if (!File.Exists(SavePath)) return new SaveData();
+        try {{
+            BinaryFormatter bf = new BinaryFormatter();
+            using (FileStream fs = File.Open(SavePath, FileMode.Open))
+                return (SaveData)bf.Deserialize(fs);
+        }} catch {{ return new SaveData(); }}
+    }}
+    public void DeleteSave() {{ if (File.Exists(SavePath)) File.Delete(SavePath); }}
+    public bool HasSave() {{ return File.Exists(SavePath); }}
+}}"""
+
+UNIVERSAL_TEMPLATES["dialogue"] = """using UnityEngine;
+using System.Collections.Generic;
+using TMPro;
+[System.Serializable]
+public class DialogueLine {{ public string speaker; [TextArea] public string text; }}
+public class {name} : MonoBehaviour
+{{
+    public List<DialogueLine> lines = new List<DialogueLine>();
+    public TextMeshProUGUI speakerText;
+    public TextMeshProUGUI dialogueText;
+    public GameObject dialoguePanel;
+    private int currentIndex = 0;
+    private bool isActive = false;
+    public void StartDialogue()
+    {{
+        if (lines.Count == 0) return;
+        currentIndex = 0; isActive = true;
+        if (dialoguePanel != null) dialoguePanel.SetActive(true);
+        ShowLine();
+    }}
+    public void NextLine()
+    {{
+        currentIndex++;
+        if (currentIndex >= lines.Count) EndDialogue();
+        else ShowLine();
+    }}
+    void ShowLine()
+    {{
+        if (currentIndex >= lines.Count) return;
+        DialogueLine line = lines[currentIndex];
+        if (speakerText != null)  speakerText.text  = line.speaker;
+        if (dialogueText != null) dialogueText.text = line.text;
+    }}
+    void EndDialogue()
+    {{
+        isActive = false;
+        if (dialoguePanel != null) dialoguePanel.SetActive(false);
+    }}
+    void Update() {{ if (isActive && Input.GetButtonDown("Fire1")) NextLine(); }}
+}}"""
+
+UNIVERSAL_TEMPLATES["inventory"] = """using UnityEngine;
+using System.Collections.Generic;
+[System.Serializable]
+public class Item {{ public string name; public int quantity; public Sprite icon; public string description; }}
+public class {name} : MonoBehaviour
+{{
+    public static {name} Instance {{ get; private set; }}
+    public List<Item> items = new List<Item>();
+    public int maxSlots = 20;
+    void Awake() {{ if (Instance == null) Instance = this; else Destroy(gameObject); }}
+    public bool AddItem(Item newItem)
+    {{
+        Item existing = items.Find(i => i.name == newItem.name);
+        if (existing != null) {{ existing.quantity += newItem.quantity; return true; }}
+        if (items.Count >= maxSlots) {{ Debug.Log("Inventory full!"); return false; }}
+        items.Add(newItem); return true;
+    }}
+    public bool RemoveItem(string itemName, int amount = 1)
+    {{
+        Item item = items.Find(i => i.name == itemName);
+        if (item == null || item.quantity < amount) return false;
+        item.quantity -= amount;
+        if (item.quantity <= 0) items.Remove(item);
+        return true;
+    }}
+    public bool HasItem(string itemName, int amount = 1)
+    {{
+        Item item = items.Find(i => i.name == itemName);
+        return item != null && item.quantity >= amount;
+    }}
+    public int GetItemCount(string itemName) {{ Item i = items.Find(x => x.name == itemName); return i?.quantity ?? 0; }}
+}}"""
+
+UNIVERSAL_TEMPLATES["quest"] = """using UnityEngine;
+using System.Collections.Generic;
+[System.Serializable]
+public class Quest
+{{
+    public string questName;
+    public string description;
+    public int requiredKills;
+    public int currentKills;
+    public int rewardScore;
+    public bool isComplete;
+    public bool isActive;
+}}
+public class {name} : MonoBehaviour
+{{
+    public static {name} Instance {{ get; private set; }}
+    public List<Quest> quests = new List<Quest>();
+    void Awake() {{ if (Instance == null) Instance = this; else Destroy(gameObject); }}
+    public void StartQuest(int index) {{ if (index < quests.Count) quests[index].isActive = true; }}
+    public void UpdateKillProgress(int index, int amount = 1)
+    {{
+        if (index >= quests.Count || !quests[index].isActive) return;
+        quests[index].currentKills += amount;
+        if (quests[index].currentKills >= quests[index].requiredKills) CompleteQuest(index);
+    }}
+    void CompleteQuest(int index)
+    {{
+        quests[index].isComplete = true; quests[index].isActive = false;
+        GameManager.Instance?.AddScore(quests[index].rewardScore);
+        Debug.Log($"Quest complete: {{quests[index].questName}}");
+    }}
+    public bool IsComplete(int index) {{ return index < quests.Count && quests[index].isComplete; }}
+}}"""
+
+UNIVERSAL_TEMPLATES["day_night"] = """using UnityEngine;
+public class {name} : MonoBehaviour
+{{
+    [Header("Day/Night")]
+    public Light directionalLight;
+    public float dayDuration = 120f;
+    public Gradient sunColor;
+    public AnimationCurve sunIntensity;
+    [Range(0,1)] public float timeOfDay = 0.25f;
+    void Update()
+    {{
+        timeOfDay += Time.deltaTime / dayDuration;
+        if (timeOfDay >= 1f) timeOfDay = 0f;
+        float angle = timeOfDay * 360f - 90f;
+        if (directionalLight != null)
+        {{
+            directionalLight.transform.rotation = Quaternion.Euler(angle, 170f, 0f);
+            directionalLight.color = sunColor.Evaluate(timeOfDay);
+            directionalLight.intensity = sunIntensity.Evaluate(timeOfDay);
+        }}
+    }}
+    public bool IsDay()   {{ return timeOfDay > 0.25f && timeOfDay < 0.75f; }}
+    public bool IsNight() {{ return !IsDay(); }}
+    public float GetHour() {{ return timeOfDay * 24f; }}
+}}"""
+
+UNIVERSAL_TEMPLATES["minimap"] = """using UnityEngine;
+using UnityEngine.UI;
+public class {name} : MonoBehaviour
+{{
+    [Header("Minimap")]
+    public Camera minimapCamera;
+    public Transform player;
+    public RawImage minimapImage;
+    public float height = 20f;
+    public float mapSize = 50f;
+    void LateUpdate()
+    {{
+        if (player == null || minimapCamera == null) return;
+        Vector3 pos = player.position;
+        minimapCamera.transform.position = new Vector3(pos.x, pos.y + height, pos.z);
+        minimapCamera.orthographicSize = mapSize;
+    }}
+    public void SetTarget(Transform t) {{ player = t; }}
+}}"""
+
+UNIVERSAL_TEMPLATES["object_pool"] = """using UnityEngine;
+using System.Collections.Generic;
+public class {name} : MonoBehaviour
+{{
+    public static {name} Instance {{ get; private set; }}
+    [System.Serializable]
+    public class Pool {{ public string tag; public GameObject prefab; public int size; }}
+    public List<Pool> pools = new List<Pool>();
+    private Dictionary<string, Queue<GameObject>> poolDictionary = new Dictionary<string, Queue<GameObject>>();
+    void Awake() {{ if (Instance == null) Instance = this; else Destroy(gameObject); }}
+    void Start()
+    {{
+        foreach (Pool pool in pools)
+        {{
+            Queue<GameObject> q = new Queue<GameObject>();
+            for (int i = 0; i < pool.size; i++)
+            {{
+                GameObject obj = Instantiate(pool.prefab, transform);
+                obj.SetActive(false); q.Enqueue(obj);
+            }}
+            poolDictionary[pool.tag] = q;
+        }}
+    }}
+    public GameObject Spawn(string tag, Vector3 pos, Quaternion rot)
+    {{
+        if (!poolDictionary.ContainsKey(tag)) return null;
+        GameObject obj = poolDictionary[tag].Dequeue();
+        obj.SetActive(true); obj.transform.SetPositionAndRotation(pos, rot);
+        poolDictionary[tag].Enqueue(obj);
+        return obj;
+    }}
+}}"""
+
+UNIVERSAL_TEMPLATES["scene_manager"] = """using UnityEngine;
+using UnityEngine.SceneManagement;
+using System.Collections;
+public class {name} : MonoBehaviour
+{{
+    public static {name} Instance {{ get; private set; }}
+    public GameObject loadingScreen;
+    public UnityEngine.UI.Slider progressBar;
+    void Awake() {{ if (Instance == null) {{ Instance = this; DontDestroyOnLoad(gameObject); }} else Destroy(gameObject); }}
+    public void LoadScene(string sceneName) {{ StartCoroutine(LoadAsync(sceneName)); }}
+    public void LoadScene(int index)         {{ StartCoroutine(LoadAsync(index)); }}
+    public void ReloadCurrent()              {{ LoadScene(SceneManager.GetActiveScene().name); }}
+    IEnumerator LoadAsync(object scene)
+    {{
+        if (loadingScreen != null) loadingScreen.SetActive(true);
+        AsyncOperation op = scene is string s ? SceneManager.LoadSceneAsync(s) : SceneManager.LoadSceneAsync((int)scene);
+        op.allowSceneActivation = false;
+        while (!op.isDone)
+        {{
+            float progress = Mathf.Clamp01(op.progress / 0.9f);
+            if (progressBar != null) progressBar.value = progress;
+            if (op.progress >= 0.9f) op.allowSceneActivation = true;
+            yield return null;
+        }}
+        if (loadingScreen != null) loadingScreen.SetActive(false);
+    }}
+}}"""
+
+UNIVERSAL_TEMPLATES["state_machine"] = """using UnityEngine;
+public enum GameState {{ Menu, Playing, Paused, GameOver, Win }}
+public class {name} : MonoBehaviour
+{{
+    public static {name} Instance {{ get; private set; }}
+    public GameState CurrentState {{ get; private set; }} = GameState.Menu;
+    public delegate void StateChanged(GameState oldState, GameState newState);
+    public event StateChanged OnStateChanged;
+    void Awake() {{ if (Instance == null) Instance = this; else Destroy(gameObject); }}
+    public void ChangeState(GameState newState)
+    {{
+        GameState old = CurrentState;
+        CurrentState = newState;
+        OnStateChanged?.Invoke(old, newState);
+        HandleStateChange(newState);
+    }}
+    void HandleStateChange(GameState state)
+    {{
+        switch (state)
+        {{
+            case GameState.Playing:  Time.timeScale = 1f; break;
+            case GameState.Paused:   Time.timeScale = 0f; break;
+            case GameState.GameOver: Time.timeScale = 0f; break;
+            case GameState.Win:      Time.timeScale = 0f; break;
+        }}
+    }}
+    public bool IsPlaying()  {{ return CurrentState == GameState.Playing; }}
+    public bool IsPaused()   {{ return CurrentState == GameState.Paused; }}
+    public bool IsGameOver() {{ return CurrentState == GameState.GameOver; }}
+}}"""
+
+UNIVERSAL_TEMPLATES["audio_manager"] = """using UnityEngine;
+using System.Collections.Generic;
+[System.Serializable]
+public class Sound {{ public string name; public AudioClip clip; [Range(0,1)] public float volume = 1f; [Range(0.5f,1.5f)] public float pitch = 1f; public bool loop; [HideInInspector] public AudioSource source; }}
+public class {name} : MonoBehaviour
+{{
+    public static {name} Instance {{ get; private set; }}
+    public List<Sound> sounds = new List<Sound>();
+    void Awake()
+    {{
+        if (Instance == null) {{ Instance = this; DontDestroyOnLoad(gameObject); }}
+        else {{ Destroy(gameObject); return; }}
+        foreach (Sound s in sounds) {{
+            s.source = gameObject.AddComponent<AudioSource>();
+            s.source.clip = s.clip; s.source.volume = s.volume;
+            s.source.pitch = s.pitch; s.source.loop = s.loop;
+        }}
+    }}
+    public void Play(string name)   {{ Sound s = sounds.Find(x => x.name == name); if (s != null) s.source.Play(); }}
+    public void Stop(string name)   {{ Sound s = sounds.Find(x => x.name == name); if (s != null) s.source.Stop(); }}
+    public void Pause(string name)  {{ Sound s = sounds.Find(x => x.name == name); if (s != null) s.source.Pause(); }}
+    public bool IsPlaying(string name) {{ Sound s = sounds.Find(x => x.name == name); return s != null && s.source.isPlaying; }}
+    public void SetVolume(string name, float vol) {{ Sound s = sounds.Find(x => x.name == name); if (s != null) s.source.volume = vol; }}
+}}"""
+
+UNIVERSAL_TEMPLATES["camera_controller"] = """using UnityEngine;
+public class {name} : MonoBehaviour
+{{
+    [Header("Target")]
+    public Transform target;
+    public Vector3 offset = new Vector3(0, 5, -10);
+    [Header("Settings")]
+    public float smoothSpeed = 5f;
+    public float rotationSpeed = 3f;
+    public bool followRotation = false;
+    [Header("Shake")]
+    private float shakeDuration = 0f;
+    private float shakeMagnitude = 0.1f;
+    void LateUpdate()
+    {{
+        if (target == null) return;
+        Vector3 desired = target.position + (followRotation ? target.TransformDirection(offset) : offset);
+        transform.position = Vector3.Lerp(transform.position, desired, smoothSpeed * Time.deltaTime);
+        if (followRotation) transform.LookAt(target);
+        if (shakeDuration > 0)
+        {{
+            transform.position += Random.insideUnitSphere * shakeMagnitude;
+            shakeDuration -= Time.deltaTime;
+        }}
+    }}
+    public void Shake(float duration, float magnitude = 0.1f)
+    {{
+        shakeDuration = duration; shakeMagnitude = magnitude;
+    }}
+}}"""
+
+UNIVERSAL_TEMPLATES["leaderboard"] = """using UnityEngine;
+using System.Collections.Generic;
+using System.Linq;
+[System.Serializable]
+public class ScoreEntry {{ public string playerName; public int score; public float time; }}
+public class {name} : MonoBehaviour
+{{
+    public static {name} Instance {{ get; private set; }}
+    public List<ScoreEntry> entries = new List<ScoreEntry>();
+    public int maxEntries = 10;
+    void Awake() {{ if (Instance == null) Instance = this; else Destroy(gameObject); Load(); }}
+    public void AddScore(string name, int score, float time = 0)
+    {{
+        entries.Add(new ScoreEntry {{ playerName = name, score = score, time = time }});
+        entries = entries.OrderByDescending(e => e.score).Take(maxEntries).ToList();
+        Save();
+    }}
+    public List<ScoreEntry> GetTop(int n = 10) {{ return entries.Take(n).ToList(); }}
+    public int GetRank(int score) {{ return entries.Count(e => e.score > score) + 1; }}
+    void Save() {{ PlayerPrefs.SetString("Leaderboard", JsonUtility.ToJson(this)); PlayerPrefs.Save(); }}
+    void Load() {{ string data = PlayerPrefs.GetString("Leaderboard",""); if (!string.IsNullOrEmpty(data)) JsonUtility.FromJsonOverwrite(data, this); }}
+}}"""
+
+UNIVERSAL_TEMPLATES["interaction"] = """using UnityEngine;
+using TMPro;
+public interface IInteractable {{ void Interact(GameObject player); string GetPrompt(); }}
+public class {name} : MonoBehaviour
+{{
+    [Header("Interaction")]
+    public float interactRadius = 2f;
+    public LayerMask interactLayer;
+    public KeyCode interactKey = KeyCode.E;
+    public TextMeshProUGUI promptText;
+    private IInteractable currentTarget;
+    void Update()
+    {{
+        Collider[] cols = Physics.OverlapSphere(transform.position, interactRadius, interactLayer);
+        currentTarget = null;
+        foreach (var col in cols)
+        {{
+            IInteractable inter = col.GetComponent<IInteractable>();
+            if (inter != null) {{ currentTarget = inter; break; }}
+        }}
+        if (promptText != null)
+        {{
+            promptText.gameObject.SetActive(currentTarget != null);
+            if (currentTarget != null) promptText.text = currentTarget.GetPrompt();
+        }}
+        if (currentTarget != null && Input.GetKeyDown(interactKey))
+            currentTarget.Interact(gameObject);
+    }}
+}}"""
+
+UNIVERSAL_TEMPLATES["touch_input"] = """using UnityEngine;
+public class {name} : MonoBehaviour
+{{
+    [Header("Touch Settings")]
+    public float swipeThreshold = 50f;
+    public float tapMaxTime = 0.2f;
+    private Vector2 touchStart;
+    private float touchStartTime;
+    public delegate void SwipeAction(Vector2 direction);
+    public static event SwipeAction OnSwipe;
+    public static event System.Action OnTap;
+    void Update()
+    {{
+        if (Input.touchCount == 0) return;
+        Touch touch = Input.GetTouch(0);
+        if (touch.phase == TouchPhase.Began) {{ touchStart = touch.position; touchStartTime = Time.time; }}
+        if (touch.phase == TouchPhase.Ended)
+        {{
+            Vector2 delta = touch.position - touchStart;
+            float duration = Time.time - touchStartTime;
+            if (delta.magnitude < swipeThreshold && duration < tapMaxTime) OnTap?.Invoke();
+            else if (delta.magnitude >= swipeThreshold) OnSwipe?.Invoke(delta.normalized);
+        }}
+    }}
+}}"""
+
+UNIVERSAL_TEMPLATES["npc"] = """using UnityEngine;
+using System.Collections;
+public class {name} : MonoBehaviour
+{{
+    [Header("NPC")]
+    public string npcName = "NPC";
+    public float walkSpeed = 2f;
+    public float waypointWaitTime = 2f;
+    public Transform[] waypoints;
+    private int currentWaypoint = 0;
+    private bool isWaiting = false;
+    void Update()
+    {{
+        if (waypoints.Length == 0 || isWaiting) return;
+        Transform wp = waypoints[currentWaypoint];
+        transform.position = Vector3.MoveTowards(transform.position, wp.position, walkSpeed * Time.deltaTime);
+        transform.LookAt(new Vector3(wp.position.x, transform.position.y, wp.position.z));
+        if (Vector3.Distance(transform.position, wp.position) < 0.1f) StartCoroutine(WaitAtWaypoint());
+    }}
+    IEnumerator WaitAtWaypoint()
+    {{
+        isWaiting = true;
+        yield return new WaitForSeconds(waypointWaitTime);
+        currentWaypoint = (currentWaypoint + 1) % waypoints.Length;
+        isWaiting = false;
+    }}
+    public void TalkTo() {{ Debug.Log($"{{npcName}}: Hello, traveler!"); }}
+}}"""
+
+UNIVERSAL_TEMPLATES["procedural_map"] = """using UnityEngine;
+public class {name} : MonoBehaviour
+{{
+    [Header("Map")]
+    public int width = 20;
+    public int height = 20;
+    [Range(0,1)] public float wallChance = 0.3f;
+    public int smoothIterations = 5;
+    public GameObject wallPrefab;
+    public GameObject floorPrefab;
+    private int[,] map;
+    void Start() {{ Generate(); }}
+    public void Generate()
+    {{
+        map = new int[width, height];
+        System.Random rng = new System.Random();
+        // Fill randomly
+        for (int x = 0; x < width; x++)
+            for (int y = 0; y < height; y++)
+                map[x,y] = (x==0||x==width-1||y==0||y==height-1) ? 1 : (rng.NextDouble() < wallChance ? 1 : 0);
+        // Smooth
+        for (int i = 0; i < smoothIterations; i++) Smooth();
+        BuildMesh();
+    }}
+    void Smooth()
+    {{
+        int[,] newMap = (int[,])map.Clone();
+        for (int x=1;x<width-1;x++) for (int y=1;y<height-1;y++)
+        {{
+            int n = CountNeighbours(x,y);
+            if (n > 4) newMap[x,y] = 1; else if (n < 4) newMap[x,y] = 0;
+        }}
+        map = newMap;
+    }}
+    int CountNeighbours(int x, int y) {{ int c=0; for(int nx=-1;nx<=1;nx++) for(int ny=-1;ny<=1;ny++) if(nx!=0||ny!=0) c+=map[x+nx,y+ny]; return c; }}
+    void BuildMesh()
+    {{
+        foreach (Transform child in transform) Destroy(child.gameObject);
+        for (int x=0;x<width;x++) for (int y=0;y<height;y++)
+        {{
+            GameObject prefab = map[x,y]==1 ? wallPrefab : floorPrefab;
+            if (prefab != null) Instantiate(prefab, new Vector3(x,0,y), Quaternion.identity, transform);
+        }}
+    }}
+}}"""

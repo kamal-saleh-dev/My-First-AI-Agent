@@ -40,7 +40,7 @@ def apply_role_fixes(script_pairs: list, task: str) -> list:
 
         # ── Hard overrides ──────────────────────
         if "gamemanager" in nl or nl == "gamemanager":
-            role = "manager"
+            role = "game_manager"
         elif any(w in nl for w in ["checkpoint","collectible","coin","pickup"])              and not any(w in nl for w in NON_PICKUP_COLL):
             role = "collectible"
         elif any(w in nl for w in ["hud","ui","score","timer","results","display","board"]):
@@ -158,6 +158,39 @@ def get_fallback_plan(task: str) -> list:
     return FALLBACK_PLANS["default"]
 
 
+# ── Unreal-specific fallback plans ────────────────────────────
+UNREAL_FALLBACK_PLANS = {
+    "shooter":      [("ShooterCharacter","shooter_character"),("EnemyAI","enemy_ai"),
+                     ("WaveSpawner","wave_spawner"),("WeaponSystem","weapon"),("MyGameMode","game_mode")],
+    "rpg":          [("RPGCharacter","rpg_character"),("EnemyAI","enemy_ai"),
+                     ("QuestManager","quest"),("InventorySystem","inventory"),("MyGameMode","game_mode")],
+    "boss":         [("PlayerCharacter","shooter_character"),("BossCharacter","boss_fight"),
+                     ("HealthComponent","health_component"),("WaveSpawner","wave_spawner"),("MyGameMode","game_mode")],
+    "stealth":      [("StealthCharacter","stealth_system"),("NPC_AI","npc_ai"),
+                     ("AIPerception","ai_perception"),("HealthComponent","health_component"),("MyGameMode","game_mode")],
+    "vehicle":      [("VehicleCharacter","vehicle_component"),("WaveManager","wave_manager"),
+                     ("HealthComponent","health_component"),("MyGameMode","game_mode"),("Leaderboard","leaderboard")],
+    "survival":     [("PlayerCharacter","shooter_character"),("StaminaSystem","stamina_system"),
+                     ("InventorySystem","inventory"),("WeatherSystem","weather_system"),("MyGameMode","game_mode")],
+    "horror":       [("PlayerCharacter","shooter_character"),("EnemyAI","enemy_ai"),
+                     ("AIPerception","ai_perception"),("StatusEffect","status_effect"),("MyGameMode","game_mode")],
+    "default":      [("PlayerCharacter","shooter_character"),("EnemyAI","enemy_ai"),
+                     ("HealthComponent","health_component"),("MyGameMode","game_mode"),("WaveSpawner","wave_spawner")],
+}
+
+def get_unreal_fallback(task: str) -> list:
+    t = task.lower()
+    if any(w in t for w in ["boss","raid","dungeon boss","final boss"]): return UNREAL_FALLBACK_PLANS["boss"]
+    if any(w in t for w in ["stealth","sneak","infiltrate"]): return UNREAL_FALLBACK_PLANS["stealth"]
+    if any(w in t for w in ["vehicle","car","tank","drive","racing"]): return UNREAL_FALLBACK_PLANS["vehicle"]
+    if any(w in t for w in ["survival","survive","open world","crafting"]): return UNREAL_FALLBACK_PLANS["survival"]
+    if any(w in t for w in ["horror","scary","monster","terror"]): return UNREAL_FALLBACK_PLANS["horror"]
+    if any(w in t for w in ["rpg","adventure","quest","dungeon"]): return UNREAL_FALLBACK_PLANS["rpg"]
+    if any(w in t for w in ["shooter","fps","tps","combat","action"]): return UNREAL_FALLBACK_PLANS["shooter"]
+    return UNREAL_FALLBACK_PLANS["default"]
+
+
+
 # ─── Main planning function ────────────────────────────────────
 def plan_scripts(task: str, engine: str, safe_chat, get_response,
                  DEFAULT_MODEL: str, DOMAIN_REGISTRY: dict,
@@ -226,7 +259,16 @@ Racing: CarController:vehicle, OpponentAI:opponent, CheckpointScript:collectible
                 if name.strip():
                     pairs.append((name.strip(), role.strip().lower()))
         if not pairs:
-            pairs = get_fallback_plan(task) if engine == "unity" else []
+            if engine == "unity":
+                pairs = get_fallback_plan(task)
+            elif engine == "unreal":
+                try:
+                    from planner import get_unreal_fallback
+                    pairs = get_unreal_fallback(task)
+                except Exception:
+                    pairs = [("PlayerCharacter","generic"),("EnemyAI","generic"),("GameMode","generic")]
+            else:
+                pairs = []
     else:
         pairs = normalize_script_pairs(raw, engine)
         if len(pairs) < 2:
@@ -238,6 +280,28 @@ Racing: CarController:vehicle, OpponentAI:opponent, CheckpointScript:collectible
     project_key = re.sub(r"[^a-z0-9]", "", task.lower()[:20])
     pairs = [(n,r) for n,r in pairs if re.sub(r"[^a-z0-9]","",n.lower()) != project_key]
     pairs = pairs[:6]
+
+    # Unity: always ensure GameManager + HealthBar in plan
+    if engine == "unity":
+        ESSENTIAL = {"game_manager","manager","health","healthbar"}
+        NON_ESSENTIAL = ["powerup","background","collectible","generic"]
+        has_gm = any("gamemanager" in n.lower() for n,r in pairs)
+        has_hb = any("healthbar" in n.lower() or n.lower()=="healthbar" or r=="health" for n,r in pairs)
+
+        # Inject GameManager — drop a non-essential if needed
+        if not has_gm:
+            drop_idx = next((i for i,(n,r) in enumerate(pairs) if r in NON_ESSENTIAL), -1)
+            if drop_idx >= 0: pairs.pop(drop_idx)
+            pairs.append(("GameManager", "game_manager"))
+
+        # Re-check HealthBar
+        has_hb = any("healthbar" in n.lower() or r=="health" for n,r in pairs)
+        if not has_hb:
+            drop_idx = next((i for i,(n,r) in enumerate(pairs) if r in NON_ESSENTIAL), -1)
+            if drop_idx >= 0: pairs.pop(drop_idx)
+            pairs.append(("HealthBar", "health"))
+
+        pairs = pairs[:8]
 
     set_cached_plan(task, pairs)
     return pairs
