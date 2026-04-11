@@ -7,6 +7,20 @@ import json
 import time
 import shutil
 import subprocess
+from openai import OpenAI
+
+# ═══════════════════════════════════════════════════════════
+# CLOUD / API GATEWAY SETUP (OpenRouter + Anthropic models)
+# ═══════════════════════════════════════════════════════════
+USE_OPENROUTER = os.getenv("CLAUDE_CODE_USE_OPENROUTER") == "1"
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+
+cloud_client = None
+if USE_OPENROUTER and OPENROUTER_API_KEY:
+    cloud_client = OpenAI(
+        base_url="https://openrouter.ai/api/v1", 
+        api_key=OPENROUTER_API_KEY,
+    )
 
 # ── Heavy libs: lazy-loaded inside functions to reduce startup time ──
 # cv2, pypdf, docx, openpyxl, pptx, pytesseract, PIL → imported where used
@@ -119,23 +133,59 @@ def _set_state(**kwargs):
 
 # ================= SAFE CHAT =================
 def safe_chat(model=None, messages=None, stream=False, retries=2, timeout=120):
-    """
-    Wrapper لـ safe_chat() مع:
-    - retry تلقائي عند فشل الاتصال
-    - timeout لتجنب التجميد
-    - error logging واضح
-    """
     if model is None:
         model = DEFAULT_MODEL
     if messages is None:
         messages = []
 
+    # خريطة الأسماء والاختصارات كاملة 
+    model_aliases = {
+        "or_free": "qwen/qwen3.6-plus:free",
+        "or_qwen": "qwen/qwen3.6-plus:free",
+        "or_glm45air": "z-ai/glm-4.5-air:free",
+        "or_minimax": "minimax/minimax-m2.5:free",
+        "claude": "anthropic/claude-sonnet-4-6",
+        "opus": "anthropic/claude-opus-4-6",
+        "gpt5": "openai/gpt-5.4",
+        "codex": "openai/gpt5.3-codex",
+        "kimi": "moonshotai/kimi-k2.5"
+    }
+
+    full_model_name = model_aliases.get(model, model)
     last_err = None
+
     for attempt in range(retries + 1):
         try:
-            # ✅ بيكلم ollama.chat مباشرة — مش safe_chat نفسها
-            result = ollama.chat(model=model, messages=messages, stream=stream)
-            return result
+            # لو مفعلين السحابة والموديل ده مش الموديل المحلي الافتراضي
+            if USE_OPENROUTER and cloud_client and full_model_name != DEFAULT_MODEL and full_model_name != "llava":
+                response = cloud_client.chat.completions.create(
+                    model=full_model_name,
+                    messages=messages,
+                    stream=stream,
+                    extra_headers={
+                        "HTTP-Referer": "https://localhost", 
+                        "X-Title": "Kamal Game Agent",
+                    }
+                )
+                
+                if stream:
+                    def stream_generator():
+                        for chunk in response:
+                            if chunk.choices and chunk.choices[0].delta.content:
+                                yield {'message': {'content': chunk.choices[0].delta.content}}
+                    return stream_generator()
+                else:
+                    class _CloudMsg:
+                        content = response.choices[0].message.content
+                    class _CloudResp:
+                        message = _CloudMsg()
+                    return _CloudResp()
+
+            else:
+                # التشغيل المحلي العادي على Ollama
+                result = ollama.chat(model=full_model_name, messages=messages, stream=stream)
+                return result
+
         except Exception as e:
             last_err = e
             err_type = type(e).__name__
@@ -146,7 +196,6 @@ def safe_chat(model=None, messages=None, stream=False, retries=2, timeout=120):
             else:
                 safe_print(f"❌ safe_chat failed after {retries+1} attempts: {err_type}: {e}")
 
-    # Return empty-content response so callers don't crash
     class _FallbackMsg:
         content = f"[ERROR: Model unavailable after {retries+1} attempts — {last_err}]"
     class _FallbackResp:
@@ -817,7 +866,7 @@ from compiler_tools import (
     LANGUAGE_RULES
 )
 from unity_pipeline import auto_fix_unity_code, auto_clean_unity_code
-from unreal_templates import validate_unreal, auto_fix_unreal_header, UNREAL_SYSTEM_PROMPT, save_unreal_scripts, UNREAL_GAME_TEMPLATES, UNREAL_GAME_KEYWORDS, get_unreal_template as _get_unreal_template
+from unreal_templates import validate_unreal, auto_fix_unreal_header, auto_fix_unreal_code, UNREAL_SYSTEM_PROMPT, save_unreal_scripts, UNREAL_GAME_TEMPLATES, UNREAL_GAME_KEYWORDS, get_unreal_template as _get_unreal_template, get_unreal_cpp_template as _get_unreal_cpp_template
 from unity_templates import (UNIVERSAL_TEMPLATES, TEMPLATED_ROLES, GAME_SPECIFIC_ROLES,
     FILL_TEMPLATES, ROLE_FILL_RULES)
 from dotnet_templates import (DOTNET_TEMPLATES, DOTNET_TEMPLATED_ROLES,
@@ -1245,7 +1294,11 @@ def chat_tool(task, _hint_domain: str = "general"):
                                 "MyGame" if detected_engine in ("unity","unreal") else "MyProject"
                             )
                         else:
-                            _state.current_project_name = "_".join(w.capitalize() for w in extracted.strip().split())[:40]
+                            # Filter out engine names from extracted project name
+                            _engine_words = {"unity","unreal","godot","pygame","monogame","gamemaker","cocos"}
+                            _proj_words = [w for w in extracted.strip().lower().split() if w not in _engine_words]
+                            if not _proj_words: _proj_words = [w for w in task.lower().replace("make","").replace("create","").replace("build","").split() if len(w) > 3 and w not in _engine_words]
+                            _state.current_project_name = "_".join(w.capitalize() for w in _proj_words[:4])[:40] or "MyGame"
 
                     # اطلب من الـ LLM يقرر السكريبتات المطلوبة
                     _p_icon  = "🌐" if detected_engine in WEB_DOMAINS else "🎮"
@@ -1766,18 +1819,85 @@ UNIVERSAL RULES:
 
                         elif detected_engine == "unreal":
                             # Unreal C++ review — validate header/cpp structure
+                            # If LLM returned only 1 block, force regeneration
+                            import re as _re_u2
+                            _u_blocks = _re_u2.findall(r"```[a-zA-Z]*\n?(.*?)```", code_response, _re_u2.DOTALL)
+                            if len(_u_blocks) < 2:
+                                print(f"⚠ Only {len(_u_blocks)} block — forcing header+cpp for {script_name}...", flush=True)
+                                _fp = f"""Write EXACTLY TWO ```cpp blocks for Unreal class {script_name}.
+Block 1 = HEADER (.h): #pragma once, #include "CoreMinimal.h", {script_name}.generated.h, UCLASS, GENERATED_BODY(), declarations
+Block 2 = CPP (.cpp): #include "{script_name}.h", ALL function implementations
+
+Output ONLY two code blocks, nothing else."""
+                                _r2 = safe_chat(model=model_name, messages=[{"role":"system","content":UNREAL_SYSTEM_PROMPT},{"role":"user","content":_fp}])
+                                code_response = get_response(_r2)
                             print(f"🔍 Reviewing {script_name} ...", flush=True)
-                            _review_prompt = f"""Review and fix this Unreal C++ code for {script_name}:
+                            # Check if we have a reference template for this script
+                            _ref_cpp = _get_unreal_cpp_template(script_name, script_role)
+                            _ref_note = f"\n\nREFERENCE IMPLEMENTATION (adapt to {script_name}):\n```cpp\n{_ref_cpp[:600]}\n```" if _ref_cpp else ""
+                            _review_prompt = f"""Fix this Unreal C++ file: {script_name}
 
-RULES:
-1. Header (.h) MUST have: #pragma once, GENERATED_BODY(), .generated.h include
-2. CPP (.cpp) MUST implement ALL declared functions — no empty bodies
-3. All UPROPERTY/UFUNCTION macros must be valid
-4. No placeholders, no TODO comments
-5. Constructor must call Super::BeginPlay() if BeginPlay is overridden
-6. Return ONLY the fixed code blocks (header then cpp)
+MANDATORY FIXES — EVERY SINGLE ONE MUST BE APPLIED:
+1. #pragma once at top of header
+2. GENERATED_BODY() in class body
+3. .generated.h MUST match class name: AMyClass uses "AMyClass.generated.h"
+4. NEVER inherit from AProjectileBase/AProjectile — use AActor instead
+5. ALL float/int UPROPERTY must have REAL C++ = defaults (NOT Meta=(DefaultValue)):
+   WRONG: float MoveSpeed; or float MoveSpeed UPROPERTY(... Meta=(DefaultValue="600"));
+   RIGHT: float MoveSpeed = 600.f; float MaxHealth = 100.f; float CurrentHealth = 100.f;
+   float AttackDamage = 20.f; float DetectionRadius = 800.f; float SpawnInterval = 3.f;
+   float MaxAmmo = 30.f; float HealthPercentage = 100.f;
+   UIHandler/HUD: MUST include float MaxHealth = 100.f; float CurrentHealth = 100.f;
+   EVERY float/int property with no = is a bug — player will have 0 health/speed!
+   float MoveSpeed=600.f; float MaxHealth=100.f; float CurrentHealth=100.f;
+   float AttackDamage=20.f; float DetectionRadius=800.f; float SpawnInterval=3.f;
+6. EVERY function in CPP must be declared in header:
+   void SpawnProjectile(); void Die(); void MoveForward(float Value);
+   void MoveRight(float Value); void Fire(); void DrawHUD() override;
+7. REPLACE ALL placeholders with REAL code — if it says "Logic to X" write the actual code:
+   "// Logic to find and update target" →
+      APawn* Player = UGameplayStatics::GetPlayerPawn(GetWorld(), 0);
+      if (IsValid(Player) && FVector::Dist(GetActorLocation(), Player->GetActorLocation()) <= DetectionRadius) Target = Player;
+   "// Logic to create" → write actual SpawnActor or LaunchCharacter code
+   "// Logic to" → ALWAYS replace with real Unreal C++ code
+   "// Logic to create projectile" →
+      FVector Loc=GetOwner()->GetActorLocation()+GetOwner()->GetActorForwardVector()*100.f;
+      if(IsValid(ProjectileClass)) GetWorld()->SpawnActor<AActor>(ProjectileClass,Loc,GetOwner()->GetActorRotation());
+   "// Initialize" or "// Assuming" or "// TODO" → remove and write real code
+   "// Handle X" → write the actual handler code
+8. Die() rules:
+   - In AActor/ACharacter subclass: Destroy(); (NOT Destroy(GetOwner()))
+   - In UActorComponent subclass: GetOwner()->Destroy();
+9. UUserWidget: NO fake functions like OnHealthChanged(). Use SetVisibility or TSubclassOf<UUserWidget>
+10. IsValid: if (IsValid(MyVar)) — NEVER "if (MyVar IsValid())"
+11. Fire() must spawn a projectile: if(IsValid(ProjectileClass)) GetWorld()->SpawnActor<AActor>(...)
+12. EnemyAI MUST have:
+    - float MaxHealth = 100.f; float CurrentHealth = 100.f; in header
+    - UFUNCTION(BlueprintCallable) void TakeDamage(float Damage); in header
+    - void Die(); in header
+    - TakeDamage impl: CurrentHealth -= Damage; if(CurrentHealth<=0) Die();
+    - Die() for AActor: Destroy();
+    - UpdateTarget(): Target = Cast<AActor>(UGameplayStatics::GetPlayerPawn(GetWorld(),0));
+13. Meta=(DefaultValue="600.0f") is NOT real C++ init — use: float MoveSpeed = 600.f;
+14. UIHandler MUST have: float MaxHealth = 100.f; float HealthPercentage = 1.f;
+15. ALL floats initialized with = not Meta=(DefaultValue)
+16. NEVER use fake Unreal functions:
+    - GetComp() does NOT exist → use FindComponentByClass<UMyComp>() or CreateDefaultSubobject<>()
+    - SetProjectileMovement() does NOT exist → use UProjectileMovementComponent directly
+    - NewObject<>() in constructor is WRONG → use CreateDefaultSubobject<>() in constructor
+    - GetComp("name") is WRONG → Cast or FindComponentByClass
+17. UFUNCTION() macro belongs in HEADER only — NEVER put UFUNCTION in CPP file
+18. Controller classes: AIController → inherit AAIController, NOT ACharacter or APlayerController
+19. ACharacter subclass constructor: NEVER call NewObject<> — use CreateDefaultSubobject<>
+20. Tick() must NOT call AddMovementInput — that belongs in MoveForward/MoveRight only
+21. ProjectileClass MUST be declared in header: UPROPERTY(EditAnywhere) TSubclassOf<AActor> ProjectileClass;
+22. MoveForward/MoveRight/OnFire/Fire MUST be declared in header as UFUNCTION()
+23. UUserWidget subclass MUST include: #include "Blueprint/UserWidget.h"
+12. AProjectileSpawner: ProjectileClass must be EditAnywhere not VisibleAnywhere
 
-Code to fix:
+Return ONLY the fixed ```cpp blocks (header first, then cpp).
+{_ref_note}
+
 {code_response}"""
                             r_rev = safe_chat(model=model_name, messages=[
                                 {"role": "system", "content": UNREAL_SYSTEM_PROMPT},
@@ -2466,6 +2586,12 @@ while True:
         user = input().strip()
         _state.last_user_input = user
 
+        # 👈 ضيف الـ 4 سطور دول هنا
+        if user.startswith("/model "):
+            DEFAULT_MODEL = user.replace("/model", "").strip()
+            print(f"🔄 تم تحويل الـ Agent بنجاح إلى الموديل: {DEFAULT_MODEL}")
+            continue
+        
         # ✅ Stop signal from GUI
         if user == "⛔ STOP_AGENT" or user == "STOP_AGENT":
             print("⛔ Stopped.", flush=True)

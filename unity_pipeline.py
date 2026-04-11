@@ -105,13 +105,33 @@ def _fix_field_array_init(code):
 
 def _fix_void_with_yield(code):
     """Fix 7: yield return inside void method body → change to IEnumerator"""
-    def _check(m):
-        if m.group(2) == "void":
-            body_start = code.find(m.group(0))
-            if 'yield' in code[body_start:body_start+600]:
-                return f"{m.group(1)}IEnumerator {m.group(3)}"
-        return m.group(0)
-    return re.sub(r'^(\s*)(void|IEnumerator)\s+(\w+\s*\([^)]*\)\s*\{)', _check, code, flags=re.MULTILINE)
+    pattern = re.compile(r'^(\s*)void(\s+\w+\s*\([^)]*\)\s*\{)', re.MULTILINE)
+    matches = list(pattern.finditer(code))
+
+    for match in reversed(matches):
+        brace_index = code.find('{', match.start())
+        if brace_index == -1:
+            continue
+
+        depth = 0
+        end_index = -1
+        for i in range(brace_index, len(code)):
+            if code[i] == '{':
+                depth += 1
+            elif code[i] == '}':
+                depth -= 1
+                if depth == 0:
+                    end_index = i
+                    break
+
+        if end_index == -1:
+            continue
+
+        method_body = code[brace_index:end_index + 1]
+        if 'yield' in method_body:
+            code = code[:match.start()] + match.group(1) + "IEnumerator" + match.group(2) + code[match.end():]
+
+    return code
 
 def _fix_duplicate_enums(code):
     """Fix 8: duplicate public enum → keep first"""

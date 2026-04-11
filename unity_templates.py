@@ -18,13 +18,17 @@ public class {name} : MonoBehaviour
         while (true)
         {{
             yield return new WaitForSeconds(spawnInterval);
-            if (currentCount < maxSpawned && prefabToSpawn != null && spawnPoints.Length > 0)
-            {{
-                Transform sp = spawnPoints[Random.Range(0, spawnPoints.Length)];
-                Instantiate(prefabToSpawn, sp.position, Quaternion.identity);
-                currentCount++;
-            }}
+            SpawnEnemy();
         }}
+    }}
+    public GameObject SpawnEnemy()
+    {{
+        if (currentCount >= maxSpawned || prefabToSpawn == null || spawnPoints == null || spawnPoints.Length == 0)
+            return null;
+        Transform sp = spawnPoints[Random.Range(0, spawnPoints.Length)];
+        GameObject enemy = Instantiate(prefabToSpawn, sp.position, Quaternion.identity);
+        currentCount++;
+        return enemy;
     }}
     public void OnObjectDestroyed() {{ currentCount = Mathf.Max(0, currentCount - 1); }}
 }}""",
@@ -136,12 +140,28 @@ public class {name} : MonoBehaviour
     public Slider healthSlider;
     public Text healthText;
     private int currentHealth;
-    void Start() {{ currentHealth = maxHealth; UpdateUI(); }}
-    public void TakeDamage(int d) {{ currentHealth = Mathf.Max(0, currentHealth - d); UpdateUI(); if (currentHealth <= 0) Die(); }}
-    public void Heal(int h) {{ currentHealth = Mathf.Min(maxHealth, currentHealth + h); UpdateUI(); }}
+    void Start() {{ SetMaxHealth(maxHealth); SetHealth(maxHealth); }}
+    public void SetMaxHealth(int value)
+    {{
+        maxHealth = Mathf.Max(1, value);
+        if (healthSlider != null)
+        {{
+            healthSlider.minValue = 0f;
+            healthSlider.maxValue = maxHealth;
+        }}
+        currentHealth = Mathf.Clamp(currentHealth, 0, maxHealth);
+        UpdateUI();
+    }}
+    public void SetHealth(int value)
+    {{
+        currentHealth = Mathf.Clamp(value, 0, maxHealth);
+        UpdateUI();
+    }}
+    public void TakeDamage(int d) {{ SetHealth(currentHealth - d); if (currentHealth <= 0) Die(); }}
+    public void Heal(int h) {{ SetHealth(currentHealth + h); }}
     void UpdateUI()
     {{
-        if (healthSlider != null) healthSlider.value = (float)currentHealth / maxHealth;
+        if (healthSlider != null) healthSlider.value = currentHealth;
         if (healthText != null) healthText.text = currentHealth + "/" + maxHealth;
     }}
     void Die()
@@ -197,17 +217,13 @@ public class {name} : MonoBehaviour
     void Start()
     {{
         rb = GetComponent<Rigidbody2D>();
-        rb.velocity = transform.up * speed;
+        if (rb != null) rb.velocity = transform.up * speed;
         Destroy(gameObject, lifetime);
     }}
     void OnTriggerEnter2D(Collider2D other)
     {{
         if (other.CompareTag("Player")) return;
-        EnemyScript e = other.GetComponent<EnemyScript>();
-        if (e != null) {{ e.TakeDamage(damage); Destroy(gameObject); return; }}
-        // Fallback: any component with TakeDamage
-        var dmg = other.GetComponent<HealthBar>();
-        if (dmg != null) {{ dmg.TakeDamage(damage); Destroy(gameObject); return; }}
+        other.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
         Destroy(gameObject);
     }}
 }}""",
@@ -379,7 +395,7 @@ public class {name} : MonoBehaviour
     {{
         rb = GetComponent<Rigidbody2D>();
         currentHealth = maxHealth;
-        rb.velocity = Vector2.down * moveSpeed;
+        if (rb != null) rb.velocity = Vector2.down * moveSpeed;
     }}
 
     void Update()
@@ -408,8 +424,7 @@ public class {name} : MonoBehaviour
     {{
         if (other.CompareTag("Player"))
         {{
-            HealthBar hb = other.GetComponent<HealthBar>();
-            if (hb != null) hb.TakeDamage(damage);
+            other.SendMessage("TakeDamage", damage, SendMessageOptions.DontRequireReceiver);
         }}
     }}
 }}""",
@@ -429,16 +444,23 @@ public class {name} : MonoBehaviour
     // Camera bounds for clamping
     private float camHalfW;
     private float camHalfH;
+    private bool hasCameraBounds;
 
     void Start()
     {{
         rb = GetComponent<Rigidbody2D>();
         healthBar = GetComponent<HealthBar>();
         currentHealth = maxHealth;
+        if (healthBar != null)
+        {{
+            healthBar.SetMaxHealth(maxHealth);
+            healthBar.SetHealth(currentHealth);
+        }}
         if (Camera.main != null)
         {{
             camHalfH = Camera.main.orthographicSize;
             camHalfW = camHalfH * Camera.main.aspect;
+            hasCameraBounds = true;
         }}
     }}
 
@@ -447,23 +469,32 @@ public class {name} : MonoBehaviour
         // Full 2D movement — works for shooters, top-down, platformers
         float h = Input.GetAxis("Horizontal");
         float v = Input.GetAxis("Vertical");
-        rb.velocity = new Vector2(h * moveSpeed, v * moveSpeed);
+        if (rb != null) rb.velocity = new Vector2(h * moveSpeed, v * moveSpeed);
 
         // Clamp inside camera bounds
-        Vector3 pos = transform.position;
-        pos.x = Mathf.Clamp(pos.x, -camHalfW + 0.5f, camHalfW - 0.5f);
-        pos.y = Mathf.Clamp(pos.y, -camHalfH + 0.5f, camHalfH - 0.5f);
-        transform.position = pos;
+        if (hasCameraBounds)
+        {{
+            Vector3 pos = transform.position;
+            pos.x = Mathf.Clamp(pos.x, -camHalfW + 0.5f, camHalfW - 0.5f);
+            pos.y = Mathf.Clamp(pos.y, -camHalfH + 0.5f, camHalfH - 0.5f);
+            transform.position = pos;
+        }}
 
         // Shoot
-        if (Input.GetButtonDown("Fire1") && bulletPrefab != null && firePoint != null)
-            Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
+        if (Input.GetButtonDown("Fire1"))
+            ShootProjectile();
+    }}
+
+    public void ShootProjectile()
+    {{
+        if (bulletPrefab == null || firePoint == null) return;
+        Instantiate(bulletPrefab, firePoint.position, firePoint.rotation);
     }}
 
     public void TakeDamage(int dmg)
     {{
-        currentHealth -= dmg;
-        if (healthBar != null) healthBar.TakeDamage(dmg);
+        currentHealth = Mathf.Max(0, currentHealth - dmg);
+        if (healthBar != null) healthBar.SetHealth(currentHealth);
         if (currentHealth <= 0) Die();
     }}
 
@@ -5078,7 +5109,7 @@ public class {name} : MonoBehaviour
 TEMPLATED_ROLES = {
     # Original
     "spawner","manager","ui","health","background","collectible","projectile",
-    "gem","board","powerup","enemy","player","vehicle","opponent","generic",
+    "gem","board","powerup","enemy","player","vehicle","opponent","generic","game_manager",
     # Card Games
     "card","deck","hand",
     # Horror
@@ -5785,14 +5816,14 @@ public class {name} : MonoBehaviour
     void Awake()
     {{
         if (Instance == null) {{ Instance = this; DontDestroyOnLoad(gameObject); }}
-        else Destroy(gameObject);
+        else {{ Destroy(gameObject); return; }}
+        Time.timeScale = 1f;
     }}
 
     public void AddScore(int amount)
     {{
         score += amount;
-        UIManager ui = FindObjectOfType<UIManager>();
-        if (ui != null) ui.UpdateScore(score);
+        Debug.Log("Score: " + score);
     }}
 
     public void OnEnemyKilled() {{ AddScore(scorePerKill); }}
@@ -5800,8 +5831,7 @@ public class {name} : MonoBehaviour
     public void LoseLife()
     {{
         lives = Mathf.Max(0, lives - 1);
-        UIManager ui = FindObjectOfType<UIManager>();
-        if (ui != null) ui.UpdateLives(lives);
+        Debug.Log("Lives: " + lives);
         if (lives <= 0) GameOver();
     }}
 
@@ -5810,15 +5840,13 @@ public class {name} : MonoBehaviour
         if (isGameOver) return;
         isGameOver = true;
         Time.timeScale = 0f;
-        UIManager ui = FindObjectOfType<UIManager>();
-        if (ui != null) ui.ShowGameOver(score);
+        Debug.Log("Game Over! Score: " + score);
     }}
 
     public void Win()
     {{
         Time.timeScale = 0f;
-        UIManager ui = FindObjectOfType<UIManager>();
-        if (ui != null) ui.ShowWin(score);
+        Debug.Log("You Win! Score: " + score);
     }}
 
     public void RestartGame()
@@ -5832,6 +5860,7 @@ public class {name} : MonoBehaviour
 
     public void TogglePause()
     {{
+        if (isGameOver) return;
         isPaused = !isPaused;
         Time.timeScale = isPaused ? 0f : 1f;
     }}
