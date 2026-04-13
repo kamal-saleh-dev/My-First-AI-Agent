@@ -44,7 +44,7 @@ def check_ollama_models() -> dict:
         names  = [m.get("name", "?") for m in models[:3]]
         return {"name": "ollama models", "ok": bool(models),
                 "version": ", ".join(names) or "no models found",
-                "required": True,
+                "required": False,
                 "hint": "Run: ollama pull qwen2.5-coder:7b"}
     except Exception as e:
         return {"name": "ollama models", "ok": False,
@@ -123,7 +123,7 @@ def run_all_checks() -> list:
 
         # ── Python packages ──
         check_python_package("ollama",     required=True,  hint="pip install ollama"),
-        check_python_package("customtkinter", "customtkinter", required=True, hint="pip install customtkinter"),
+        check_python_package("customtkinter", "customtkinter", required=False, hint="pip install customtkinter"),
         check_python_package("pypdf",      required=False, hint="pip install pypdf"),
         check_python_package("python-docx","docx",         required=False, hint="pip install python-docx"),
         check_python_package("openpyxl",   required=False, hint="pip install openpyxl"),

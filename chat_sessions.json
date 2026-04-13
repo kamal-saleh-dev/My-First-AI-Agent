@@ -1,0 +1,47 @@
+[
+  {
+    "id": "1776083402",
+    "title": "Make a simple To-Do CLI app",
+    "timestamp": "1776083402",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Make a simple To-Do CLI app in Python"
+      },
+      {
+        "role": "assistant",
+        "content": "🌐 تم إنشاء مشروع Todo_Cli!\n\n   ✅ main.py\n   ✅ todo_item.py\n   ✅ cli.py\n   ✅ storage.py\n   ✅ config.py\n   ❌ test فشل\n\n[ 💾 الملفات في: Generated_Scripts/Todo_Cli ]"
+      }
+    ]
+  },
+  {
+    "id": "1776083648",
+    "title": "python agent.py",
+    "timestamp": "1776083648",
+    "messages": [
+      {
+        "role": "user",
+        "content": "python agent.py"
+      },
+      {
+        "role": "assistant",
+        "content": "```python\nimport socket\n\ndef start_server(host='127.0.0.1', port=65432):\n    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:\n        s.bind((host, port))\n        s.listen()\n        print(f\"Server listening on {host}:{port}\")\n        conn, addr = s.accept()\n        with conn:\n            print('Connected by', addr)\n            while True:\n                data = conn.recv(1024)\n                if not data:\n                    break\n                conn.sendall(data)\n\nif __name__ == \"__main__\":\n    start_server()\n```"
+      }
+    ]
+  },
+  {
+    "id": "1776083753",
+    "title": "Make a simple To-Do CLI app",
+    "timestamp": "1776083753",
+    "messages": [
+      {
+        "role": "user",
+        "content": "Make a simple To-Do CLI app in Python"
+      },
+      {
+        "role": "assistant",
+        "content": "🌐 تم إنشاء مشروع Todo_Cli!\n\n   ✅ main.py\n   ✅ todo_item.py\n   ✅ storage.py\n   ✅ config.py\n   ✅ test.py\n   ❌ cli فشل\n\n[ 💾 الملفات في: Generated_Scripts/Todo_Cli ]"
+      }
+    ]
+  }
+]

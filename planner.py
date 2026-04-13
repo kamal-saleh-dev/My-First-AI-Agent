@@ -1,23 +1,57 @@
 # planner.py — Script planning, role normalization, fallback logic
 import re, hashlib, json, time
+import config as _cfg
+from errors import PlanningError, CacheError
 
-# ─── Planning cache ────────────────────────────────────────────
+# ─── Planning cache (persistent JSON) ─────────────────────────
+import os as _os
+
+_CACHE_FILE = _cfg.PLAN_CACHE_FILE
 _planning_cache: dict = {}
+
 
 def _cache_key(task: str) -> str:
     return hashlib.md5(task.lower().strip().encode()).hexdigest()[:12]
+
+
+def _load_cache():
+    """Load cache from disk on first use."""
+    global _planning_cache
+    try:
+        if _os.path.exists(_CACHE_FILE):
+            with open(_CACHE_FILE, "r", encoding="utf-8") as f:
+                _planning_cache = json.load(f)
+    except Exception:
+        _planning_cache = {}
+
+
+def _save_cache():
+    """Persist cache to disk (atomic write)."""
+    try:
+        tmp = _CACHE_FILE + ".tmp"
+        with open(tmp, "w", encoding="utf-8") as f:
+            json.dump(_planning_cache, f, ensure_ascii=False)
+        _os.replace(tmp, _CACHE_FILE)
+    except Exception:
+        pass  # Never block planning on a cache write failure
+
+
+# Load on import
+_load_cache()
+
 
 def get_cached_plan(task: str):
     """Return cached script pairs or None."""
     return _planning_cache.get(_cache_key(task))
 
+
 def set_cached_plan(task: str, pairs: list):
-    """Cache planning result — max 300 entries (evict oldest)."""
-    if len(_planning_cache) >= 300:
-        # Remove oldest 50 entries
-        for key in list(_planning_cache.keys())[:50]:
+    """Cache planning result — max 300 entries (evict oldest), then persist."""
+    if len(_planning_cache) >= _cfg.PLAN_CACHE_MAX:
+        for key in list(_planning_cache.keys())[:_cfg.PLAN_CACHE_EVICT]:
             del _planning_cache[key]
     _planning_cache[_cache_key(task)] = pairs
+    _save_cache()
 
 
 # ─── Role normalization ────────────────────────────────────────
@@ -263,7 +297,6 @@ Racing: CarController:vehicle, OpponentAI:opponent, CheckpointScript:collectible
                 pairs = get_fallback_plan(task)
             elif engine == "unreal":
                 try:
-                    from planner import get_unreal_fallback
                     pairs = get_unreal_fallback(task)
                 except Exception:
                     pairs = [("PlayerCharacter","generic"),("EnemyAI","generic"),("GameMode","generic")]

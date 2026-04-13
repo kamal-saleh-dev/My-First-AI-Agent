@@ -1,32 +1,78 @@
 # file_handler.py — File attachment handling (PDF, Word, Excel, PPT, images, video, code)
 import os, sys, re, io, time, json, subprocess, threading
 
+def get_token_limit(model: str = None) -> int:
+    """
+    Dynamic context limit based on active model.
+    Returns character limit (not tokens — 1 token ≈ 4 chars).
+
+    Cloud models (Claude, GPT, Qwen3 cloud): 150k chars (~37k tokens)
+    Mid-size local (14b+):                    32k  chars (~8k tokens)
+    Small local (7b):                          8k  chars (~2k tokens)
+    """
+    m = (model or _model() or "").lower()
+    # Cloud / large context models
+    if any(x in m for x in ["claude", "gpt-4", "or_free", "qwen3", "gemini", "mistral-large"]):
+        return 150_000
+    # Mid-size local models (≥14b)
+    if any(x in m for x in ["14b", "32b", "70b", "72b", "codestral", "deepseek-v2"]):
+        return 32_000
+    # Default: small local model (7b)
+    return 8_000
+
 def _import_cv2():
     import cv2 as _cv2; return _cv2
 
 def _import_pytesseract():
-    import pytesseract as _t
-    _t.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"
-    return _t
+    """Lazy import pytesseract — auto-detect tesseract binary across platforms."""
+    try:
+        import pytesseract as _t
+        import sys as _sys, os as _os, shutil as _sh
+        # Only set on Windows if tesseract is NOT already on PATH
+        if _sys.platform == "win32" and not _sh.which("tesseract"):
+            candidates = [
+                r"C:\Program Files\Tesseract-OCR\tesseract.exe",
+                r"C:\Program Files (x86)\Tesseract-OCR\tesseract.exe",
+            ]
+            for path in candidates:
+                if _os.path.exists(path):
+                    _t.pytesseract.tesseract_cmd = path
+                    break
+        return _t
+    except ImportError:
+        safe_print("⚠️ pytesseract not installed — OCR unavailable. Run: pip install pytesseract")
+        return None
 
 def _import_pil():
     from PIL import ImageEnhance, ImageFilter; return ImageEnhance, ImageFilter
 
+import llm_client as _llm_client  # for live DEFAULT_MODEL reads
+
 # Globals injected by agent.py via inject_globals()
-safe_chat = get_response = DEFAULT_MODEL = log = _state = project_context = safe_print = None
+safe_chat = get_response = log = _state = project_context = safe_print = None
 save_project_context = None  # injected from agent.py via inject_globals()
 
+def _model() -> str:
+    """Always returns the current DEFAULT_MODEL (reflects /model switches)."""
+    return _llm_client.DEFAULT_MODEL
+
+# ── Required globals injected by agent.py at startup ─────────────────────────
+_REQUIRED_GLOBALS = {"safe_chat", "get_response", "log", "_state"}
+
 def inject_globals(**kwargs):
-    """Called once by agent.py after imports."""
+    """
+    Called once by agent.py after imports.
+    Injects shared dependencies: safe_chat, get_response, DEFAULT_MODEL, log, _state
+    """
     g = globals()
     for k, v in kwargs.items():
         g[k] = v
 
 def _require_injected():
-    """Guard — validates ALL required globals are injected."""
-    required = {"safe_chat": safe_chat, "get_response": get_response,
-                "DEFAULT_MODEL": DEFAULT_MODEL, "log": log}
-    missing = [k for k, v in required.items() if v is None]
+    """Guard — validates ALL required globals are injected (call inject_globals() first)."""
+    missing = [k for k, v in {
+        "safe_chat": safe_chat, "get_response": get_response, "log": log
+    }.items() if v is None]
     if missing:
         raise RuntimeError(
             f"file_handler globals not injected: {missing} — call inject_globals() first"
@@ -73,8 +119,11 @@ def detect_file_type(file_path):
 
 # ================= SMART HANDLERS =================
 
-def detect_intent(user_text):
-    text_lower = user_text.lower()
+def detect_intent(text):
+    text_lower = text.lower()
+
+    if any(w in text_lower for w in ["summarize", "summary"]): return "summarize"
+    if any(w in text_lower for w in ["bug", "issue", "fix", "error"]): return "detect_issues"
     
     # 🔥 1. كبرنا شبكة الدردشة عشان تشمل الهزار والأسئلة العامة
     default_words = [
@@ -104,8 +153,8 @@ def detect_intent(user_text):
         
     # 🔥 2. قفلنا ثغرة التفكير الغبي للموديل
     try:
-        prompt = f"Categorize into ONE: 'compare', 'summarize', 'detect_issues', 'describe', 'default'. RULE: For coding, general questions, or jokes, YOU MUST pick 'default'. User Request: '{user_text}'. Reply with one word."
-        r = safe_chat(model=DEFAULT_MODEL, messages=[{"role": "user", "content": prompt}])
+        prompt = f"Categorize into ONE: 'compare', 'summarize', 'detect_issues', 'describe', 'default'. RULE: For coding, general questions, or jokes, YOU MUST pick 'default'. User Request: '{text}'. Reply with one word."
+        r = safe_chat(model=_model(), messages=[{"role": "user", "content": prompt}])
         ans = get_response(r).strip().lower()
         
         # لو الموديل جاب سيرة default في كلامه، نعتبرها دردشة فوراً ومندورش على الباقي
@@ -116,7 +165,7 @@ def detect_intent(user_text):
             if valid in ans:
                 return valid
     except Exception as e:
-        safe_print(f"⚠ save_session error: {e}")
+        safe_print(f"⚠ intent detection error: {e}")
         
     return "default"
 
@@ -145,7 +194,7 @@ def select_relevant_files(user_text, context_list):
     Reply ONLY with the digits separated by commas (e.g., 1, 4). No text."""
     
     try:
-        r = safe_chat(model=DEFAULT_MODEL, messages=[{"role": "user", "content": prompt}])
+        r = safe_chat(model=_model(), messages=[{"role": "user", "content": prompt}])
         ans = get_response(r).strip()
         
         selected_ids = [int(s) - 1 for s in ans.replace(',', ' ').split() if s.isdigit()]
@@ -215,7 +264,7 @@ def handle_code_file(file_path):
         print("🧠 Analyzing code with AI...")
 
         r = safe_chat(
-            model=DEFAULT_MODEL,
+            model=_model(),
             messages=[{
                 "role":"user",
                 "content":f"Explain this code briefly and detect problems:\n\n{content}"
@@ -340,11 +389,25 @@ def handle_pdf_file(file_path):
 
             from pdf2image import convert_from_path
 
+            # Detect poppler path cross-platform (Windows only needs explicit path)
+            import shutil as _sh, sys as _sys
+            poppler_path = None
+            if _sys.platform == "win32" and not _sh.which("pdftoppm"):
+                _win_candidates = [
+                    r"C:\poppler\Library\bin",
+                    r"C:\poppler\bin",
+                    r"C:\Program Files\poppler\Library\bin",
+                ]
+                import os as _os
+                for _p in _win_candidates:
+                    if _os.path.isdir(_p):
+                        poppler_path = _p
+                        break
             images = convert_from_path(
                 file_path,
                 first_page=1,
                 last_page=2,
-                poppler_path=r"C:\poppler\Library\bin"
+                poppler_path=poppler_path   # None = use PATH (Linux/Mac/Win with PATH set)
             )
 
             ImageEnhance, ImageFilter = _import_pil()
@@ -375,7 +438,7 @@ def handle_pdf_file(file_path):
         print("🧠 Sending PDF content to AI...")
 
         r = safe_chat(
-            model=DEFAULT_MODEL,
+            model=_model(),
             messages=[{
                 "role":"user",
                 "content": f"""
@@ -395,15 +458,15 @@ def handle_pdf_file(file_path):
                 If something missing leave it empty.
 
                 Document:
-                {text[:4000]}"""
+                {text[:get_token_limit()]}"""
             }]
         )
 
+        raw = get_response(r)
         print("\n🤖 PDF Summary:")
-        print(get_response(r))
+        print(raw)
 
         try:
-            raw = get_response(r)
 
             # استخراج JSON من أي كلام حوالينه
             match = re.search(r"\{.*\}", raw, re.DOTALL)
@@ -444,12 +507,12 @@ def handle_word_file(file_path):
         for p in doc.paragraphs:
             text += p.text + "\n"
 
-        text = text[:4000]
+        text = text[:get_token_limit()]
 
         print("🧠 Sending Word content to AI...")
 
         r = safe_chat(
-            model=DEFAULT_MODEL,
+            model=_model(),
             messages=[{
                 "role":"user",
                 "content":f"Summarize this document:\n\n{text}"
@@ -477,12 +540,12 @@ def handle_excel_file(file_path):
         for row in sheet.iter_rows(values_only=True):
             rows.append(str(row))
 
-        text = "\n".join(rows)[:4000]
+        text = "\n".join(rows)[:get_token_limit()]
 
         print("🧠 Sending Excel content to AI...")
 
         r = safe_chat(
-            model=DEFAULT_MODEL,
+            model=_model(),
             messages=[{
                 "role":"user",
                 "content":f"Explain this excel data:\n\n{text}"
@@ -511,12 +574,12 @@ def handle_ppt_file(file_path):
                 if hasattr(shape, "text"):
                     text += shape.text + "\n"
 
-        text = text[:4000]
+        text = text[:get_token_limit()]
 
         print("🧠 Sending PowerPoint content to AI...")
 
         r = safe_chat(
-            model=DEFAULT_MODEL,
+            model=_model(),
             messages=[{
                 "role":"user",
                 "content":f"Summarize this presentation:\n\n{text}"
