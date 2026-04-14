@@ -13,7 +13,6 @@ All logic lives in dedicated modules:
 """
 
 import sys
-import os
 
 # Encoding fix — must run before any print
 if sys.platform == "win32":
@@ -29,7 +28,7 @@ import llm_client
 
 from model_router    import detect_mode
 from file_handler    import detect_intent, inject_globals as _fh_inject
-from session_manager import (save_session, load_all_sessions,
+from session_manager import (load_all_sessions,
                               save_project_context, load_project_context)
 from shutdown_manager import run_in_background, register_shutdown_hooks
 from tool_registry   import get_tool, BACKGROUND_TOOLS

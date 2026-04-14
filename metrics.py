@@ -43,6 +43,9 @@ class AgentMetrics:
                             "compile_runs","compile_success","compile_failed",
                             "fix_retries_total","llm_calls","llm_errors","planning_cache_hits"):
                     self._data[key] += saved.get(key, 0)
+                # Restore defaultdicts — plain dict from JSON loses the default_factory
+                self._data["domains_used"]   = defaultdict(int, saved.get("top_domains", {}))
+                self._data["intents_routed"] = defaultdict(int, saved.get("intent_breakdown", {}))
         except Exception:
             pass
 
@@ -75,8 +78,9 @@ class AgentMetrics:
         self._data["fix_retries_total"] += fix_retries
 
     def record_llm_call(self, elapsed: float, error: bool = False):
-        self._data["llm_calls"]       += 1
-        self._data["llm_errors" if error else "llm_calls"]
+        self._data["llm_calls"] += 1
+        if error:
+            self._data["llm_errors"] += 1
         self._data["latency_llm"].append(round(elapsed, 2))
         if len(self._data["latency_llm"]) > 200:
             self._data["latency_llm"] = self._data["latency_llm"][-200:]

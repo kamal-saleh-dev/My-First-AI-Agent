@@ -8,6 +8,7 @@ import warnings
 from logger import log, safe_print
 from llm_client import safe_chat, get_response
 import llm_client
+import config as _cfg
 
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
@@ -33,7 +34,7 @@ def run_python(file_path):
     script = os.path.basename(file_path)
 
     try:
-        subprocess.run([sys.executable, script], timeout=15, cwd=folder)
+        subprocess.run([sys.executable, script], timeout=_cfg.PYTHON_RUN_TIMEOUT, cwd=folder)
     except subprocess.TimeoutExpired:
         print("⚠ Program timed out (loop or waiting for input).")
     except Exception as e:
@@ -41,7 +42,7 @@ def run_python(file_path):
 
 def delete_tool(task):
     import re
-    name = re.sub(r'^(delete|remove)\s+', '', task, flags=re.IGNORECASE).strip()
+    name = re.sub(r'^\ *(delete|remove)\ +', '', task, flags=re.IGNORECASE).strip()
     target = os.path.abspath(name)
 
     if os.path.exists(target):

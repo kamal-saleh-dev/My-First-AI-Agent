@@ -4,13 +4,14 @@
 import signal
 import atexit
 import threading as _threading
+from typing import Optional
 
 from logger         import log
 from process_registry import terminate_all as _terminate_all
 
 # ── Background executor ───────────────────────────────────────────────────────
 
-_current_task: _threading.Thread | None = None
+_current_task: Optional[_threading.Thread] = None
 _task_lock = _threading.Lock()
 
 

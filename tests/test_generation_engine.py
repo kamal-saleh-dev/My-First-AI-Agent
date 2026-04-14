@@ -71,11 +71,12 @@ class TestExtractAndSaveScripts:
 
     def test_saves_csharp_block(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)
-        # استخدمنا حيلة برمجية عشان السيستم ميقطعش الكود
         ticks = "`" * 3
         code = f"{ticks}csharp\nusing UnityEngine;\npublic class Player : MonoBehaviour {{ void Start() {{}} }}\n{ticks}"
         result = self.save(code, "TestGame", forced_name="Player", forced_ext=".cs")
         assert result is True
+        saved = list((tmp_path / "Generated_Scripts" / "TestGame").glob("*.cs"))
+        assert len(saved) == 1
 
     def test_saves_python_block(self, tmp_path, monkeypatch):
         monkeypatch.chdir(tmp_path)

@@ -55,8 +55,9 @@ def launch_website(project_folder: str, engine: str):
 
         elif engine == "angular":
             print("⚙️ Starting Angular dev server (ng serve)...", flush=True)
-            proc = subprocess.Popen(
-                ["npx", "@angular/cli", "serve", "--open"],
+            import sys
+            use_shell = (sys.platform == "win32")
+            proc = subprocess.Popen(["ng", "serve", "--open"], shell=use_shell,
                 cwd=folder, stdout=subprocess.PIPE, stderr=subprocess.PIPE
             )
             try:

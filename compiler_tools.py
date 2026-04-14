@@ -26,16 +26,21 @@ def detect_programming_domain(code):
 
     if "uclass" in code_lower or "generated_body" in code_lower:
         return "unreal"
-
     if "using unityengine" in code_lower or "monobehaviour" in code_lower:
         return "unity"
+        
+    # +++ ضيف السطرين دول للـ Frontend +++
+    if "export class" in code_lower or "@component" in code_lower or "from '@angular" in code_lower:
+        return "angular"
+    if "import react" in code_lower or "export default" in code_lower:
+        return "react"
 
-    if "import " in code_lower or "def " in code_lower:
+    # +++ عدل شرط البايثون عشان يتجاهل الـ JS/TS +++
+    if ("import " in code_lower or "def " in code_lower) and "export " not in code_lower and "from '" not in code_lower:
         return "python"
 
     if "#include" in code_lower:
         return "cpp"
-
     if "using system" in code_lower:
         return "csharp"
 

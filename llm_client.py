@@ -34,8 +34,8 @@ MODEL_ALIASES = {
     "or_qwen":     "qwen/qwen3.6-plus:free",
     "or_glm45air": "z-ai/glm-4.5-air:free",
     "or_minimax":  "minimax/minimax-m2.5:free",
-    "claude":      "anthropic/claude-sonnet-4-5",   # corrected from claude-sonnet-4-6
-    "opus":        "anthropic/claude-opus-4-5",      # corrected from claude-opus-4-6
+    "claude":      "anthropic/claude-sonnet-4-6",
+    "opus":        "anthropic/claude-opus-4-6",
     "gpt4":        "openai/gpt-4o",
     "codex":       "openai/gpt-4o",
     "kimi":        "moonshotai/kimi-k2.5",

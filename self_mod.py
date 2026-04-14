@@ -4,6 +4,7 @@
 import os
 import re
 import ast
+import time
 import shutil
 
 from logger     import log, safe_print
@@ -87,7 +88,7 @@ def self_mod_tool(task: str):
 
     # ── Backup + write ────────────────────────────────────────────────────────
     if os.path.exists(target_file):
-        backup = target_file + ".bak"
+        backup = f"{target_file}.{int(time.time())}.bak"
         shutil.copy2(target_file, backup)
         log.info(f"Backup created: {backup}")
 

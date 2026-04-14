@@ -188,6 +188,12 @@ class ModernAgentGUI(QMainWindow):
             base_dir = os.path.dirname(os.path.abspath(__file__))
             
         agent_path = os.path.join(base_dir, "agent.py")
+
+        if not os.path.exists(agent_path):
+            self.chat_display.append(
+                f"<span style='color:red;'>❌ agent.py not found in: {base_dir}</span>"
+            )
+            return
         
         startupinfo = None
         if sys.platform == "win32":

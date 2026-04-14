@@ -4,16 +4,16 @@
 import os
 import json
 import time as _time
+from typing import Optional
 
 from state_manager import _state, _state_lock, chat_history, project_context
 from logger        import safe_print
 import config as _cfg
 
-import config as _cfg2
-BASE_DIR      = _cfg2.BASE_DIR
-MEMORY_FILE   = _cfg2.MEMORY_FILE
-CONTEXT_FILE  = _cfg2.CONTEXT_FILE
-HISTORY_FILE  = _cfg2.HISTORY_FILE
+BASE_DIR      = _cfg.BASE_DIR
+MEMORY_FILE   = _cfg.MEMORY_FILE
+CONTEXT_FILE  = _cfg.CONTEXT_FILE
+HISTORY_FILE  = _cfg.HISTORY_FILE
 
 # ── Project memory (last run path) ────────────────────────────────────────────
 
@@ -21,7 +21,7 @@ def save_last_project(path: str):
     with open(MEMORY_FILE, "w", encoding="utf-8") as f:
         f.write(path)
 
-def load_last_project() -> str | None:
+def load_last_project() -> Optional[str]:
     if not os.path.exists(MEMORY_FILE):
         return None
     with open(MEMORY_FILE, "r", encoding="utf-8") as f:
