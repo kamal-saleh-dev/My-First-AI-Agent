@@ -242,18 +242,35 @@ class RecoveryContext:
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        if exc_type is None:
+        # Check if generation was stopped by a shutdown signal (Ctrl+C).
+        # A clean break() has exc_type=None but stop_event is set — treat it
+        # the same as a crash so the checkpoint is SAVED, not deleted.
+        _stopped_by_signal = False
+        try:
+            from shutdown_manager import stop_event as _se
+            _stopped_by_signal = _se.is_set()
+        except ImportError:
+            pass
+
+        all_done = (
+            exc_type is None
+            and not _stopped_by_signal
+            and not self._cp.remaining_pairs   # every script completed
+        )
+
+        if all_done:
             self._cp.mark_complete()
             self._manager.save(self._cp)
-            self._manager.delete(self._project_name)   # clean up on success
+            self._manager.delete(self._project_name)   # clean up on true success
         else:
-            # Save progress so user can resume
+            # Interrupted (crash or Ctrl+C) — save so user can /resume
             self._manager.save(self._cp)
-            safe_print(
-                f"\n⚠️  Generation interrupted for '{self._project_name}'.\n"
-                f"   {len(self._cp.completed)} scripts saved. "
-                f"Run '/resume {self._project_name}' to continue.\n"
-            )
+            if self._cp.completed or _stopped_by_signal:
+                safe_print(
+                    f"\n⚠️  Generation interrupted for '{self._project_name}'.\n"
+                    f"   {len(self._cp.completed)} scripts saved. "
+                    f"Run '/resume {self._project_name}' to continue.\n"
+                )
         return False  # don't suppress the exception
 
     # ── Forwarded checkpoint API ──────────────────────────────────────────────

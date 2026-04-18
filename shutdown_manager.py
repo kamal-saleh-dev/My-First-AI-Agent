@@ -6,13 +6,15 @@ import atexit
 import threading as _threading
 from typing import Optional
 
-from logger         import log
+from logger           import log
 from process_registry import terminate_all as _terminate_all
 
 # ── Background executor ───────────────────────────────────────────────────────
 
 _current_task: Optional[_threading.Thread] = None
-_task_lock = _threading.Lock()
+_task_lock     = _threading.Lock()
+_shutdown_called = False                  # guard: prevents double-shutdown
+stop_event     = _threading.Event()      # exported — generation loop polls this
 
 
 def run_in_background(fn, *args, **kwargs):
@@ -26,6 +28,7 @@ def run_in_background(fn, *args, **kwargs):
             log.error(f"Background task error in {fn.__name__}: {e}")
 
     with _task_lock:
+        stop_event.clear()   # reset for new task
         t = _threading.Thread(target=_wrapper, daemon=True, name=f"agent-{fn.__name__}")
         _current_task = t
         t.start()
@@ -38,11 +41,28 @@ def is_task_running() -> bool:
 # ── Graceful shutdown ─────────────────────────────────────────────────────────
 
 def handle_shutdown(signum=None, frame=None):
-    """Save state, flush logs, terminate child processes."""
+    """Save state, flush logs, terminate child processes. Runs at most once."""
+    global _shutdown_called
+    if _shutdown_called:
+        return          # ← prevents double-shutdown from atexit + SIGINT
+    _shutdown_called = True
+
     try:
         log.info("Shutting down agent gracefully...")
 
-        # Save metrics (import lazily to avoid circular imports)
+        # ── Signal the generation loop to stop after current script ──────────
+        stop_event.set()
+
+        # ── Wait for background thread (max 5s) ──────────────────────────────
+        with _task_lock:
+            task = _current_task
+        if task and task.is_alive():
+            log.info("Waiting for background task to finish (max 5s)...")
+            task.join(timeout=5.0)
+            if task.is_alive():
+                log.warn("Background task did not finish in time — checkpoint saved anyway.")
+
+        # Save metrics
         try:
             from metrics import metrics
             metrics.save()

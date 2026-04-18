@@ -13,6 +13,7 @@ All logic lives in dedicated modules:
 """
 
 import sys
+import traceback
 
 # Encoding fix — must run before any print
 if sys.platform == "win32":
@@ -63,7 +64,7 @@ _fh_inject(
 )
 
 load_project_context()
-log.success("AGENT READY — type your request")
+log.success("I'm READY — type your request")
 
 # Main loop
 while True:
@@ -142,8 +143,10 @@ while True:
         else:
             tool(user)
 
-    except KeyboardInterrupt:
+    except (KeyboardInterrupt, EOFError):
+        # EOFError = stdin closed after Ctrl+C during shutdown — normal, not an error
         print("\nExiting...")
         break
     except Exception as e:
         safe_print(f"❌ Critical Error: {e}")
+        safe_print(traceback.format_exc())
