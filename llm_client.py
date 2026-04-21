@@ -30,13 +30,21 @@ if USE_OPENROUTER and OPENROUTER_API_KEY:
 
 # ── Model aliases (validated against OpenRouter's actual model IDs) ──────────
 MODEL_ALIASES = {
-    "or_free":     "qwen/qwen3.6-plus:free",
-    "or_qwen":     "qwen/qwen3.6-plus:free",
-    "or_glm45air": "z-ai/glm-4.5-air:free",
-    "or_minimax":  "minimax/minimax-m2.5:free",
+    # ── Free models (no credits needed) ─────────────────────────────────────
+    "or_free":     "openrouter/auto",                          # auto-picks best free model
+    "or_deepseek": "deepseek/deepseek-r1-0528:free",          # reasoning — confirmed working
+    "or_deepseek2":"deepseek/deepseek-chat-v3-0324:free",     # fast chat — confirmed working
+    "or_llama":    "meta-llama/llama-4-maverick:free",        # Meta Llama 4 — confirmed working
+    "or_mistral":  "mistralai/mistral-small-3.1-24b-instruct:free",  # Mistral free
+    "or_gemma":    "google/gemma-3-27b-it:free",               # Google free
+    "or_qwen":     "qwen/qwen3-8b:free",                       # Qwen3 8B free
+
+    # ── Paid models (تحتاج credits على OpenRouter) ────────────────────────
+    "gpt54":  "openai/gpt-5.4",
+    "gpt4":   "openai/gpt-4o",
+    "kimi":   "moonshotai/kimi-k2.5",
     "claude":      "anthropic/claude-sonnet-4-6",
     "opus":        "anthropic/claude-opus-4-6",
-    "gpt4":        "openai/gpt-4o",
     "codex":       "openai/gpt-4o",
     "kimi":        "moonshotai/kimi-k2.5",
 }

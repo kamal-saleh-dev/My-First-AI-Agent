@@ -1,0 +1,21 @@
+{
+  "session_start": "2026-04-21T10:51:36.005427",
+  "generations": 0,
+  "generation_success": 0,
+  "generation_failed": 0,
+  "generation_success_rate": "N/A",
+  "compile_runs": 0,
+  "compile_success_rate": "N/A",
+  "fix_retries_total": 0,
+  "avg_fix_retries": 0.0,
+  "llm_calls": 0,
+  "llm_error_rate": "N/A",
+  "planning_cache_hits": 0,
+  "cache_hit_rate": "N/A",
+  "avg_latency_planning": 0.0,
+  "avg_latency_generation": 0.0,
+  "avg_latency_llm": 0.0,
+  "p95_latency_llm": 0.0,
+  "top_domains": {},
+  "intent_breakdown": {}
+}
