@@ -29,15 +29,19 @@ if USE_OPENROUTER and OPENROUTER_API_KEY:
     )
 
 # ── Model aliases (validated against OpenRouter's actual model IDs) ──────────
+# "local" is a special reserved alias — always maps to the configured local model.
+# Resolved lazily so it reflects runtime DEFAULT_MODEL changes.
+_LOCAL_ALIAS = "local"
+
 MODEL_ALIASES = {
     # ── Free models (no credits needed) ─────────────────────────────────────
-    "or_free":     "openrouter/auto",                          # auto-picks best free model
-    "or_deepseek": "deepseek/deepseek-r1-0528:free",          # reasoning — confirmed working
-    "or_deepseek2":"deepseek/deepseek-chat-v3-0324:free",     # fast chat — confirmed working
-    "or_llama":    "meta-llama/llama-4-maverick:free",        # Meta Llama 4 — confirmed working
+    "or_free":     "openrouter/free",                          # auto-picks best available free model
+    "or_deepseek": "deepseek/deepseek-r1:free",               # DeepSeek R1 free
+    "or_deepseek2":"deepseek/deepseek-chat-v3-0324:free",     # DeepSeek V3 free
+    "or_llama":    "meta-llama/llama-3.3-70b-instruct:free",  # Llama 3.3 70B free
     "or_mistral":  "mistralai/mistral-small-3.1-24b-instruct:free",  # Mistral free
-    "or_gemma":    "google/gemma-3-27b-it:free",               # Google free
-    "or_qwen":     "qwen/qwen3-8b:free",                       # Qwen3 8B free
+    "or_gemma":    "google/gemma-3-27b-it:free",              # Gemma 3 27B free
+    "or_qwen":     "qwen/qwen3-8b:free",                      # Qwen3 8B free
 
     # ── Paid models (تحتاج credits على OpenRouter) ────────────────────────
     "gpt54":  "openai/gpt-5.4",
@@ -85,6 +89,7 @@ _KNOWN_PROVIDERS = {
     "anthropic/", "openai/", "qwen/", "z-ai/", "minimax/",
     "moonshotai/", "meta-llama/", "google/", "mistralai/",
     "cohere/", "01-ai/", "deepseek/", "nousresearch/",
+    "openrouter/", "nvidia/", "microsoft/", "arcee-ai/",
 }
 
 def _validate_model(model_name: str, is_cloud: bool) -> bool:
@@ -116,6 +121,10 @@ def safe_chat(model=None, messages=None, stream=False,
         model = DEFAULT_MODEL
     if messages is None:
         messages = []
+
+    # Resolve "local" alias → always uses the current DEFAULT_MODEL (local ollama)
+    if model == _LOCAL_ALIAS:
+        model = DEFAULT_MODEL
 
     full_model_name = MODEL_ALIASES.get(model, model)
 

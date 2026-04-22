@@ -44,10 +44,19 @@ from threading import Lock as _Lock
 _model_lock = _Lock()
 
 def _switch_model(new_model: str):
+    # Resolve "local" → actual configured model name before storing
+    import config as _cfg
+    if new_model == "local":
+        resolved = _cfg.DEFAULT_MODEL
+    else:
+        resolved = llm_client.MODEL_ALIASES.get(new_model, new_model)
+        # If alias resolves to a cloud model but OpenRouter isn't configured, warn
+        if "/" in resolved and not llm_client.USE_OPENROUTER:
+            print(f"⚠️  Model '{new_model}' needs OpenRouter (CLAUDE_CODE_USE_OPENROUTER=1)")
     with _model_lock:
-        llm_client.DEFAULT_MODEL = new_model
-    log.info(f"Model switched to {new_model}")
-    print(f"🔄 تم تحويل الـ Agent بنجاح إلى الموديل: {new_model}")
+        llm_client.DEFAULT_MODEL = resolved
+    log.info(f"Model switched to {resolved} (alias: {new_model})")
+    print(f"🔄 تم تحويل الـ Agent بنجاح إلى الموديل: {new_model} → {resolved}")
 
 # Startup
 check_and_exit_if_missing()
@@ -64,7 +73,7 @@ _fh_inject(
 )
 
 load_project_context()
-log.success("I'm READY — type your request")
+log.success("AGENT READY — type your request")
 
 # Main loop
 while True:
