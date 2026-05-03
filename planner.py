@@ -136,11 +136,32 @@ def normalize_script_pairs(raw: str, engine: str = "unity") -> list:
             parts = item.split(":", 1)
             name  = parts[0].strip()
             role  = parts[1].strip().lower().split()[0] if parts[1].strip() else "generic"
-            if name and len(name) < 40 and name[0].isupper():
+            if _valid_script_name(name):
                 pairs.append((name, role))
-        elif item and len(item) < 40 and item[0].isupper():
+        elif _valid_script_name(item):
             pairs.append((item, "generic"))
     return pairs
+
+
+def _valid_script_name(name: str) -> bool:
+    """
+    Return True only if name looks like a real script name, not a code fragment.
+    Rejects: names with (, ), ;, ", spaces in middle, or > 40 chars.
+    """
+    if not name or len(name) > 40:
+        return False
+    # Must start with uppercase letter
+    if not name[0].isupper():
+        return False
+    # Must NOT contain code characters
+    BAD_CHARS = set("();'{}[].,=<>!@#$%^&*+-/\\\"")
+    if any(c in BAD_CHARS for c in name):
+        return False
+    # Must be mostly alphanumeric + underscore
+    alnum = sum(1 for c in name if c.isalnum() or c == '_')
+    if alnum < len(name) * 0.8:
+        return False
+    return True
 
 
 # ── Fallback plans ────────────────────────────────────────────────────────────

@@ -77,15 +77,6 @@ PLAN_CACHE_FILE = os.path.join(BASE_DIR, "planning_cache.json")
 #   AGENT_LLM_RETRIES=3
 # ══════════════════════════════════════════════════════════════════════════════
 
-# ══════════════════════════════════════════════════════════════════════════════
-# TESTING / DEBUG
-# ══════════════════════════════════════════════════════════════════════════════
-
-# Delay (seconds) between each generated script — 0 in production.
-# Set AGENT_SCRIPT_DELAY=5 to slow generation down for checkpoint testing.
-SCRIPT_DELAY: float = 0.0
-
-
 def _env(key: str, default, cast=str):
     val = os.getenv(f"AGENT_{key.upper()}")
     return cast(val) if val is not None else default
@@ -95,4 +86,3 @@ LLM_RETRIES          = _env("LLM_RETRIES",          LLM_RETRIES,          int)
 LLM_TIMEOUT          = _env("LLM_TIMEOUT",          LLM_TIMEOUT,          int)
 COMPILE_FIX_ATTEMPTS = _env("COMPILE_FIX_ATTEMPTS", COMPILE_FIX_ATTEMPTS, int)
 LOG_MIN_LEVEL        = _env("LOG_MIN_LEVEL",        LOG_MIN_LEVEL)
-SCRIPT_DELAY         = _env("SCRIPT_DELAY",         SCRIPT_DELAY,         float)

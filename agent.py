@@ -75,6 +75,44 @@ _fh_inject(
 load_project_context()
 log.success("AGENT READY — type your request")
 
+# ── Help menu ─────────────────────────────────────────────────────────────────
+def _print_help():
+    print("""
+╔══════════════════════════════════════════════════════════════╗
+║                    AGENT COMMANDS                            ║
+╠══════════════════════════════════════════════════════════════╣
+║  GENERATION                                                  ║
+║  make a <game/app/website>   Start a full generation         ║
+║  /resume <project>           Resume interrupted generation   ║
+║  checkpoints                 List resumable generations      ║
+║                                                              ║
+║  SELF-MODIFICATION                                           ║
+║  add <feature> to yourself   Add a new capability            ║
+║  can you edit yourself       Trigger self-mod mode           ║
+║  /scan                       List all project .py files      ║
+║  /read <file.py>             Read a file (smart summary)     ║
+║  /read <file.py> full        Read entire file                ║
+║  /diff <file.py>             Diff current vs last backup     ║
+║                                                              ║
+║  MODEL                                                       ║
+║  /model <alias>              Switch active model             ║
+║  /model local                Use local ollama model          ║
+║  /model or_free              Use OpenRouter free model       ║
+║  /model or_deepseek          Use DeepSeek free               ║
+║  /model kimi                 Use Kimi K2.5 (paid)            ║
+║  /model claude               Use Claude Sonnet (paid)        ║
+║                                                              ║
+║  SESSION                                                     ║
+║  new_chat                    Start new conversation          ║
+║  attach <path>               Attach a file to context        ║
+║  metrics                     Show performance dashboard      ║
+║  profile                     Show timing profiler            ║
+║  health                      Show domain health report       ║
+║  exit                        Quit the agent                  ║
+╚══════════════════════════════════════════════════════════════╝
+""", flush=True)
+
+
 # Main loop
 while True:
     try:
@@ -94,6 +132,16 @@ while True:
 
         if not user:
             continue
+
+        # ── Confirmation intercept ────────────────────────────────────────────
+        # Only intercept YES/NO when self_mod is explicitly waiting for an answer
+        try:
+            from self_mod import is_waiting_for_confirmation, provide_confirmation
+            if is_waiting_for_confirmation() and user.strip().upper() in ("YES", "Y", "NO", "N"):
+                provide_confirmation(user)
+                continue
+        except ImportError:
+            pass
 
         intent = detect_intent(user)
         if intent != "default":
@@ -131,6 +179,83 @@ while True:
             get_checkpoint_manager().print_resumable()
             continue
 
+        if user.strip() == "/scan":
+            from self_mod import scan_tool
+            scan_tool()
+            continue
+
+        if user.strip().startswith("/read "):
+            parts = user.strip().split()
+            fname = parts[1] if len(parts) > 1 else ""
+            full  = len(parts) > 2 and parts[2].lower() == "full"
+            if fname:
+                from self_mod import read_tool, read_full_tool
+                (read_full_tool if full else read_tool)(fname)
+            continue
+
+        if user.strip().startswith("/diff "):
+            fname = user.strip().replace("/diff", "").strip()
+            if fname:
+                from self_mod import diff_tool
+                diff_tool(fname)
+            continue
+
+        if user.strip() == "/status":
+            from tool_registry import TOOL_REGISTRY
+            TOOL_REGISTRY["STATUS"](user)
+            continue
+
+        if user.strip() == "/time":
+            from tool_registry import TOOL_REGISTRY
+            if "TIME" in TOOL_REGISTRY:
+                TOOL_REGISTRY["TIME"](user)
+            else:
+                import datetime
+                print(f"\n🕒 Current Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+            continue
+
+        if user.strip() == "/help":
+            print("""
+╔══════════════════════════════════════════════════════════╗
+║                    AGENT COMMANDS                        ║
+╠══════════════════════════════════════════════════════════╣
+║  GENERATION                                              ║
+║  make a <type> game         Generate Unity/Unreal game   ║
+║  build a <type> website     Generate web project         ║
+║  /resume <project>          Resume interrupted project   ║
+║                                                          ║
+║  SELF-MODIFICATION                                       ║
+║  add <feature> to yourself  Add new capability           ║
+║  edit yourself              Modify own source code       ║
+║  /scan                      List all project .py files   ║
+║  /read <file>               Read a source file           ║
+║  /read <file> full          Read entire file             ║
+║  /diff <file>               Diff file vs last backup     ║
+║                                                          ║
+║  FILES                                                   ║
+║  attach <path>              Attach file to context       ║
+║  clear                      Clear file context           ║
+║                                                          ║
+║  MODEL                                                   ║
+║  /model <alias>             Switch model                 ║
+║  /model local               Use local ollama model       ║
+║  /model or_free             Use free OpenRouter model    ║
+║  /model or_deepseek         Use DeepSeek free            ║
+║  /model kimi                Use Kimi K2.5 (paid)         ║
+║  /model claude              Use Claude Sonnet (paid)     ║
+║                                                          ║
+║  SYSTEM                                                  ║
+║  checkpoints                Show resumable generations   ║
+║  metrics                    Show performance dashboard   ║
+║  health                     Show domain health report    ║
+║  profile                    Show profiler report         ║
+║  new_chat                   Start new conversation       ║
+║  /help                      Show this menu               ║
+║  exit                       Exit the agent               ║
+╚══════════════════════════════════════════════════════════╝
+""", flush=True)
+            continue
+
         if user.startswith("/resume "):
             project_name = user.replace("/resume", "").strip()
             from chat_handler import chat_tool
@@ -141,6 +266,30 @@ while True:
                                   **{"_hint_domain": cp.engine, "_resume": True})
             else:
                 safe_print(f"❌ No resumable checkpoint found for '{project_name}'")
+            continue
+
+        if user.strip() == "/scan":
+            from self_mod import scan_tool
+            scan_tool()
+            continue
+
+        if user.startswith("/read "):
+            parts = user.replace("/read", "").strip().split()
+            from self_mod import read_tool, read_full_tool
+            if len(parts) == 2 and parts[1] == "full":
+                read_full_tool(parts[0])
+            else:
+                read_tool(parts[0] if parts else "")
+            continue
+
+        if user.startswith("/diff "):
+            fname = user.replace("/diff", "").strip()
+            from self_mod import diff_tool
+            diff_tool(fname)
+            continue
+
+        if user.strip() == "/help":
+            _print_help()
             continue
 
         mode, detected_domain = detect_mode(user)

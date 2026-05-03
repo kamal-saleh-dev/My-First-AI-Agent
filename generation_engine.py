@@ -67,14 +67,35 @@ _GAME_KW: list[str] = [
 ]
 
 
+# Vague phrases that signal "chatting about" rather than "requesting generation"
+_VAGUE_PHRASES = [
+    "i want to make", "i want to create", "i want to build",
+    "thinking about", "i'm thinking", "what do you think",
+    "can you help", "how do i", "how to make", "how to create",
+    "unique", "interesting", "cool", "fun", "some kind of",
+    "عاوز اعمل", "فكرة", "ممكن تساعدني", "ازاي اعمل",
+]
+
 def is_generation_request(task_lower: str, domain: str) -> tuple[bool, bool]:
     """
     Returns (is_complete_generation, is_single_script).
     Single source of truth — imported by chat_handler.py to avoid duplication.
+
+    Vague requests ("i want to make a unique game") → (False, False) → CHAT
+    Specific requests ("make a space shooter unity game") → (True, True) → GENERATE
     """
     has_verb    = any(w in task_lower for w in CREATION_VERBS)
     has_game_kw = any(w in task_lower for w in _GAME_KW)
     is_web      = domain in WEB_ENGINES
+
+    # If the request is vague/exploratory → treat as chat, not generation
+    is_vague = any(ph in task_lower for ph in _VAGUE_PHRASES)
+    if is_vague and not any(specific in task_lower for specific in [
+        "shooter", "platformer", "racing", "rpg", "puzzle", "runner",
+        "tower defense", "horror", "fighting", "survival",
+        "لعبة", "شوتر", "منصات",
+    ]):
+        return False, False
 
     is_full = (has_game_kw and (has_verb or has_game_kw)) or (is_web and has_verb)
     is_script = (

@@ -88,6 +88,11 @@ def extract_and_save_scripts(text: str, project_name: str,
             )
             class_name = m.group(1) if m else f"Script_{i}"
 
+        # Sanitize class_name — strip chars invalid in Windows filenames
+        class_name = re.sub(r"[\\/:*?\"<>|()';,. ]", "_", class_name).strip("_")
+        if not class_name:
+            class_name = f"Script_{i}"
+
         if forced_name and class_name.lower().endswith(extension.lower()):
             file_name = class_name
         else:

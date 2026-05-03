@@ -8,6 +8,167 @@ from PySide6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QThread, Signal
 from PySide6.QtGui import QColor, QTextCursor, QPainter
 
 
+# ── Commands reference data ───────────────────────────────────────────────────
+COMMANDS = [
+    ("GENERATION", [
+        ("make a <type> game",        "Generate a Unity / Unreal game project"),
+        ("build a <type> website",    "Generate React / Angular / HTML / .NET project"),
+        ("/resume <project>",         "Resume an interrupted project generation"),
+    ]),
+    ("SELF-MODIFICATION", [
+        ("add <feature> to yourself", "Add a new capability to the agent"),
+        ("edit yourself",             "Ask agent to modify its own source code"),
+        ("/scan",                     "List all project .py files with status"),
+        ("/read <file>",              "Read a source file (smart summary for large files)"),
+        ("/read <file> full",         "Read entire source file without truncation"),
+        ("/diff <file>",              "Show diff between current file and last backup"),
+    ]),
+    ("FILES & CONTEXT", [
+        ("attach <path>",             "Attach a file to the conversation context"),
+        ("clear",                     "Clear all attached files from context"),
+    ]),
+    ("MODEL SWITCHING", [
+        ("/model local",              "Use local Ollama model (always free)"),
+        ("/model or_free",            "Use OpenRouter auto free model"),
+        ("/model or_deepseek",        "Use DeepSeek R1 free"),
+        ("/model or_llama",           "Use Llama 3.3 70B free"),
+        ("/model kimi",               "Use Kimi K2.5 (paid)"),
+        ("/model claude",             "Use Claude Sonnet (paid)"),
+        ("/model gpt54",              "Use GPT-5.4 (paid)"),
+    ]),
+    ("SYSTEM", [
+        ("/status",                   "Show current model, memory and context info"),
+        ("/time",                     "Show the current date and time"),
+        ("/help",                     "Print all commands in the terminal"),
+        ("checkpoints",               "List resumable interrupted generations"),
+        ("metrics",                   "Show performance stats dashboard"),
+        ("health",                    "Show domain health report"),
+        ("new_chat",                  "Start a fresh conversation"),
+        ("exit",                      "Exit the agent"),
+    ]),
+]
+
+
+def _load_commands_manifest() -> list:
+    """Load extra commands added by self_mod from commands_manifest.json."""
+    import json, os as _os
+    path = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), "commands_manifest.json")
+    try:
+        if _os.path.exists(path):
+            with open(path, encoding="utf-8") as f:
+                return json.load(f)
+    except Exception:
+        pass
+    return []
+
+
+def _get_all_commands() -> list:
+    """Merge hardcoded COMMANDS with dynamic manifest entries."""
+    result = [list(section) for section in COMMANDS]  # deep copy
+    extras = _load_commands_manifest()
+    if not extras:
+        return result
+    # Group manifest entries by section
+    sections: dict = {}
+    for e in extras:
+        sec = e.get("section", "AGENT COMMANDS")
+        sections.setdefault(sec, []).append((e["cmd"], e["desc"]))
+    for sec_name, cmds in sections.items():
+        result.append((sec_name, cmds))
+    return result
+
+
+# ── Commands floating panel ────────────────────────────────────────────────────
+class CommandsPanel(QFrame):
+    """Floating commands reference — toggled by the ⌘ Commands button."""
+    send_command = Signal(str)
+
+    def __init__(self, parent=None):
+        super().__init__(parent, Qt.Tool | Qt.FramelessWindowHint)
+        self.setStyleSheet(
+            "QFrame{background:#0d0d20;border:1px solid #2a2a4a;border-radius:12px;}"
+        )
+        self.setFixedWidth(540)
+        self.hide()
+
+        outer = QVBoxLayout(self)
+        outer.setContentsMargins(0, 10, 0, 10)
+        outer.setSpacing(0)
+
+        # Header
+        hdr = QHBoxLayout(); hdr.setContentsMargins(16, 0, 10, 8)
+        title = QLabel("⌘  Commands Reference")
+        title.setStyleSheet("color:#8899ff;font-size:13px;font-weight:700;background:transparent;")
+        close_btn = QPushButton("✕"); close_btn.setFixedSize(22, 22)
+        close_btn.setStyleSheet(
+            "QPushButton{background:transparent;color:#445566;border:none;font-size:13px;}"
+            "QPushButton:hover{color:#cc4444;}")
+        close_btn.clicked.connect(self.hide)
+        hdr.addWidget(title); hdr.addStretch(); hdr.addWidget(close_btn)
+        outer.addLayout(hdr)
+
+        sep = QFrame(); sep.setFrameShape(QFrame.HLine)
+        sep.setStyleSheet("background:#1a1a35;max-height:1px;")
+        outer.addWidget(sep)
+
+        # Scroll area
+        scroll = QScrollArea(); scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("border:none;background:transparent;")
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        inner = QWidget()
+        il = QVBoxLayout(inner); il.setContentsMargins(0, 6, 0, 10); il.setSpacing(0)
+
+        for section, cmds in _get_all_commands():
+            sec_lbl = QLabel(section)
+            sec_lbl.setStyleSheet(
+                "color:#445588;font-size:10px;font-weight:700;"
+                "letter-spacing:1px;padding:10px 16px 3px;background:transparent;")
+            il.addWidget(sec_lbl)
+
+            for cmd, desc in cmds:
+                row = QWidget(); rl = QHBoxLayout(row)
+                rl.setContentsMargins(10, 1, 14, 1); rl.setSpacing(10)
+
+                btn = QPushButton(cmd)
+                btn.setFixedWidth(220)
+                btn.setStyleSheet(
+                    "QPushButton{background:transparent;color:#6677bb;"
+                    "font-size:11px;font-weight:600;font-family:Consolas,monospace;"
+                    "text-align:left;border:none;padding:4px 8px;border-radius:5px;}"
+                    "QPushButton:hover{background:#1a1a35;color:#aabbff;}")
+                btn.setCursor(Qt.PointingHandCursor)
+                # Strip <placeholder> parts before sending
+                _cmd = cmd.split("<")[0].strip()
+                btn.clicked.connect(lambda _, c=_cmd: self._on_cmd(c))
+
+                desc_lbl = QLabel(desc)
+                desc_lbl.setStyleSheet("color:#3a4a5a;font-size:11px;background:transparent;")
+                desc_lbl.setWordWrap(True)
+
+                rl.addWidget(btn); rl.addWidget(desc_lbl, 1)
+                il.addWidget(row)
+
+            il.addSpacing(2)
+
+        il.addStretch()
+        scroll.setWidget(inner)
+        outer.addWidget(scroll)
+
+    def _on_cmd(self, cmd: str):
+        self.send_command.emit(cmd)
+        self.hide()
+
+    def toggle(self, anchor_widget):
+        if self.isVisible():
+            self.hide()
+            return
+        # Position above the anchor button
+        ag = anchor_widget.mapToGlobal(QPoint(0, 0))
+        self.move(ag.x() - self.width() + anchor_widget.width(),
+                  ag.y() - self.height() - 6)
+        self.show(); self.raise_()
+
+
 class HologramCore(QWidget):
     def __init__(self):
         super().__init__()
@@ -72,8 +233,9 @@ class SessionRow(QFrame):
         row=QHBoxLayout(self); row.setContentsMargins(12,4,6,4); row.setSpacing(4)
         txt=QWidget(); txt.setAttribute(Qt.WA_TransparentForMouseEvents)
         tl=QVBoxLayout(txt); tl.setContentsMargins(0,0,0,0); tl.setSpacing(1)
-        pre="📌 " if pinned else ""
-        self._lbl=QLabel(pre+title[:36]+("…" if len(title)>36 else ""))
+        self._pre   = "📌 " if pinned else ""
+        self._title = title       # full title stored for hover truncation
+        self._lbl=QLabel(self._pre+title[:36]+("…" if len(title)>36 else ""))
         self._lbl.setStyleSheet("color:#d0d0f0;font-size:12px;font-weight:600;background:transparent;")
         tsl=QLabel(ts); tsl.setStyleSheet("color:#44446a;font-size:10px;background:transparent;")
         tl.addWidget(self._lbl); tl.addWidget(tsl); row.addWidget(txt,1)
@@ -96,8 +258,17 @@ class SessionRow(QFrame):
         m.addAction("🗑️  Delete",     lambda: self.delete_sig.emit(self.sid))
         m.exec(self._btn.mapToGlobal(QPoint(0,self._btn.height())))
 
-    def enterEvent(self,_): self._btn.show()
-    def leaveEvent(self,_): self._btn.hide()
+    def enterEvent(self,_):
+        self._btn.show()
+        # Shorten title to make room for the ⋯ button
+        short = self._pre + self._title[:22] + ("…" if len(self._title) > 22 else "")
+        self._lbl.setText(short)
+
+    def leaveEvent(self,_):
+        self._btn.hide()
+        # Restore full (36-char) title
+        full = self._pre + self._title[:36] + ("…" if len(self._title) > 36 else "")
+        self._lbl.setText(full)
     def mousePressEvent(self,e):
         if not self._btn.underMouse(): self.clicked_sig.emit(self.sid)
 
@@ -115,6 +286,8 @@ class ModernAgentGUI(QMainWindow):
 
         self._sessions={}; self._active_id=""; self._pending_id=""
         self._agent_buf=""; self._in_agent_turn=False; self._attached=[]
+        self._confirm_mode=False
+        self._confirm_mode=False
         self._sess_file=os.path.join(os.path.dirname(os.path.abspath(__file__)),"gui_sessions.json")
         self._load_sessions()
         self.process=None; self.streamer=None
@@ -158,7 +331,12 @@ class ModernAgentGUI(QMainWindow):
         self._ab=QPushButton("📎 Attach File"); self._ab.setCursor(Qt.PointingHandCursor); self._ab.setStyleSheet(bs); self._ab.clicked.connect(self._attach_file)
         self._sb2=QPushButton("📸 Screenshot"); self._sb2.setCursor(Qt.PointingHandCursor); self._sb2.setStyleSheet(bs); self._sb2.clicked.connect(self._take_screenshot)
         cb=QPushButton("🗑 Clear"); cb.setCursor(Qt.PointingHandCursor); cb.setStyleSheet(bs); cb.clicked.connect(self._clear_display)
-        tb.addWidget(self._ab); tb.addWidget(self._sb2); tb.addWidget(cb); tb.addStretch(); cl.addLayout(tb)
+        cmd_btn=QPushButton("⌘ Commands"); cmd_btn.setCursor(Qt.PointingHandCursor); cmd_btn.setStyleSheet("QPushButton{background:#151530;color:#6688ff;border:1px solid #22224a;border-radius:8px;font-size:13px;padding:6px 14px;}QPushButton:hover{background:#1c1c40;color:#aabbff;}"); cmd_btn.clicked.connect(lambda: self._toggle_commands(cmd_btn))
+        tb.addWidget(self._ab); tb.addWidget(self._sb2); tb.addWidget(cb); tb.addWidget(cmd_btn); tb.addStretch(); cl.addLayout(tb)
+        # Commands panel (floating overlay)
+        self._cmd_panel = CommandsPanel()
+        self._cmd_panel.send_command.connect(self._send_command_from_panel)
+
         ir=QHBoxLayout(); ir.setSpacing(10)
         self.input_box=QLineEdit(); self.input_box.setPlaceholderText("Ask the Agent anything…"); self.input_box.setFixedHeight(48)
         self.input_box.setStyleSheet("QLineEdit{background:#10102a;border:1px solid #1e1e3a;border-radius:24px;padding-left:20px;font-size:14px;color:#e0e0f0;}QLineEdit:focus{border:1px solid #4466ff;}QLineEdit:disabled{color:#334455;}")
@@ -222,7 +400,14 @@ class ModernAgentGUI(QMainWindow):
         self._save_sess()
 
     def _flush_agent_turn(self):
-        if self._agent_buf.strip(): self._save_msg("agent",self._agent_buf,self._agent_buf)
+        text = self._agent_buf.strip()
+        # Skip pure system lines — they're noise, not real agent responses
+        _NOISE = (
+            "✅ AGENT READY", "✅ I'm READY", "ℹ️", "⏱", "📋 Scripts",
+            "⚙️ Writing", "💾 Script saved", "🎮 Planning",
+        )
+        if text and not any(text.startswith(n) for n in _NOISE):
+            self._save_msg("agent", text, text)
         self._agent_buf=""; self._in_agent_turn=False
 
     def _refresh_sb(self):
@@ -272,11 +457,102 @@ class ModernAgentGUI(QMainWindow):
             self.chat_display.append(f"<span style='color:#00cc88;'>📤 Exported to {os.path.basename(path)}</span>")
         except Exception as e: self.chat_display.append(f"<span style='color:red;'>❌ {e}</span>")
 
+    # Commands panel
+    def _show_commands(self):
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QLabel, QScrollArea, QWidget
+        dlg = QDialog(self)
+        dlg.setWindowTitle("Agent Commands")
+        dlg.setMinimumSize(620, 560)
+        dlg.setStyleSheet("background:#0d0d1a; color:#d0d0f0; font-family:'Segoe UI';")
+
+        outer = QVBoxLayout(dlg)
+        outer.setContentsMargins(16, 16, 16, 16)
+
+        scroll = QScrollArea(); scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("border:none; background:transparent;")
+        inner  = QWidget()
+        lay    = QVBoxLayout(inner); lay.setSpacing(6)
+
+        COMMANDS = [
+            ("GENERATION", None),
+            ("make a <game / website / app>",  "Start full project generation"),
+            ("/resume <project_name>",          "Resume an interrupted generation"),
+            ("checkpoints",                     "List all resumable generations"),
+
+            ("SELF-MODIFICATION", None),
+            ("add <feature> to yourself",       "Add a new capability to the agent"),
+            ("can you edit yourself",           "Trigger self-modification mode"),
+            ("/scan",                           "List all project .py files with sizes"),
+            ("/read <file.py>",                 "Read a file (smart structure summary)"),
+            ("/read <file.py> full",            "Read the entire file line by line"),
+            ("/diff <file.py>",                 "Show diff between current and last backup"),
+
+            ("MODEL", None),
+            ("/model local",                    "Switch to local ollama model"),
+            ("/model or_free",                  "Switch to OpenRouter free model"),
+            ("/model or_deepseek",              "Switch to DeepSeek free (reasoning)"),
+            ("/model or_llama",                 "Switch to Llama 3.3 70B free"),
+            ("/model kimi",                     "Switch to Kimi K2.5 (paid)"),
+            ("/model claude",                   "Switch to Claude Sonnet (paid)"),
+
+            ("FILES & CONTEXT", None),
+            ("attach <path>",                   "Attach a file to the conversation context"),
+            ("clear",                           "Clear attached files from context"),
+
+            ("SESSION", None),
+            ("new_chat",                        "Start a new conversation"),
+            ("metrics",                         "Show performance & latency dashboard"),
+            ("profile",                         "Show timing profiler report"),
+            ("health",                          "Show domain sandbox health report"),
+            ("/help",                           "Print this command list in the terminal"),
+            ("exit",                            "Quit the agent"),
+        ]
+
+        HDR_STYLE  = ("background:#1a1a3a; color:#7799ff; font-size:11px; font-weight:700;"
+                      "padding:5px 10px; border-radius:5px; letter-spacing:1px;")
+        CMD_STYLE  = "color:#5588ff; font-size:13px; font-family:'Consolas','Courier New',monospace;"
+        DESC_STYLE = "color:#8899aa; font-size:12px; padding-left:4px;"
+        ROW_STYLE  = ("background:#111120; border-radius:6px; padding:6px 10px;"
+                      "border-left:2px solid #22224a;")
+
+        for cmd, desc in COMMANDS:
+            if desc is None:
+                lbl = QLabel(cmd)
+                lbl.setStyleSheet(HDR_STYLE)
+                lay.addWidget(lbl)
+            else:
+                row   = QFrame()
+                row.setStyleSheet(f"QFrame{{{ROW_STYLE}}}")
+                # Make row clickable — pastes command into input box
+                row.setCursor(Qt.PointingHandCursor)
+                row_lay = QHBoxLayout(row)
+                row_lay.setContentsMargins(0,0,0,0); row_lay.setSpacing(10)
+                cl2  = QLabel(cmd);  cl2.setStyleSheet(CMD_STYLE);  cl2.setFixedWidth(230)
+                dl2  = QLabel(desc); dl2.setStyleSheet(DESC_STYLE); dl2.setWordWrap(True)
+                row_lay.addWidget(cl2); row_lay.addWidget(dl2,1)
+                lay.addWidget(row)
+                # Click → paste command into input
+                _cmd = cmd
+                row.mousePressEvent = lambda e, c=_cmd: (
+                    self.input_box.setText(c.replace("<","").replace(">","").split()[0]
+                                           if "<" in c else c),
+                    dlg.close(),
+                    self.input_box.setFocus()
+                )
+
+        lay.addStretch()
+        scroll.setWidget(inner); outer.addWidget(scroll)
+        dlg.exec()
+
     # Messaging
     def send_msg(self):
         msg=self.input_box.text().strip()
         if not msg or not self.process: return
-        self.input_box.clear(); self._flush_agent_turn()
+        self.input_box.clear()
+        # Exit confirmation mode if we were in it
+        if self._confirm_mode:
+            self._exit_confirm_mode()
+        self._flush_agent_turn()
         self._bubble("user",msg); self._save_msg("user",msg,msg)
         try: self.process.stdin.write(msg+"\n"); self.process.stdin.flush()
         except Exception as e: self.chat_display.append(f"<span style='color:red;'>❌ {e}</span>")
@@ -288,7 +564,35 @@ class ModernAgentGUI(QMainWindow):
         c=self.chat_display.textCursor(); c.movePosition(QTextCursor.End)
         self.chat_display.setTextCursor(c); self.chat_display.insertPlainText(ch)
         self.chat_display.verticalScrollBar().setValue(self.chat_display.verticalScrollBar().maximum())
-    def _agent_turn_ended(self): self._typing_timer.stop(); self.hologram.set_state("idle"); self._flush_agent_turn()
+        # Detect confirmation request and update placeholder
+        if "Type  YES  to apply" in self._agent_buf or "Type YES to confirm" in self._agent_buf:
+            self._set_confirm_mode(True)
+        elif "✅ Confirmed" in self._agent_buf or "❌ Cancelled" in self._agent_buf or "❌ Timed out" in self._agent_buf:
+            self._set_confirm_mode(False)
+        # Detect confirmation prompt from self_mod
+        if "Type  YES  to apply" in self._agent_buf and not self._confirm_mode:
+            self._enter_confirm_mode()
+    def _agent_turn_ended(self):
+        self._typing_timer.stop(); self.hologram.set_state("idle"); self._flush_agent_turn()
+        # Reset confirm mode if still active after turn ends
+        if self._confirm_mode:
+            self._set_confirm_mode(False)
+
+    def _set_confirm_mode(self, active: bool):
+        self._confirm_mode = active
+        if active:
+            self.input_box.setPlaceholderText("⚠️  Type  YES  to confirm or  NO  to cancel")
+            self.input_box.setStyleSheet(
+                "QLineEdit{background:#1a0a0a;border:2px solid #cc4444;"
+                "border-radius:24px;padding-left:20px;font-size:14px;color:#ffaaaa;}"
+                "QLineEdit:focus{border:2px solid #ff6666;}")
+        else:
+            self.input_box.setPlaceholderText("Ask the Agent anything…")
+            self.input_box.setStyleSheet(
+                "QLineEdit{background:#10102a;border:1px solid #1e1e3a;"
+                "border-radius:24px;padding-left:20px;font-size:14px;color:#e0e0f0;}"
+                "QLineEdit:focus{border:1px solid #4466ff;}"
+                "QLineEdit:disabled{color:#334455;}")
     def _on_stream_error(self,msg): self.hologram.set_state("idle"); self._flush_agent_turn(); self.chat_display.append(f"<span style='color:orange;'>⚠️ {msg}</span>")
 
     # Attach/Screenshot
@@ -329,6 +633,52 @@ class ModernAgentGUI(QMainWindow):
         names=[os.path.basename(p) for p in self._attached[-4:]]; extra=len(self._attached)-4
         self._att_lbl.setText("📎 "+"\n".join(names)+(f"\n+{extra} more" if extra>0 else ""))
     def _clear_display(self): self.chat_display.clear()
+
+    # ── Confirmation mode ─────────────────────────────────────────────────────
+    def _enter_confirm_mode(self):
+        """Switch UI to YES/NO confirmation state."""
+        self._confirm_mode = True
+        self.input_box.setText("")
+        self.input_box.setPlaceholderText("Type YES to apply changes, or NO to cancel")
+        self.input_box.setStyleSheet(
+            "QLineEdit{background:#1a0a0a;border:2px solid #ff4444;"
+            "border-radius:24px;padding-left:20px;font-size:14px;color:#ffaaaa;}"
+            "QLineEdit:focus{border:2px solid #ff6666;}")
+        self.send_btn.setStyleSheet(
+            "QPushButton{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #cc2222,stop:1 #881111);border-radius:24px;"
+            "font-size:18px;color:white;font-weight:bold;}"
+            "QPushButton:hover{background:#dd3333;}")
+        self.chat_display.append(
+            "<br><span style='color:#ff6644;font-weight:bold;font-size:13px;'>"
+            "⚠️  Waiting for confirmation — type YES or NO in the input box below</span><br>"
+        )
+
+    def _exit_confirm_mode(self):
+        """Restore normal UI after confirmation."""
+        self._confirm_mode = False
+        self.input_box.setPlaceholderText("Ask the Agent anything…")
+        self.input_box.setStyleSheet(
+            "QLineEdit{background:#10102a;border:1px solid #1e1e3a;"
+            "border-radius:24px;padding-left:20px;font-size:14px;color:#e0e0f0;}"
+            "QLineEdit:focus{border:1px solid #4466ff;}"
+            "QLineEdit:disabled{color:#334455;}")
+        self.send_btn.setStyleSheet(
+            "QPushButton{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #3355ff,stop:1 #1133cc);border-radius:24px;"
+            "font-size:18px;color:white;font-weight:bold;}"
+            "QPushButton:hover{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #4466ff,stop:1 #2244ee);}"
+            "QPushButton:pressed{background:#1122aa;}"
+            "QPushButton:disabled{background:#1a1a2a;color:#333355;}")
+
+    def _toggle_commands(self, anchor_widget):
+        self._cmd_panel.toggle(anchor_widget)
+
+    def _send_command_from_panel(self, cmd: str):
+        """Put command in input box so user can review/edit before sending."""
+        self.input_box.setText(cmd)
+        self.input_box.setFocus()
 
     # Persistence
     def _load_sessions(self):

@@ -92,7 +92,8 @@ def load_all_sessions() -> list:
         return []
 
 def save_session():
-    """Atomically persist current chat_history to HISTORY_FILE."""
+    """Disabled — GUI handles session persistence via gui_sessions.json."""
+    return
     if not chat_history:
         return
     if not _state.current_session_id:

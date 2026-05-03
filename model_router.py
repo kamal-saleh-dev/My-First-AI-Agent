@@ -147,9 +147,23 @@ def detect_mode(user: str) -> tuple:
         "html", "sql", "postgres", "server", "api",
     ]
     SELF_MOD_KEYWORDS = [
+        # Direct modification commands
         "add feature", "improve yourself", "update yourself", "modify yourself",
         "add support for", "teach yourself", "expand yourself",
+        "edit yourself", "change yourself", "fix yourself",
+        "add to yourself", "upgrade yourself", "update your code",
+        # "add a X" patterns — adding something to the agent
+        "add a command", "add a tool", "add new feature", "add a feature",
+        "add a /", "add support", "add the ability", "add an option",
+        "add a status", "add a mode", "add a function", "add a feature",
+        "add a new", "add new",
+        # Capability questions
+        "can you edit yourself", "can you modify yourself",
+        "can you improve yourself", "can you update yourself",
+        "can you change yourself",
+        # Arabic
         "طور نفسك", "اضف ميزة", "حدث نفسك", "عدل نفسك",
+        "تقدر تعدل نفسك", "تقدر تحسن نفسك", "عايزك تضيف",
     ]
     QUESTION_STARTS = [
         "what", "how", "why", "when", "who", "which", "explain", "tell me",
@@ -180,19 +194,41 @@ def detect_mode(user: str) -> tuple:
     if has_job and not is_question:
         return "JOB", "general"
 
+    # Vague/exploratory phrasing → chat first, don't auto-generate
+    _VAGUE = [
+        "i want to make", "i want to create", "i want to build",
+        "thinking about", "i'm thinking", "what do you think",
+        "can you help", "how do i", "how to make", "unique", "some kind of",
+        "عاوز اعمل", "فكرة", "ممكن تساعدني", "ازاي اعمل",
+    ]
+    # Specific genres that confirm intent
+    _SPECIFIC = [
+        "shooter", "platformer", "rpg", "puzzle", "runner",
+        "tower defense", "horror", "fighting", "survival", "endless",
+        "zombie", "لعبة شوتر", "منصات",
+    ]
+    _is_vague = any(ph in t for ph in _VAGUE) and not any(s in t for s in _SPECIFIC)
+
     is_game = (
         (has_verb and (has_target or has_lang))
         or (has_target and not is_question and not is_opinion)
     )
-    if is_game:
+    if is_game and not _is_vague:
         return "GAME", detect_domain(t)
+    if is_game and _is_vague:
+        # Treat as CHAT so the agent asks clarifying questions
+        return "CHAT", detect_domain(t)
 
     if any(kw in t for kw in SELF_MOD_KEYWORDS):
         return "SELF_MOD", "general"
 
-    # ── 3. LLM fallback (skip for short messages) ────────────────────────────
+    # ── 3. Short messages → CHAT ─────────────────────────────────────────────
     if len(t.split()) < 4:
         return "CHAT", "general"
+
+    # ── 4. Clear questions → always CHAT, never send to LLM classifier ───────
+    if is_question:
+        return "CHAT", detect_domain(t)
 
     try:
         prompt = (
