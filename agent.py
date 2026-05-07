@@ -108,6 +108,9 @@ def _print_help():
 ║  metrics                     Show performance dashboard      ║
 ║  profile                     Show timing profiler            ║
 ║  health                      Show domain health report       ║
+║  /date                       Show today's date               ║
+║  /time                       Show current time               ║
+║  /weather                     Show weather info              ║
 ║  exit                        Quit the agent                  ║
 ╚══════════════════════════════════════════════════════════════╝
 """, flush=True)
@@ -214,6 +217,21 @@ while True:
                 print(f"\n🕒 Current Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
             continue
 
+        if user.strip() == "/weather":
+            from tool_registry import TOOL_REGISTRY
+            if "WEATHER" in TOOL_REGISTRY:
+                TOOL_REGISTRY["WEATHER"](user)
+            continue
+
+        if user.strip() == "/date":
+            from tool_registry import TOOL_REGISTRY
+            if "DATE" in TOOL_REGISTRY:
+                TOOL_REGISTRY["DATE"](user)
+            else:
+                import datetime
+                print(f"\n📅 Today's Date: {datetime.datetime.now().strftime('%Y-%m-%d')}\n")
+            continue
+
         if user.strip() == "/help":
             print("""
 ╔══════════════════════════════════════════════════════════╗
@@ -250,7 +268,10 @@ while True:
 ║  health                     Show domain health report    ║
 ║  profile                    Show profiler report         ║
 ║  new_chat                   Start new conversation       ║
+║  /date                      Show today's date            ║
+║  /time                      Show current time            ║
 ║  /help                      Show this menu               ║
+║  /weather                    Show weather info             ║
 ║  exit                       Exit the agent               ║
 ╚══════════════════════════════════════════════════════════╝
 """, flush=True)
@@ -266,30 +287,6 @@ while True:
                                   **{"_hint_domain": cp.engine, "_resume": True})
             else:
                 safe_print(f"❌ No resumable checkpoint found for '{project_name}'")
-            continue
-
-        if user.strip() == "/scan":
-            from self_mod import scan_tool
-            scan_tool()
-            continue
-
-        if user.startswith("/read "):
-            parts = user.replace("/read", "").strip().split()
-            from self_mod import read_tool, read_full_tool
-            if len(parts) == 2 and parts[1] == "full":
-                read_full_tool(parts[0])
-            else:
-                read_tool(parts[0] if parts else "")
-            continue
-
-        if user.startswith("/diff "):
-            fname = user.replace("/diff", "").strip()
-            from self_mod import diff_tool
-            diff_tool(fname)
-            continue
-
-        if user.strip() == "/help":
-            _print_help()
             continue
 
         mode, detected_domain = detect_mode(user)

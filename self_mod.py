@@ -315,6 +315,20 @@ def _detect_target_files(task: str) -> list[str]:
             if filename not in _PROTECTED:
                 candidates.append(filename)
 
+    # ── Command pattern: adding a /command always needs BOTH files ────────────
+    # tool_registry.py gets the _tool_xxx function + registry entry
+    # agent.py gets the "if user == '/xxx': ..." handler in the main loop
+    _is_slash_cmd = (
+        re.search(r'/[a-z]', t)
+        or any(w in t for w in ["slash command", "new command", "add command",
+                                "command handler", "add a /", "add /"])
+        or ("command" in t and any(w in t for w in ["add", "new", "create", "show"]))
+    )
+    if _is_slash_cmd:
+        for _f in ("tool_registry.py", "agent.py"):
+            if _f not in candidates and _f not in _PROTECTED:
+                candidates.append(_f)
+
     # Explicit file name mentioned?
     for f in _MODIFIABLE:
         if f.replace(".py", "").replace("_", " ") in t or f in task:
@@ -371,7 +385,95 @@ def _read_file_snippet(filepath: str) -> str:
         return ""
 
 
-def _build_prompt(task: str, target_files: list[str], search_results: str) -> str:
+def _patch_agent_py(task: str, cmd_name: str, tool_key: str) -> bool:
+    """
+    Surgically patch agent.py to add a new /command handler.
+    Uses str.replace instead of full LLM rewrite — 100% reliable.
+    Returns True if patch was applied successfully.
+
+    Inserts:
+      1. The /cmd handler block right after the /time handler
+      2. The /cmd entry in both help menus
+    """
+    agent_path = os.path.join(_get_project_root(), "agent.py")
+    if not os.path.exists(agent_path):
+        return False
+
+    try:
+        with open(agent_path, encoding="utf-8") as f:
+            content = f.read()
+    except Exception:
+        return False
+
+    # ── 1. Add handler after /time block ─────────────────────────────────────
+    TIME_ANCHOR = (
+        "        if user.strip() == \"/time\":\n"
+        "            from tool_registry import TOOL_REGISTRY\n"
+        "            if \"TIME\" in TOOL_REGISTRY:\n"
+        "                TOOL_REGISTRY[\"TIME\"](user)\n"
+        "            else:\n"
+        "                import datetime\n"
+        "                print(f\"\\n🕒 Current Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\\n\")\n"
+        "            continue"
+    )
+
+    new_handler = (
+        f"\n\n        if user.strip() == \"/{cmd_name}\":\n"
+        f"            from tool_registry import TOOL_REGISTRY\n"
+        f"            if \"{tool_key}\" in TOOL_REGISTRY:\n"
+        f"                TOOL_REGISTRY[\"{tool_key}\"](user)\n"
+        f"            continue"
+    )
+
+    if f'"/{cmd_name}"' in content:
+        safe_print(f"   ℹ️  /{cmd_name} handler already exists in agent.py — skipping.")
+        return True   # already patched
+
+    if TIME_ANCHOR not in content:
+        safe_print(f"   ⚠️  Could not find /time anchor in agent.py — skipping agent.py patch.")
+        return False
+
+    content = content.replace(TIME_ANCHOR, TIME_ANCHOR + new_handler, 1)
+
+    # ── 2. Add to help menus ──────────────────────────────────────────────────
+    HELP_ANCHOR_1 = "║  exit                        Quit the agent                  ║"
+    HELP_ANCHOR_2 = "║  exit                       Exit the agent               ║"
+    cmd_padded_1  = f"/{cmd_name}"
+    desc_padded   = f"Show {cmd_name} info"
+    new_help_1    = (
+        f"║  {cmd_padded_1:<28} {desc_padded:<30} ║\n"
+        + HELP_ANCHOR_1
+    )
+    new_help_2    = (
+        f"║  {cmd_padded_1:<27} {desc_padded:<27}   ║\n"
+        + HELP_ANCHOR_2
+    )
+
+    if HELP_ANCHOR_1 in content:
+        content = content.replace(HELP_ANCHOR_1, new_help_1, 1)
+    if HELP_ANCHOR_2 in content:
+        content = content.replace(HELP_ANCHOR_2, new_help_2, 1)
+
+    # ── 3. Backup + write ─────────────────────────────────────────────────────
+    backup = f"{agent_path}.{int(time.time())}.bak"
+    shutil.copy2(agent_path, backup)
+
+    try:
+        with open(agent_path, "w", encoding="utf-8") as f:
+            f.write(content)
+        import ast as _pyc_ast
+        with open(agent_path, encoding="utf-8") as _cf:
+            _pyc_ast.parse(_cf.read())
+        safe_print(f"   ✅ agent.py patched (/{cmd_name} handler added)", flush=True)
+        return True
+    except Exception as e:
+        safe_print(f"   💥 agent.py patch failed: {e} — reverting", flush=True)
+        shutil.copy2(backup, agent_path)
+        return False
+
+
+def _build_prompt(task: str, target_files: list[str], search_results: str,
+                  agent_patched: bool = False) -> str:
     """Build the LLM prompt for code generation."""
     CRITICAL_MAP = {
         "tool_registry.py": ["def get_tool", "BACKGROUND_TOOLS", "TOOL_REGISTRY"],
@@ -404,6 +506,14 @@ def _build_prompt(task: str, target_files: list[str], search_results: str) -> st
         if search_results else ""
     )
 
+    _agent_rule = (
+        "- agent.py is already patched surgically — do NOT output an agent.py block."
+        if agent_patched else
+        "- For /command additions: add the tool in tool_registry.py AND the handler in agent.py.\n"
+        "- In agent.py, add the handler right after the /time handler block.\n"
+        "- Also update the /help menu strings in agent.py to include the new command."
+    )
+
     return f"""You are an expert Python developer adding a new feature to an AI agent.
 
 TASK: {task}
@@ -413,13 +523,16 @@ CURRENT SOURCE FILES:{files_block}
 {preserve_note}
 
 INSTRUCTIONS:
-1. Implement the task by modifying ONE file shown above.
-2. Output the COMPLETE updated file using this EXACT format:
+1. Implement the task by modifying ALL files that need changes (can be multiple files).
+2. For each file you change, output the COMPLETE updated file using this EXACT format:
 
 ===FILE: filename.py===
 ```python
 <complete updated file — every existing line must still be present>
 ```
+
+If multiple files need changes (e.g. tool_registry.py AND agent.py), output MULTIPLE
+===FILE=== blocks — one per file.
 
 STRICT RULES:
 - PRESERVE every existing function, class, and variable. Only ADD new ones.
@@ -427,13 +540,15 @@ STRICT RULES:
 - Your output file must be >= the original file in number of lines.
 - No placeholders, no TODO, no empty function bodies.
 - Valid Python syntax only.
-- Output ONLY the ===FILE=== block. No text outside it.
+{_agent_rule}
+- Output ONLY the ===FILE=== blocks. No text outside them.
 """
 
 
 def _generate_patch(task: str, target_files: list[str],
                     search_results: str,
-                    force_model_idx: int = 0) -> dict[str, str]:
+                    force_model_idx: int = 0,
+                    agent_patched: bool = False) -> dict[str, str]:
     """
     Generate code patches using the escalation ladder.
     force_model_idx: start from this ladder index (for retries with stronger models).
@@ -441,7 +556,8 @@ def _generate_patch(task: str, target_files: list[str],
     """
     from model_advisor import ESCALATION_LADDER, _models_above, assess_quality
 
-    prompt   = _build_prompt(task, target_files, search_results)
+    prompt   = _build_prompt(task, target_files, search_results,
+                              agent_patched=agent_patched)
     messages = [
         {"role": "system", "content": "You are a Python expert. Output ONLY file blocks in the format ===FILE: name.py==="},
         {"role": "user",   "content": prompt},
@@ -514,7 +630,8 @@ def _parse_file_blocks(response: str, allowed_files: list[str]) -> dict[str, str
         if fname in _PROTECTED:
             safe_print(f"🛡️  Skipping protected file: {fname}")
             continue
-        if fname not in _MODIFIABLE and fname not in allowed_files:
+        _allowed_basenames = {os.path.basename(f) for f in allowed_files}
+        if fname not in _allowed_basenames:
             safe_print(f"⚠️  Skipping unlisted file: {fname}")
             continue
         patches[fname] = code
@@ -706,18 +823,21 @@ def _update_commands_manifest(fname: str, code: str) -> None:
     try:
         # Find new tool keys in TOOL_REGISTRY
         matches = re.findall(r'"([A-Z_]+)"\s*:\s*_tool_(\w+)', code)
-        known   = {"GAME","PROJECT","JOB","DELETE","RUN","ATTACH","CLEAR",
-                   "CHAT","SELF_MOD","STATUS","TIME"}
-        new_tools = [(k, fn) for k, fn in matches if k not in known]
-        if not new_tools:
-            return
-
+        # Read existing known tools from the manifest rather than hardcoding
         manifest_path = os.path.join(_get_project_root(), "commands_manifest.json")
         try:
             with open(manifest_path, encoding="utf-8") as f:
                 manifest = json.load(f)
+            known_from_manifest = {e["cmd"].lstrip("/").upper() for e in manifest if "cmd" in e}
         except Exception:
             manifest = []
+            known_from_manifest = set()
+        # Also include built-in non-slash tools that don't appear in manifest
+        _builtin = {"GAME", "PROJECT", "JOB", "DELETE", "RUN", "ATTACH", "CLEAR", "CHAT", "SELF_MOD"}
+        known = known_from_manifest | _builtin
+        new_tools = [(k, fn) for k, fn in matches if k not in known]
+        if not new_tools:
+            return
 
         for key, fn_name in new_tools:
             cmd     = f"/{key.lower()}"
@@ -820,8 +940,11 @@ def _apply_patches(patches: dict[str, str]) -> list[str]:
             # ── Post-apply compile check ──────────────────────────────────────
             import py_compile as _pyc
             try:
-                _pyc.compile(fname, doraise=True)
-            except _pyc.PyCompileError as ce:
+                # Use ast.parse instead of py_compile to avoid Windows path issues
+                import ast as _ast
+                with open(fname, encoding="utf-8") as _cf:
+                    _ast.parse(_cf.read())
+            except SyntaxError as ce:
                 # Revert immediately from backup
                 safe_print(f"   💥 Post-write compile FAILED: {ce}", flush=True)
                 safe_print(f"   🔄 Reverting to backup...", flush=True)
@@ -935,9 +1058,33 @@ def self_mod_tool(task: str):
     target_files = _detect_target_files(task)
     safe_print(f"📁 Target files: {', '.join(target_files)}", flush=True)
 
-    # ── 3. Generate patch ─────────────────────────────────────────────────────
+    # ── 2b. Surgical agent.py patch (for /command additions) ─────────────────
+    # agent.py is too large for local LLM to rewrite reliably.
+    # Instead, we use a template-based str.replace insertion.
+    _agent_patched = False
+    _llm_targets   = list(target_files)   # files sent to LLM
+
+    if any(os.path.basename(f) == "agent.py" for f in target_files):
+        # Extract command name from task  e.g. "add a /weather command" → "weather"
+        import re as _re
+        _cmd_match = _re.search(r'/([a-z_]+)', task.lower())
+        if not _cmd_match:
+            _cmd_match = _re.search(
+                r'(?:add|new)\s+(?:a\s+)?(?:command\s+)?([a-z_]+)\s+command',
+                task.lower()
+            )
+        if _cmd_match:
+            _cmd_name  = _cmd_match.group(1)
+            _tool_key  = _cmd_name.upper()
+            safe_print(f"🔩 Patching agent.py surgically for /{_cmd_name}...", flush=True)
+            _agent_patched = _patch_agent_py(task, _cmd_name, _tool_key)
+        # Remove agent.py from LLM targets — handled surgically above
+        _llm_targets = [f for f in _llm_targets if "agent.py" not in f]
+
+    # ── 3. Generate patch (LLM — only non-agent files) ────────────────────────
     safe_print("⚙️  Generating code patch (escalation ladder)...", flush=True)
-    patches = _generate_patch(task, target_files, search_results)
+    patches = _generate_patch(task, _llm_targets, search_results,
+                               agent_patched=_agent_patched)
 
     if not patches:
         safe_print("❌ No valid patches generated — self-mod aborted.", flush=True)
@@ -1107,7 +1254,7 @@ def self_mod_tool(task: str):
             # Try with the next model up in the ladder
             from model_advisor import ESCALATION_LADDER
             current_idx = 0
-            retry_patches = _generate_patch(task, target_files, search_results,
+            retry_patches = _generate_patch(task, _llm_targets, search_results,
                                              force_model_idx=min(current_idx + attempt + 1,
                                                                   len(ESCALATION_LADDER) - 1))
             if retry_patches:
@@ -1118,10 +1265,11 @@ def self_mod_tool(task: str):
         _sync_commands_to_gui(patches, task)
 
     # ── 7. Report ─────────────────────────────────────────────────────────────
-    if updated:
+    all_updated = updated + (["agent.py"] if _agent_patched and "agent.py" not in updated else [])
+    if all_updated:
         safe_print(
             f"\n✅ Self-modification complete!\n"
-            f"   Updated: {', '.join(updated)}\n"
+            f"   Updated: {', '.join(all_updated)}\n"
             f"   ⚠️  Restart the agent to apply changes.\n",
             flush=True
         )

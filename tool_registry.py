@@ -80,6 +80,12 @@ def _tool_time(user: str):
     print()
 
 
+def _tool_date(user: str):  # New tool for showing today's date
+    current_date = datetime.now().strftime("%Y-%m-%d")
+    print(f"\n📅 Today's Date")
+    print(f"   📅 Date     : {current_date}")
+    print()
+
 # ── Registry ─────────────────────────────────────────────────────────────────
 # To add a new tool: add one entry here and implement the function above.
 
@@ -95,6 +101,7 @@ TOOL_REGISTRY: dict = {
     "SELF_MOD": _tool_self_mod,
     "STATUS":   _tool_status,
     "TIME":     _tool_time,
+    "DATE":     _tool_date,      # Added new tool for showing today's date
 }
 
 

@@ -44,6 +44,7 @@ COMMANDS = [
         ("metrics",                   "Show performance stats dashboard"),
         ("health",                    "Show domain health report"),
         ("new_chat",                  "Start a fresh conversation"),
+        ("/date",                      "date command that shows today's date"),
         ("exit",                      "Exit the agent"),
     ]),
 ]
