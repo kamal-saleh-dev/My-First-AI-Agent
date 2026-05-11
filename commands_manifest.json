@@ -1,0 +1,10 @@
+[
+  {"cmd": "/status",          "desc": "Show agent status and active model",    "section": "AGENT COMMANDS"},
+  {"cmd": "/time",            "desc": "Show current time",                     "section": "AGENT COMMANDS"},
+  {"cmd": "/date",            "desc": "Show today's date",                     "section": "AGENT COMMANDS"},
+  {"cmd": "/weather <city>",  "desc": "Show current weather for a city",       "section": "AGENT COMMANDS"},
+  {"cmd": "/memory",          "desc": "Show recent memories and success rate", "section": "AGENT COMMANDS"},
+  {"cmd": "/memory search",   "desc": "Search past tasks in memory",           "section": "AGENT COMMANDS"},
+  {"cmd": "/hello",           "desc": "Print a greeting",                      "section": "AGENT COMMANDS"},
+  {"cmd": "/joke",            "desc": "Tell a random joke",                    "section": "AGENT COMMANDS"}
+]

@@ -86,6 +86,126 @@ def _tool_date(user: str):  # New tool for showing today's date
     print(f"   📅 Date     : {current_date}")
     print()
 
+def _tool_memory(user: str):
+    """
+    /memory              — show recent memories + stats
+    /memory search <q>   — search memory for a query
+    /memory clear        — delete all memories (asks confirmation)
+    /memory export       — export to memory_export.json
+    """
+    from memory_store import memory
+    parts = user.strip().split(maxsplit=2)
+    sub   = parts[1].lower() if len(parts) > 1 else ""
+
+    if sub == "search":
+        query = " ".join(parts[2:]) if len(parts) > 2 else ""
+        if not query:
+            print("❌ Usage: /memory search <query>")
+        else:
+            memory.print_search(query)
+    elif sub == "clear":
+        # Don't use input() — it blocks the GUI thread.
+        # Require explicit "/memory clear confirm" instead.
+        if len(parts) > 2 and parts[2].lower() == "confirm":
+            memory.clear()
+        else:
+            print("⚠️  This will delete ALL memories permanently.")
+            print("   To confirm: /memory clear confirm")
+    elif sub == "export":
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            "memory_export.json")
+        memory.export(path)
+    else:
+        memory.print_recent(n=10)
+
+
+def _tool_weather(user: str):
+    """Show current weather for a city.  Usage: /weather <city>
+    Uses Open-Meteo + Nominatim — 100% free, no API key needed.
+    """
+    import urllib.request as _ur
+    import urllib.parse   as _up
+    import json           as _json
+
+    # ── 1. Parse city name ────────────────────────────────────────────────────
+    parts = user.strip().split(maxsplit=1)
+    city  = parts[1].strip() if len(parts) > 1 else ""
+    if not city:
+        print("❌ Usage: /weather <city>   e.g. /weather Cairo")
+        return
+
+    # ── 2. Geocode city → lat/lon (Nominatim, free) ───────────────────────────
+    try:
+        geo_url = (
+            "https://nominatim.openstreetmap.org/search?"
+            + _up.urlencode({"q": city, "format": "json", "limit": "1"})
+        )
+        req = _ur.Request(geo_url,
+                          headers={"User-Agent": "AI-Agent-Weather/1.0"})
+        with _ur.urlopen(req, timeout=8) as r:
+            geo = _json.loads(r.read().decode())
+    except Exception as e:
+        print(f"❌ Geocoding failed: {e}")
+        return
+
+    if not geo:
+        print(f"❌ City not found: '{city}'")
+        return
+
+    lat        = geo[0]["lat"]
+    lon        = geo[0]["lon"]
+    city_label = geo[0].get("display_name", city).split(",")[0]
+
+    # ── 3. Fetch weather (Open-Meteo, free, no key) ───────────────────────────
+    try:
+        wx_url = (
+            "https://api.open-meteo.com/v1/forecast?"
+            + _up.urlencode({
+                "latitude":   lat,
+                "longitude":  lon,
+                "current":    "temperature_2m,relative_humidity_2m,"
+                              "apparent_temperature,precipitation,"
+                              "wind_speed_10m,weathercode",
+                "wind_speed_unit": "kmh",
+                "timezone":   "auto",
+            })
+        )
+        with _ur.urlopen(wx_url, timeout=8) as r:
+            wx = _json.loads(r.read().decode())
+    except Exception as e:
+        print(f"❌ Weather fetch failed: {e}")
+        return
+
+    c    = wx.get("current", {})
+    temp = c.get("temperature_2m",      "?")
+    feel = c.get("apparent_temperature","?")
+    hum  = c.get("relative_humidity_2m","?")
+    wind = c.get("wind_speed_10m",      "?")
+    prec = c.get("precipitation",       0)
+    code = c.get("weathercode",         0)
+
+    # WMO weather code → description
+    _WMO = {
+        0:"Clear sky", 1:"Mainly clear", 2:"Partly cloudy", 3:"Overcast",
+        45:"Foggy", 48:"Icy fog",
+        51:"Light drizzle", 53:"Drizzle", 55:"Heavy drizzle",
+        61:"Light rain", 63:"Rain", 65:"Heavy rain",
+        71:"Light snow", 73:"Snow", 75:"Heavy snow",
+        80:"Rain showers", 81:"Showers", 82:"Violent showers",
+        95:"Thunderstorm", 96:"Thunderstorm + hail",
+    }
+    desc = _WMO.get(int(code), f"Code {code}")
+
+    print(f"\n🌤️  Weather in {city_label}")
+    print(f"   🌡️  Temperature : {temp}°C  (feels like {feel}°C)")
+    print(f"   🌦️  Condition   : {desc}")
+    print(f"   💧 Humidity    : {hum}%")
+    print(f"   💨 Wind        : {wind} km/h")
+    if prec:
+        print(f"   🌧️  Precipitation: {prec} mm")
+    print()
+
+
 # ── Registry ─────────────────────────────────────────────────────────────────
 # To add a new tool: add one entry here and implement the function above.
 
@@ -102,6 +222,8 @@ TOOL_REGISTRY: dict = {
     "STATUS":   _tool_status,
     "TIME":     _tool_time,
     "DATE":     _tool_date,      # Added new tool for showing today's date
+    "WEATHER":  _tool_weather,   # New tool for checking weather
+    "MEMORY":   _tool_memory,    # RAG memory — view, search, clear
 }
 
 

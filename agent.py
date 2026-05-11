@@ -27,6 +27,13 @@ from logger          import log, safe_print
 from state_manager   import _state, chat_history, project_context
 import llm_client
 
+# Load .env file — for OpenRouter key and any other API keys
+try:
+    from dotenv import load_dotenv as _load_dotenv
+    _load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed — set env vars manually or: pip install python-dotenv
+
 from model_router    import detect_mode
 from file_handler    import detect_intent, inject_globals as _fh_inject
 from session_manager import (load_all_sessions,
@@ -111,6 +118,8 @@ def _print_help():
 ║  /date                       Show today's date               ║
 ║  /time                       Show current time               ║
 ║  /weather                     Show weather info              ║
+║  /memory                     Show recent memories            ║
+║  /memory search <q>          Search past tasks               ║
 ║  exit                        Quit the agent                  ║
 ╚══════════════════════════════════════════════════════════════╝
 """, flush=True)
@@ -121,13 +130,16 @@ while True:
     try:
         user = input().strip()
         _state.last_user_input = user
+        _is_background_cmd = False   # set True for BACKGROUND_TOOLS
 
         if user.startswith("/model "):
             _switch_model(user.replace("/model", "").strip())
+            print("⚡AGENT_IDLE", flush=True)
             continue
 
         if user in ("⛔ STOP_AGENT", "STOP_AGENT"):
             print("⛔ Stopped.", flush=True)
+            print("⚡AGENT_IDLE", flush=True)
             continue
 
         if user.lower() == "exit":
@@ -142,98 +154,96 @@ while True:
             from self_mod import is_waiting_for_confirmation, provide_confirmation
             if is_waiting_for_confirmation() and user.strip().upper() in ("YES", "Y", "NO", "N"):
                 provide_confirmation(user)
+                # Don't emit ⚡AGENT_IDLE here — self_mod is still running
+                # in the background and will emit it when truly done.
                 continue
         except ImportError:
             pass
 
-        intent = detect_intent(user)
-        if intent != "default":
-            _state.active_intent = intent
+        # ── All inline commands — try/finally guarantees ⚡AGENT_IDLE ─────────
+        try:
+            intent = detect_intent(user)
+            if intent != "default":
+                _state.active_intent = intent
 
-        if user.startswith("load_session "):
-            sid = user.replace("load_session ", "").strip()
-            for s in load_all_sessions():
-                if s["id"] == sid:
-                    chat_history.clear()
-                    chat_history.extend(s["messages"])
-                    _state.current_session_id = sid
-                    break
-            continue
+            if user.startswith("load_session "):
+                sid = user.replace("load_session ", "").strip()
+                for s in load_all_sessions():
+                    if s["id"] == sid:
+                        chat_history.clear()
+                        chat_history.extend(s["messages"])
+                        _state.current_session_id = sid
+                        break
+                return_now = True
 
-        if user == "new_chat":
-            chat_history.clear()
-            _state.current_session_id = None
-            continue
+            elif user == "new_chat":
+                chat_history.clear()
+                _state.current_session_id = None
+                return_now = True
 
-        if user.strip() == "metrics":
-            metrics.print_dashboard()
-            metrics.save()
-            continue
+            elif user.strip() == "metrics":
+                metrics.print_dashboard()
+                metrics.save()
 
-        if user.strip() == "profile":
-            profiler.report()
-            continue
+            elif user.strip() == "profile":
+                profiler.report()
 
-        if user.strip() == "health":
-            print_health_report()
-            continue
+            elif user.strip() == "health":
+                print_health_report()
 
-        if user.strip() == "checkpoints":
-            get_checkpoint_manager().print_resumable()
-            continue
+            elif user.strip() == "checkpoints":
+                get_checkpoint_manager().print_resumable()
 
-        if user.strip() == "/scan":
-            from self_mod import scan_tool
-            scan_tool()
-            continue
+            elif user.strip() == "/scan":
+                from self_mod import scan_tool
+                scan_tool()
 
-        if user.strip().startswith("/read "):
-            parts = user.strip().split()
-            fname = parts[1] if len(parts) > 1 else ""
-            full  = len(parts) > 2 and parts[2].lower() == "full"
-            if fname:
-                from self_mod import read_tool, read_full_tool
-                (read_full_tool if full else read_tool)(fname)
-            continue
+            elif user.strip().startswith("/read "):
+                parts = user.strip().split()
+                fname = parts[1] if len(parts) > 1 else ""
+                full  = len(parts) > 2 and parts[2].lower() == "full"
+                if fname:
+                    from self_mod import read_tool, read_full_tool
+                    (read_full_tool if full else read_tool)(fname)
 
-        if user.strip().startswith("/diff "):
-            fname = user.strip().replace("/diff", "").strip()
-            if fname:
-                from self_mod import diff_tool
-                diff_tool(fname)
-            continue
+            elif user.strip().startswith("/diff "):
+                fname = user.strip().replace("/diff", "").strip()
+                if fname:
+                    from self_mod import diff_tool
+                    diff_tool(fname)
 
-        if user.strip() == "/status":
-            from tool_registry import TOOL_REGISTRY
-            TOOL_REGISTRY["STATUS"](user)
-            continue
+            elif user.strip() == "/status":
+                from tool_registry import TOOL_REGISTRY
+                TOOL_REGISTRY["STATUS"](user)
 
-        if user.strip() == "/time":
-            from tool_registry import TOOL_REGISTRY
-            if "TIME" in TOOL_REGISTRY:
-                TOOL_REGISTRY["TIME"](user)
-            else:
-                import datetime
-                print(f"\n🕒 Current Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-            continue
+            elif user.strip() == "/time":
+                from tool_registry import TOOL_REGISTRY
+                if "TIME" in TOOL_REGISTRY:
+                    TOOL_REGISTRY["TIME"](user)
+                else:
+                    import datetime
+                    print(f"\n🕒 Current Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
 
-        if user.strip() == "/weather":
-            from tool_registry import TOOL_REGISTRY
-            if "WEATHER" in TOOL_REGISTRY:
-                TOOL_REGISTRY["WEATHER"](user)
-            continue
+            elif user.strip().startswith("/weather"):
+                from tool_registry import TOOL_REGISTRY
+                if "WEATHER" in TOOL_REGISTRY:
+                    TOOL_REGISTRY["WEATHER"](user)
 
-        if user.strip() == "/date":
-            from tool_registry import TOOL_REGISTRY
-            if "DATE" in TOOL_REGISTRY:
-                TOOL_REGISTRY["DATE"](user)
-            else:
-                import datetime
-                print(f"\n📅 Today's Date: {datetime.datetime.now().strftime('%Y-%m-%d')}\n")
-            continue
+            elif user.strip() == "/date":
+                from tool_registry import TOOL_REGISTRY
+                if "DATE" in TOOL_REGISTRY:
+                    TOOL_REGISTRY["DATE"](user)
+                else:
+                    import datetime
+                    print(f"\n📅 Today's Date: {datetime.datetime.now().strftime('%Y-%m-%d')}\n")
 
-        if user.strip() == "/help":
-            print("""
+            elif user.strip().startswith("/memory"):
+                from tool_registry import TOOL_REGISTRY
+                if "MEMORY" in TOOL_REGISTRY:
+                    TOOL_REGISTRY["MEMORY"](user)
+
+            elif user.strip() == "/help":
+                print("""
 ╔══════════════════════════════════════════════════════════╗
 ║                    AGENT COMMANDS                        ║
 ╠══════════════════════════════════════════════════════════╣
@@ -271,32 +281,40 @@ while True:
 ║  /date                      Show today's date            ║
 ║  /time                      Show current time            ║
 ║  /help                      Show this menu               ║
-║  /weather                    Show weather info             ║
+║  /weather                   Show weather info            ║
+║  /memory                    Show recent memories         ║
+║  /memory search <q>         Search past tasks            ║
 ║  exit                       Exit the agent               ║
 ╚══════════════════════════════════════════════════════════╝
 """, flush=True)
-            continue
 
-        if user.startswith("/resume "):
-            project_name = user.replace("/resume", "").strip()
-            from chat_handler import chat_tool
-            cp = get_checkpoint_manager().load(project_name)
-            if cp:
-                safe_print(f"♻️  Resuming '{project_name}'...")
-                run_in_background(chat_tool, cp.task,
-                                  **{"_hint_domain": cp.engine, "_resume": True})
+            elif user.startswith("/resume "):
+                project_name = user.replace("/resume", "").strip()
+                from chat_handler import chat_tool
+                cp = get_checkpoint_manager().load(project_name)
+                if cp:
+                    safe_print(f"♻️  Resuming '{project_name}'...")
+                    run_in_background(chat_tool, cp.task,
+                                      **{"_hint_domain": cp.engine, "_resume": True})
+                    _is_background_cmd = True
+                else:
+                    safe_print(f"❌ No resumable checkpoint found for '{project_name}'")
+
             else:
-                safe_print(f"❌ No resumable checkpoint found for '{project_name}'")
-            continue
+                mode, detected_domain = detect_mode(user)
+                tool = get_tool(mode)
+                if mode in BACKGROUND_TOOLS:
+                    kw = {"_hint_domain": detected_domain} if detected_domain != "general" else {}
+                    run_in_background(tool, user, **kw)
+                    _is_background_cmd = True
+                else:
+                    tool(user)
 
-        mode, detected_domain = detect_mode(user)
-        tool = get_tool(mode)
-
-        if mode in BACKGROUND_TOOLS:
-            kw = {"_hint_domain": detected_domain} if detected_domain != "general" else {}
-            run_in_background(tool, user, **kw)
-        else:
-            tool(user)
+        finally:
+            # Always restore the Send button for inline commands.
+            # Background tools emit ⚡AGENT_IDLE themselves when done.
+            if not _is_background_cmd:
+                print("⚡AGENT_IDLE", flush=True)
 
     except (KeyboardInterrupt, EOFError):
         # EOFError = stdin closed after Ctrl+C during shutdown — normal, not an error

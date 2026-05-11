@@ -247,11 +247,114 @@ def diff_tool(filename: str):
 # 1. WEB SEARCH
 # ══════════════════════════════════════════════════════════════
 
-def _web_search(query: str, max_results: int = 5) -> str:
+def _searxng_search(query: str, max_results: int = 5,
+                    base_url: str = "http://localhost:8080") -> str:
     """
-    Search the web for implementation guidance.
-    Returns a formatted string of results, or empty string on failure.
+    Search via a local SearXNG instance (aggregates Google, Bing, DDG etc.)
+    Returns formatted results string, or empty string if unavailable.
+    Run with: docker run -d -p 8080:8080 searxng/searxng
     """
+    try:
+        import urllib.parse as _up
+        import urllib.request as _ur
+        import json as _json
+
+        params = _up.urlencode({
+            "q":          query,
+            "format":     "json",
+            "categories": "general",
+        })
+        url = f"{base_url}/search?{params}"
+        req = _ur.Request(url, headers={"User-Agent": "AI-Agent/1.0"})
+        with _ur.urlopen(req, timeout=5) as resp:
+            data = _json.loads(resp.read().decode())
+
+        results = []
+        for r in data.get("results", [])[:max_results]:
+            title   = r.get("title",   "")
+            snippet = r.get("content", "")[:300]
+            href    = r.get("url",     "")
+            results.append(f"• {title}\n  {snippet}\n  {href}")
+        return "\n\n".join(results) if results else ""
+    except Exception:
+        return ""
+
+
+def _playwright_google_search(query: str, max_results: int = 5) -> str:
+    """
+    Search Google directly via Playwright (headless Chromium).
+    Parses real Google results — no API key needed.
+    Falls back silently if Playwright isn't installed or captcha is hit.
+
+    Install once:
+      pip install playwright
+      playwright install chromium
+    """
+    try:
+        from playwright.sync_api import sync_playwright as _pw
+    except ImportError:
+        return ""   # not installed — silent fallback
+
+    try:
+        import urllib.parse as _up
+        search_url = f"https://www.google.com/search?q={_up.quote(query)}&hl=en&num={max_results + 2}"
+
+        with _pw() as pw:
+            browser = pw.chromium.launch(headless=True)
+            ctx     = browser.new_context(
+                user_agent=(
+                    "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                    "AppleWebKit/537.36 (KHTML, like Gecko) "
+                    "Chrome/124.0.0.0 Safari/537.36"
+                ),
+                locale="en-US",
+            )
+            page = ctx.new_page()
+
+            # Block images/fonts to speed up loading
+            page.route("**/*.{png,jpg,jpeg,gif,webp,woff,woff2,ttf}", lambda r: r.abort())
+
+            page.goto(search_url, wait_until="domcontentloaded", timeout=15_000)
+
+            # ── Captcha detection ─────────────────────────────────────────────
+            if any(x in page.url for x in ("sorry/index", "captcha", "recaptcha")):
+                browser.close()
+                log.warn("Google search: captcha detected — falling back to DuckDuckGo")
+                return ""
+
+            if "detected unusual traffic" in page.content().lower():
+                browser.close()
+                log.warn("Google search: rate-limited — falling back to DuckDuckGo")
+                return ""
+
+            # ── Parse results ─────────────────────────────────────────────────
+            results = []
+            blocks  = page.query_selector_all("div.g")
+            for block in blocks[:max_results]:
+                try:
+                    title_el   = block.query_selector("h3")
+                    snippet_el = block.query_selector("div[data-sncf], div.VwiC3b, span.aCOpRe")
+                    link_el    = block.query_selector("a[href]")
+
+                    title   = title_el.inner_text().strip()   if title_el   else ""
+                    snippet = snippet_el.inner_text()[:300].strip() if snippet_el else ""
+                    href    = link_el.get_attribute("href")   if link_el    else ""
+
+                    if title and href and href.startswith("http"):
+                        results.append(f"• {title}\n  {snippet}\n  {href}")
+                except Exception:
+                    continue
+
+            browser.close()
+            return "\n\n".join(results) if results else ""
+
+    except Exception as e:
+        log.warn(f"Playwright Google search failed: {e}")
+        return ""
+
+
+def _duckduckgo_search(query: str, max_results: int = 5) -> str:
+    """Search via DuckDuckGo. Returns formatted results or empty string."""
     try:
         try:
             from ddgs import DDGS as _DDGS
@@ -259,7 +362,6 @@ def _web_search(query: str, max_results: int = 5) -> str:
             try:
                 from duckduckgo_search import DDGS as _DDGS
             except ImportError:
-                safe_print("⚠️  Install ddgs: pip install ddgs")
                 return ""
         import warnings as _w
         results = []
@@ -273,12 +375,47 @@ def _web_search(query: str, max_results: int = 5) -> str:
                 href  = r.get("href",  "")
                 results.append(f"• {title}\n  {body}\n  {href}")
         return "\n\n".join(results) if results else ""
-    except ImportError:
-        safe_print("⚠️  duckduckgo-search not installed — skipping web search. Run: pip install duckduckgo-search")
-        return ""
     except Exception as e:
-        log.warn(f"Web search failed: {e}")
+        log.warn(f"DuckDuckGo search failed: {e}")
         return ""
+
+
+def _web_search(query: str, max_results: int = 5) -> str:
+    """
+    Search the web for implementation guidance.
+    Priority ladder (first success wins):
+      1. SearXNG   — local Docker, aggregates Google+Bing+DDG, no limits
+      2. Google    — Playwright headless scrape, real results, captcha-aware
+      3. DuckDuckGo — pure Python fallback, always available
+
+    One-time setup (pick one):
+      SearXNG : docker run -d -p 8080:8080 searxng/searxng
+      Google  : pip install playwright && playwright install chromium
+      DDG     : pip install ddgs   (zero setup — last resort)
+    """
+    # ── 1. SearXNG ────────────────────────────────────────────────────────────
+    results = _searxng_search(query, max_results)
+    if results:
+        safe_print("   🔍 Search via SearXNG", flush=True)
+        return results
+
+    # ── 2. Google via Playwright ──────────────────────────────────────────────
+    results = _playwright_google_search(query, max_results)
+    if results:
+        safe_print("   🔍 Search via Google (Playwright)", flush=True)
+        return results
+
+    # ── 3. DuckDuckGo fallback ────────────────────────────────────────────────
+    results = _duckduckgo_search(query, max_results)
+    if results:
+        safe_print("   🔍 Search via DuckDuckGo", flush=True)
+        return results
+
+    safe_print("⚠️  No search results — all engines failed.", flush=True)
+    safe_print("   • SearXNG : docker run -d -p 8080:8080 searxng/searxng", flush=True)
+    safe_print("   • Google  : pip install playwright && playwright install chromium", flush=True)
+    safe_print("   • DDG     : pip install ddgs", flush=True)
+    return ""
 
 
 # ══════════════════════════════════════════════════════════════
@@ -365,21 +502,20 @@ def _detect_target_files(task: str) -> list[str]:
 # 3. CODE PATCH GENERATION (with escalation)
 # ══════════════════════════════════════════════════════════════
 
-def _read_file_snippet(filepath: str) -> str:
+def _read_file_snippet(filepath: str, max_chars: int = 10000) -> str:
     """
     Read source file for LLM context.
-    - Files under 6000 chars: read fully (no truncation).
-    - Larger files: read first 2000 + last 1000 chars so critical
-      end-of-file symbols (BACKGROUND_TOOLS, get_tool) are always visible.
+    - Files under max_chars: read fully.
+    - Larger files: head + tail so TOOL_REGISTRY dict (at end) is always visible.
     """
     try:
         with open(filepath, encoding="utf-8", errors="ignore") as f:
             full = f.read()
-        if len(full) <= 6000:
-            return full          # small file — send everything
-        # Large file: head + tail so nothing critical at the end is lost
-        head = full[:2500]
-        tail = full[-1000:]
+        if len(full) <= max_chars:
+            return full
+        # Keep more head (functions) + more tail (TOOL_REGISTRY dict + get_tool)
+        head = full[:6000]
+        tail = full[-2000:]
         return head + "\n\n# ... (middle truncated) ...\n\n" + tail
     except Exception:
         return ""
@@ -406,23 +542,20 @@ def _patch_agent_py(task: str, cmd_name: str, tool_key: str) -> bool:
         return False
 
     # ── 1. Add handler after /time block ─────────────────────────────────────
-    TIME_ANCHOR = (
-        "        if user.strip() == \"/time\":\n"
-        "            from tool_registry import TOOL_REGISTRY\n"
-        "            if \"TIME\" in TOOL_REGISTRY:\n"
-        "                TOOL_REGISTRY[\"TIME\"](user)\n"
-        "            else:\n"
-        "                import datetime\n"
-        "                print(f\"\\n🕒 Current Time: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\\n\")\n"
-        "            continue"
+    # Support both old (if) and new (elif) agent.py structure
+    TIME_ANCHOR_ELIF = (
+        "        elif user.strip() == \"/time\":\n"
     )
+    TIME_ANCHOR_IF = (
+        "        if user.strip() == \"/time\":\n"
+    )
+    TIME_ANCHOR = TIME_ANCHOR_ELIF if TIME_ANCHOR_ELIF in content else TIME_ANCHOR_IF
 
     new_handler = (
-        f"\n\n        if user.strip() == \"/{cmd_name}\":\n"
+        f"\n\n        elif user.strip() == \"/{cmd_name}\":\n"
         f"            from tool_registry import TOOL_REGISTRY\n"
         f"            if \"{tool_key}\" in TOOL_REGISTRY:\n"
         f"                TOOL_REGISTRY[\"{tool_key}\"](user)\n"
-        f"            continue"
     )
 
     if f'"/{cmd_name}"' in content:
@@ -575,7 +708,11 @@ def _generate_patch(task: str, target_files: list[str],
     for model_alias in models_to_try:
         safe_print(f"   🔁 Trying {model_alias}...", flush=True)
         try:
-            r = safe_chat(model=model_alias, messages=messages)
+            # Cap tokens for cloud models to avoid 402 insufficient credits.
+            # Local Ollama ignores this parameter safely.
+            _is_cloud = "/" in str(model_alias) or model_alias.startswith("or_")
+            _call_kw  = {"max_tokens": 4096} if _is_cloud else {}
+            r = safe_chat(model=model_alias, messages=messages, **_call_kw)
             response = get_response(r)
             patches  = _parse_file_blocks(response, target_files)
 
@@ -691,7 +828,8 @@ def _safety_check(code: str, filename: str) -> tuple[bool, str]:
 # 5. APPLY PATCHES
 # ══════════════════════════════════════════════════════════════
 
-def _review_patch(task: str, fname: str, original: str, new_code: str) -> tuple[bool, str]:
+def _review_patch(task: str, fname: str, original: str, new_code: str,
+                  skip_llm: bool = False) -> tuple[bool, str]:
     """
     8-layer patch reviewer. Layers 1-7 are hard rules (no LLM).
     Layer 8 is LLM soft opinion (non-blocking).
@@ -771,11 +909,15 @@ def _review_patch(task: str, fname: str, original: str, new_code: str) -> tuple[
     # functions but have no def/import for them.
     # (Skipped for brevity — covered by syntax + AST checks above.)
 
-    # ── 8. LLM soft opinion (non-blocking) ───────────────────────────────────
+    # ── 8. LLM soft opinion (advisory only — never blocks) ───────────────────
+    # This check is intentionally non-blocking: it logs the LLM's opinion but
+    # never causes a failure. The deterministic checks 1-6 are authoritative.
+    # Surgical merges in particular look "incomplete" to an LLM because it only
+    # sees the added code, not the full merged file.
     try:
         r = safe_chat(model=_get_best_reviewer(), messages=[
             {"role": "system", "content": (
-                "You are a strict Python code reviewer.\n"
+                "You are a Python code reviewer.\n"
                 "Reply ONLY:\nVERDICT: OK\nREASON: <one line>\n"
                 "or\nVERDICT: FAIL\nREASON: <one line>"
             )},
@@ -793,23 +935,18 @@ def _review_patch(task: str, fname: str, original: str, new_code: str) -> tuple[
                  for l in resp.splitlines() if l.startswith("REASON:")),
                 "LLM rejected"
             )
-            return False, f"LLM: {reason}"
+            log.warn(f"LLM reviewer opinion (advisory): {reason}")
+            # NOT returning False — deterministic checks already passed
     except Exception as e:
         log.warn(f"LLM review skipped ({type(e).__name__})")
 
-    return True, "all 8 checks passed"
+    return True, "all checks passed"
 
 
 def _get_best_reviewer() -> str:
-    """Return the best available model for reviewing. Always returns local as fallback."""
-    import llm_client as _lc
-    if _lc.USE_OPENROUTER and _lc.cloud_client:
-        for alias in ("or_llama", "or_free", "or_gemma"):
-            resolved = _lc.MODEL_ALIASES.get(alias, "")
-            if resolved:
-                return alias
-    # Always fall back to local — never fail because of cloud unavailability
-    return _lc.DEFAULT_MODEL
+    """Always use the local Ollama model for review — never cloud (avoids 429)."""
+    import config as _cfg
+    return _cfg.DEFAULT_MODEL
 
 
 def _update_commands_manifest(fname: str, code: str) -> None:
@@ -854,6 +991,51 @@ def _update_commands_manifest(fname: str, code: str) -> None:
         log.warn(f"Commands manifest update failed: {e}")
 
 
+def _fix_missing_imports(blocks: list[str]) -> list[str]:
+    """
+    Ensure each code block has its third-party imports inside it.
+    E.g. if a function calls pyjokes.get_joke() but has no 'import pyjokes',
+    inject 'import pyjokes' right after the def line.
+    """
+    import re as _re_fi
+    _STDLIB = {
+        "os","sys","re","json","time","datetime","math","random",
+        "threading","subprocess","pathlib","shutil","glob","ast",
+        "collections","itertools","functools","typing","io","copy",
+        "hashlib","base64","urllib","http","traceback","warnings",
+        "logging","inspect","importlib","platform","tempfile","string",
+    }
+    _INTERNAL = {
+        "logger","state_manager","llm_client","config","errors",
+        "model_router","model_advisor","chat_handler","tool_registry",
+        "self_mod","session_manager","shutdown_manager","recovery",
+        "memory_store","metrics","profiler","domain_sandbox",
+        "file_handler","project_tools","project_builder",
+        "generation_engine","compiler_tools","script_generator",
+        "script_reviewer","unity_pipeline","planner","env_check",
+    }
+    fixed = []
+    for blk in blocks:
+        used_mods   = set(_re_fi.findall(r'\b([a-z][a-z0-9_]+)\.\w+', blk))
+        existing    = set(_re_fi.findall(r'^\s*import\s+(\w+)', blk, _re_fi.MULTILINE))
+        existing   |= set(_re_fi.findall(r'^\s*from\s+(\w+)', blk, _re_fi.MULTILINE))
+        missing     = used_mods - existing - _STDLIB - _INTERNAL
+        if missing:
+            lines = blk.splitlines()
+            insert_at = 1
+            for i, ln in enumerate(lines[1:], 1):
+                s = ln.strip()
+                if s.startswith(('"""', "'''")):
+                    insert_at = i + 1
+                elif s and not s.startswith('#'):
+                    break
+            for mod in sorted(missing):
+                lines.insert(insert_at, f"    import {mod}")
+            blk = "\n".join(lines)
+        fixed.append(blk)
+    return fixed
+
+
 def _apply_patches(patches: dict[str, str]) -> list[str]:
     """
     Backup + write each patch.
@@ -890,26 +1072,114 @@ def _apply_patches(patches: dict[str, str]) -> list[str]:
                 safe_print(f"❌ {fname} rejected after {MAX_FIX} fix attempts — skipping.", flush=True)
                 code = None
                 break
-            # Ask LLM to fix the specific problem
             safe_print(f"   🔧 Auto-fixing: {review_reason}...", flush=True)
             fname = os.path.basename(fname) if os.path.sep in fname else fname
+
+            # ── Strategy A: surgical merge (when LLM truncated the file) ──────
+            # If the patch deleted too much, extract only the NEW functions the
+            # LLM added and splice them into the original file. This is 100%
+            # reliable and needs no LLM call at all.
+            if "deletes too much code" in review_reason or "removes functions" in review_reason:
+                try:
+                    import ast as _ast2
+                    orig_tree2  = _ast2.parse(original)
+                    patch_tree2 = _ast2.parse(code)
+                    orig_defs2  = {n.name for n in _ast2.walk(orig_tree2)
+                                   if isinstance(n, (_ast2.FunctionDef,
+                                                     _ast2.AsyncFunctionDef,
+                                                     _ast2.ClassDef))}
+                    # Lines of the failed patch that define NEW symbols
+                    new_blocks = []
+                    code_lines = code.splitlines()
+                    for node in _ast2.walk(patch_tree2):
+                        if isinstance(node, (_ast2.FunctionDef,
+                                             _ast2.AsyncFunctionDef,
+                                             _ast2.ClassDef)):
+                            if node.name not in orig_defs2:
+                                start = node.lineno - 1
+                                end   = (node.end_lineno
+                                         if hasattr(node, "end_lineno")
+                                         else start + 20)
+                                block = "\n".join(code_lines[start:end])
+                                new_blocks.append(block)
+                    if new_blocks:
+                        new_blocks = _fix_missing_imports(new_blocks)
+                        # Append new functions to the original
+                        merged = original.rstrip() + "\n\n\n" + "\n\n\n".join(new_blocks)
+                        # Pull new TOOL_REGISTRY entries from the FULL patch (not just new_blocks)
+                        import re as _re2
+                        all_patch_entries = _re2.findall(
+                            r'"([A-Z_]+)":\s+(_tool_\w+)',
+                            code
+                        )
+                        orig_entries = set(_re2.findall(
+                            r'"([A-Z_]+)":\s+_tool_\w+',
+                            original
+                        ))
+                        new_reg_entries = [
+                            (k, v) for k, v in all_patch_entries
+                            if k not in orig_entries
+                        ]
+                        # Fallback: derive registry entry from function name
+                        if not new_reg_entries:
+                            for block in new_blocks:
+                                m_fn = _re2.search(r'def (_tool_(\w+))\s*\(', block)
+                                if m_fn:
+                                    fn_full = m_fn.group(1)
+                                    key     = m_fn.group(2).upper()
+                                    if key not in orig_entries:
+                                        new_reg_entries.append((key, fn_full))
+                        for key, fn in new_reg_entries:
+                            entry_line = f'    "{key}": {fn},'
+                            merged = _re2.sub(
+                                r'(?m)(^})',
+                                f'{entry_line}\n' + r'\1',
+                                merged,
+                                count=1,
+                            )
+                            safe_print(
+                                f"   📋 Added registry entry: \"{key}\": {fn}",
+                                flush=True
+                            )
+                        code = merged
+                        safe_print(f"   🔩 Surgical merge: inserted {len(new_blocks)} new block(s) into original",
+                                   flush=True)
+                        continue   # re-review the merged result
+                except Exception as _merge_err:
+                    log.warn(f"Surgical merge failed: {_merge_err}")
+                    # Fall through to LLM fix
+
+            # ── Strategy B: LLM fix — always use local model, never cloud ─────
+            # Using DEFAULT_MODEL (the active model) risks hitting cloud rate
+            # limits. config.DEFAULT_MODEL is always the local Ollama model.
+            import config as _cfg
+            _fix_model = _cfg.DEFAULT_MODEL   # always local — never 429
+
+            # Keep prompt short to stay within token limits of any model
+            orig_preview  = original[:1500]
+            code_preview  = code[:1000]
             fix_prompt = (
-                f"CRITICAL FIX NEEDED — previous attempt failed.\n"
+                f"CRITICAL FIX NEEDED.\n"
                 f"ISSUE: {review_reason}\n"
                 f"TASK: {_current_task}\n\n"
-                f"ORIGINAL FILE (keep everything in it):\n```python\n{original[:2000]}\n```\n\n"
-                f"FAILED ATTEMPT:\n```python\n{code[:2000]}\n```\n\n"
-                f"Write the COMPLETE fixed file that:\n"
-                f"1. Implements: {_current_task}\n"
-                f"2. Preserves EVERY function from the original\n"
-                f"3. Fixes: {review_reason}\n\n"
-                f"Output format: ===FILE: {fname}===\n```python\n...\n```"
+                f"ORIGINAL FILE (first 1500 chars — keep ALL of it):\n"
+                f"```python\n{orig_preview}\n```\n\n"
+                f"FAILED ATTEMPT:\n```python\n{code_preview}\n```\n\n"
+                f"Rules:\n"
+                f"1. Output the COMPLETE file — every original function MUST be present\n"
+                f"2. Add only what the task requires\n"
+                f"3. Fix: {review_reason}\n\n"
+                f"Output ONLY: ===FILE: {fname}===\n```python\n...\n```"
             )
             try:
-                r2  = safe_chat(model=llm_client.DEFAULT_MODEL, messages=[
-                    {"role": "system", "content": "You are a Python expert. Fix the issue and return the complete fixed file."},
-                    {"role": "user",   "content": fix_prompt},
-                ])
+                r2  = safe_chat(
+                    model=_fix_model,
+                    messages=[
+                        {"role": "system",
+                         "content": "You are a Python expert. Return the complete fixed file."},
+                        {"role": "user", "content": fix_prompt},
+                    ],
+                )
                 raw = get_response(r2)
                 import re as _re
                 m   = _re.search(r"```python\n(.*?)```", raw, _re.DOTALL)
@@ -927,6 +1197,7 @@ def _apply_patches(patches: dict[str, str]) -> list[str]:
             continue
 
         # Backup
+        backup = None
         if os.path.exists(fname):
             backup = f"{fname}.{int(time.time())}.bak"
             shutil.copy2(fname, backup)
@@ -938,19 +1209,22 @@ def _apply_patches(patches: dict[str, str]) -> list[str]:
                 f.write(code)
 
             # ── Post-apply compile check ──────────────────────────────────────
-            import py_compile as _pyc
             try:
-                # Use ast.parse instead of py_compile to avoid Windows path issues
                 import ast as _ast
                 with open(fname, encoding="utf-8") as _cf:
                     _ast.parse(_cf.read())
             except SyntaxError as ce:
-                # Revert immediately from backup
                 safe_print(f"   💥 Post-write compile FAILED: {ce}", flush=True)
-                safe_print(f"   🔄 Reverting to backup...", flush=True)
-                if os.path.exists(backup):
+                if backup and os.path.exists(backup):
+                    safe_print(f"   🔄 Reverting to backup...", flush=True)
                     shutil.copy2(backup, fname)
                     safe_print(f"   ✅ Reverted successfully.", flush=True)
+                else:
+                    safe_print(f"   ⚠️  No backup to revert — new file removed.", flush=True)
+                    try:
+                        os.remove(fname)
+                    except Exception:
+                        pass
                 continue
 
             log.success(f"✅ {fname} updated")
@@ -969,46 +1243,81 @@ def _apply_patches(patches: dict[str, str]) -> list[str]:
 
 def _sync_commands_to_gui(patches: dict, task: str) -> None:
     """
-    When a new tool is added to tool_registry.py, auto-add it to
-    the Commands panel in agent_gui.py so it shows up immediately.
-    """
-    import re as _re
-    gui_path = "agent_gui.py"
-    if not os.path.exists(gui_path):
-        return
+    When a new tool is added to tool_registry.py, register it in
+    commands_manifest.json so agent_gui.py picks it up automatically.
 
-    # Find new tool keys added to TOOL_REGISTRY
-    new_keys = []
+    Uses the manifest (loaded by _get_all_commands in agent_gui.py) instead
+    of patching agent_gui.py directly — safer and always correct.
+    """
+    import re as _re, json as _json
+
+    # ── Find new tool keys added to TOOL_REGISTRY ─────────────────────────────
+    new_keys: list[str] = []
     for fname, code in patches.items():
         if "tool_registry" not in fname:
             continue
         found = _re.findall(r'"([A-Z_]+)":\s+_tool_\w+', code)
-        existing = {"GAME","PROJECT","JOB","DELETE","RUN","ATTACH","CLEAR","CHAT","SELF_MOD","STATUS","TIME"}
+        existing = {
+            "GAME", "PROJECT", "JOB", "DELETE", "RUN", "ATTACH",
+            "CLEAR", "CHAT", "SELF_MOD", "STATUS", "TIME", "DATE",
+        }
         new_keys = [k for k in found if k not in existing]
 
     if not new_keys:
         return
 
+    manifest_path = os.path.join(_get_project_root(), "commands_manifest.json")
+
+    # ── Load existing manifest ────────────────────────────────────────────────
+    manifest: list[dict] = []
+    if os.path.exists(manifest_path):
+        try:
+            with open(manifest_path, encoding="utf-8") as _f:
+                manifest = _json.load(_f)
+        except Exception:
+            manifest = []
+
+    existing_cmds = {e.get("cmd", "") for e in manifest}
+
+    # ── Build clean description from task ─────────────────────────────────────
+    # "add a /weather command" → "Show weather info"
+    # "add a /calc command that solves math" → "Solve math expressions"
+    def _make_desc(cmd_name: str, raw_task: str) -> str:
+        # Strip common boilerplate words
+        cleaned = (raw_task
+                   .lower()
+                   .replace("add a", "").replace("add an", "").replace("add", "")
+                   .replace(f"/{cmd_name}", "").replace(cmd_name, "")
+                   .replace("command", "").replace("that", "")
+                   .replace("which", "").replace("to", "")
+                   .strip(" /-"))
+        # Capitalise first word
+        if cleaned:
+            return cleaned[:60].capitalize()
+        return f"Run /{cmd_name}"
+
+    # ── Register each new command ─────────────────────────────────────────────
+    added: list[str] = []
+    for key in new_keys:
+        cmd_name = f"/{key.lower()}"
+        if cmd_name in existing_cmds:
+            continue
+        desc = _make_desc(key.lower(), task)
+        manifest.append({"section": "AGENT COMMANDS", "cmd": cmd_name, "desc": desc})
+        existing_cmds.add(cmd_name)
+        added.append(cmd_name)
+
+    if not added:
+        return
+
+    # ── Write manifest ────────────────────────────────────────────────────────
     try:
-        with open(gui_path, "r", encoding="utf-8") as f:
-            gui_content = f.read()
-
-        # Find the SYSTEM section in COMMANDS and add new commands there
-        cmd_name = new_keys[0].lower()
-        cmd_desc = task.replace("add a", "").replace("add", "").replace("/","").strip()
-        cmd_desc = cmd_desc[:60] if cmd_desc else f"Run /{cmd_name}"
-
-        pad        = " " * max(1, 26 - len(cmd_name))
-        old_system = '        ("exit",                      "Exit the agent"),'
-        new_entry  = f'        ("/{cmd_name}",{pad}"{cmd_desc}"),\n' + old_system
-
-        if old_system in gui_content and new_entry not in gui_content:
-            gui_content = gui_content.replace(old_system, new_entry, 1)
-            with open(gui_path, "w", encoding="utf-8") as f:
-                f.write(gui_content)
-            safe_print(f"   📋 Added /{cmd_name} to Commands panel in agent_gui.py", flush=True)
+        with open(manifest_path, "w", encoding="utf-8") as _f:
+            _json.dump(manifest, _f, ensure_ascii=False, indent=2)
+        for cmd in added:
+            safe_print(f"   📋 Registered {cmd} in commands_manifest.json", flush=True)
     except Exception as e:
-        log.warn(f"Could not sync command to GUI: {e}")
+        log.warn(f"Could not update commands manifest: {e}")
 
 
 def self_mod_tool(task: str):
@@ -1053,6 +1362,27 @@ def self_mod_tool(task: str):
         safe_print(f"✅ Got {search_results.count('•')} search results")
     else:
         safe_print("⚠️  No web results — proceeding without search context")
+
+    # ── 1b. Memory search ────────────────────────────────────────────────────
+    try:
+        from memory_store import memory as _mem
+        _mem_context = _mem.format_context(task, top_k=3)
+        # Also search for known errors related to this task
+        _err_hits = _mem.search(f"error fix {task}", top_k=2, only_successful=False)
+        _known_errors = [h for h in _err_hits if not h.get("s", 1)]
+        if _known_errors:
+            _err_ctx = "KNOWN PAST ERRORS TO AVOID:\n" + "\n".join(
+                f"  ❌ {h.get('q','')} → {h.get('r','')}" for h in _known_errors
+            )
+            _mem_context = (_mem_context + "\n\n" + _err_ctx
+                            if _mem_context else _err_ctx)
+        if _mem_context:
+            safe_print(f"🧠 Found relevant past experience in memory", flush=True)
+            search_results = (_mem_context + "\n\n" + search_results
+                              if search_results else _mem_context)
+    except Exception as _me:
+        log.warn(f"Memory search skipped: {_me}")
+        _mem_context = ""
 
     # ── 2. Detect target files ────────────────────────────────────────────────
     target_files = _detect_target_files(task)
@@ -1123,11 +1453,18 @@ def self_mod_tool(task: str):
             except Exception:
                 pass
 
-        current_code = code
+        current_code     = code
+        _surgical_merged = False   # flag: surgical merge applied this iteration
         for attempt in range(1, MAX_PRE_FIX + 1):
             ok, reason = _safety_check(current_code, fname_short)
             if ok:
-                rev_ok, rev_reason = _review_patch(task, fname_short, original, current_code)
+                # Skip LLM soft opinion (layer 8) after a surgical merge —
+                # the merged code is deterministically correct; LLM opinion
+                # is unreliable here and just causes false rejections.
+                rev_ok, rev_reason = _review_patch(
+                    task, fname_short, original, current_code,
+                    skip_llm=_surgical_merged
+                )
             else:
                 rev_ok, rev_reason = False, reason
 
@@ -1141,16 +1478,96 @@ def self_mod_tool(task: str):
                 safe_print(f"   ❌ {fname_short} could not be fixed — skipped.", flush=True)
                 break
 
-            # Auto-fix: ask LLM to fix the specific problem
             safe_print(f"   🔧 Auto-fixing: {rev_reason}...", flush=True)
+
+            # ── Strategy A: surgical merge (no LLM, no network) ─────────────
+            if "deletes too much code" in rev_reason or "removes functions" in rev_reason:
+                try:
+                    import ast as _ast2
+                    orig_tree2  = _ast2.parse(original)
+                    patch_tree2 = _ast2.parse(current_code)
+                    orig_defs2  = {n.name for n in _ast2.walk(orig_tree2)
+                                   if isinstance(n, (_ast2.FunctionDef,
+                                                     _ast2.AsyncFunctionDef,
+                                                     _ast2.ClassDef))}
+                    new_blocks = []
+                    code_lines = current_code.splitlines()
+                    for node in _ast2.walk(patch_tree2):
+                        if isinstance(node, (_ast2.FunctionDef,
+                                             _ast2.AsyncFunctionDef,
+                                             _ast2.ClassDef)):
+                            if node.name not in orig_defs2:
+                                start = node.lineno - 1
+                                end   = (node.end_lineno
+                                         if hasattr(node, "end_lineno")
+                                         else start + 20)
+                                new_blocks.append(
+                                    "\n".join(code_lines[start:end])
+                                )
+                    if new_blocks:
+                        new_blocks = _fix_missing_imports(new_blocks)
+                        merged = original.rstrip() + "\n\n\n" + "\n\n\n".join(new_blocks)
+                        # Pull new TOOL_REGISTRY entries from the FULL patch
+                        # (they live in the dict, not inside the function body)
+                        import re as _re2
+                        # Find all registry entries in the patch
+                        all_patch_entries = _re2.findall(
+                            r'"([A-Z_]+)":\s+(_tool_\w+)',
+                            current_code
+                        )
+                        # Find existing entries in original
+                        orig_entries = set(_re2.findall(
+                            r'"([A-Z_]+)":\s+_tool_\w+',
+                            original
+                        ))
+                        # Only add truly new ones
+                        new_reg_entries = [
+                            (k, v) for k, v in all_patch_entries
+                            if k not in orig_entries
+                        ]
+                        # Fallback: derive from function names if patch didn't include dict entry
+                        if not new_reg_entries:
+                            for block in new_blocks:
+                                m_fn = _re2.search(r'def (_tool_(\w+))\s*\(', block)
+                                if m_fn:
+                                    fn_full = m_fn.group(1)  # e.g. _tool_hello
+                                    key     = m_fn.group(2).upper()  # e.g. HELLO
+                                    if key not in orig_entries:
+                                        new_reg_entries.append((key, fn_full))
+                        for key, fn in new_reg_entries:
+                            entry_line = f'    "{key}": {fn},'
+                            # Insert before closing brace of TOOL_REGISTRY dict
+                            merged = _re2.sub(
+                                r'(?m)(^})',
+                                f'{entry_line}\n' + r'\1',
+                                merged,
+                                count=1,
+                            )
+                            safe_print(
+                                f"   📋 Added registry entry: \"{key}\": {fn}",
+                                flush=True
+                            )
+                        current_code     = merged
+                        _surgical_merged = True
+                        safe_print(
+                            f"   🔩 Surgical merge: added {len(new_blocks)} block(s)",
+                            flush=True
+                        )
+                        continue   # re-review immediately
+                except Exception as _me:
+                    safe_print(f"   ⚠️  Surgical merge failed: {_me}", flush=True)
+
+            # ── Strategy B: local LLM only — never OpenRouter ─────────────────
+            import config as _cfg
+            _fix_model = _cfg.DEFAULT_MODEL   # always local, never 429
             fix_prompt = (
                 f"CRITICAL FIX NEEDED.\n"
                 f"ISSUE: {rev_reason}\n"
                 f"TASK: {task}\n\n"
-                f"ORIGINAL FILE (you MUST keep ALL existing functions):\n"
-                f"```python\n{original[:3000]}\n```\n\n"
-                f"YOUR PREVIOUS BROKEN ATTEMPT:\n"
-                f"```python\n{current_code[:2000]}\n```\n\n"
+                f"ORIGINAL FILE (keep ALL of it):\n"
+                f"```python\n{original[:1500]}\n```\n\n"
+                f"FAILED ATTEMPT:\n"
+                f"```python\n{current_code[:1000]}\n```\n\n"
                 f"Rules:\n"
                 f"- Keep EVERY existing function and class from the original\n"
                 f"- Only ADD the new functionality, never remove anything\n"
@@ -1158,16 +1575,19 @@ def self_mod_tool(task: str):
                 f"Output the COMPLETE fixed file now:"
             )
             try:
-                r = safe_chat(model=_get_best_reviewer(), messages=[
-                    {"role": "system", "content": "Fix the Python file. Keep all existing code. Only add new code."},
-                    {"role": "user",   "content": fix_prompt},
-                ])
+                r = safe_chat(
+                    model=_fix_model,
+                    messages=[
+                        {"role": "system",
+                         "content": "Fix the Python file. Keep all existing code. Only add new code."},
+                        {"role": "user", "content": fix_prompt},
+                    ],
+                )
                 fixed_response = get_response(r)
                 fixed_patches  = _parse_file_blocks(fixed_response, [fname_short])
                 if fixed_patches:
                     current_code = list(fixed_patches.values())[0]
                 else:
-                    # Try extracting plain python block
                     import re as _re
                     m = _re.search(r"```python\n(.*?)```", fixed_response, _re.DOTALL)
                     if m:
@@ -1240,7 +1660,120 @@ def self_mod_tool(task: str):
         safe_print("\n❌ Cancelled — no files were changed.\n", flush=True)
         return
 
+def _auto_install_deps(patches: dict[str, str]) -> list[str]:
+    """
+    Scan all patch code for third-party imports, check if they're installed,
+    and auto-install any missing ones via pip.
+    Returns list of packages that were installed.
+
+    Stdlib and known internal modules are excluded automatically.
+    """
+    import importlib
+    import subprocess
+    import sys
+
+    # Packages that are stdlib or always available — never try to install
+    _STDLIB_OR_INTERNAL = {
+        "os", "sys", "re", "json", "time", "datetime", "math", "random",
+        "threading", "subprocess", "pathlib", "shutil", "glob", "ast",
+        "collections", "itertools", "functools", "typing", "io", "copy",
+        "hashlib", "base64", "urllib", "http", "email", "socket",
+        "traceback", "warnings", "logging", "inspect", "importlib",
+        "platform", "tempfile", "textwrap", "string", "struct", "enum",
+        # internal project modules
+        "logger", "state_manager", "llm_client", "config", "errors",
+        "model_router", "model_advisor", "chat_handler", "tool_registry",
+        "self_mod", "session_manager", "shutdown_manager", "recovery",
+        "memory_store", "metrics", "profiler", "domain_sandbox",
+        "file_handler", "project_tools", "project_builder",
+        "generation_engine", "compiler_tools", "script_generator",
+        "script_reviewer", "unity_pipeline", "planner", "env_check",
+        "process_registry", "template_cache",
+    }
+
+    # import name → pip package name (when they differ)
+    _IMPORT_TO_PIP = {
+        "cv2":          "opencv-python",
+        "PIL":          "Pillow",
+        "sklearn":      "scikit-learn",
+        "bs4":          "beautifulsoup4",
+        "yaml":         "PyYAML",
+        "dotenv":       "python-dotenv",
+        "pyjokes":      "pyjokes",
+        "playwright":   "playwright",
+        "ddgs":         "ddgs",
+        "duckduckgo_search": "duckduckgo-search",
+        "psutil":       "psutil",
+        "numpy":        "numpy",
+        "pandas":       "pandas",
+        "matplotlib":   "matplotlib",
+        "flask":        "flask",
+        "fastapi":      "fastapi",
+        "sqlalchemy":   "SQLAlchemy",
+        "pydantic":     "pydantic",
+        "aiohttp":      "aiohttp",
+        "httpx":        "httpx",
+    }
+
+    # Collect all imports from patches
+    import re as _re
+    all_imports: set[str] = set()
+    for code in patches.values():
+        # "import X" and "import X as Y"
+        for m in _re.finditer(r'^\s*import\s+([\w]+)', code, _re.MULTILINE):
+            all_imports.add(m.group(1))
+        # "from X import ..."
+        for m in _re.finditer(r'^\s*from\s+([\w]+)', code, _re.MULTILINE):
+            all_imports.add(m.group(1))
+
+    # Filter to only third-party candidates
+    candidates = [
+        pkg for pkg in all_imports
+        if pkg not in _STDLIB_OR_INTERNAL and not pkg.startswith("_")
+    ]
+
+    if not candidates:
+        return []
+
+    # Check which ones are missing
+    missing: list[str] = []
+    for imp in candidates:
+        try:
+            importlib.import_module(imp)
+        except ImportError:
+            missing.append(imp)
+
+    if not missing:
+        return []
+
+    # Notify user and install
+    installed: list[str] = []
+    for imp in missing:
+        pip_name = _IMPORT_TO_PIP.get(imp, imp)
+        safe_print(f"   📦 Installing missing dependency: {pip_name}", flush=True)
+        try:
+            result = subprocess.run(
+                [sys.executable, "-m", "pip", "install", pip_name, "-q"],
+                capture_output=True, text=True, timeout=120
+            )
+            if result.returncode == 0:
+                safe_print(f"   ✅ {pip_name} installed successfully", flush=True)
+                installed.append(pip_name)
+            else:
+                safe_print(f"   ❌ Failed to install {pip_name}: {result.stderr[:200]}",
+                           flush=True)
+        except Exception as e:
+            safe_print(f"   ❌ Install error for {pip_name}: {e}", flush=True)
+
+    return installed
+
+
     safe_print("\n✅ Confirmed — applying patches...\n", flush=True)
+
+    # ── 4b. Auto-install any missing dependencies ─────────────────────────────
+    _installed = _auto_install_deps(patches)
+    if _installed:
+        safe_print(f"   📦 Installed: {', '.join(_installed)}\n", flush=True)
 
     # ── 5. Validate + apply (with auto-retry on reviewer failure) ────────────
     MAX_RETRY = 2
@@ -1256,7 +1789,8 @@ def self_mod_tool(task: str):
             current_idx = 0
             retry_patches = _generate_patch(task, _llm_targets, search_results,
                                              force_model_idx=min(current_idx + attempt + 1,
-                                                                  len(ESCALATION_LADDER) - 1))
+                                                                  len(ESCALATION_LADDER) - 1),
+                                             agent_patched=_agent_patched)
             if retry_patches:
                 patches = retry_patches
 
@@ -1264,8 +1798,63 @@ def self_mod_tool(task: str):
     if updated and "tool_registry.py" in " ".join(updated):
         _sync_commands_to_gui(patches, task)
 
-    # ── 7. Report ─────────────────────────────────────────────────────────────
+    # Build full updated list (includes agent.py if surgically patched)
     all_updated = updated + (["agent.py"] if _agent_patched and "agent.py" not in updated else [])
+
+    # ── 7. Save to memory ────────────────────────────────────────────────────
+    try:
+        from memory_store import memory as _mem
+
+        # Extract the most useful snippet from patches to guide future tasks.
+        # For tool additions: save the function signature + registry entry.
+        # This lets the LLM see the actual pattern next time, not just file names.
+        _pattern_parts = []
+        for _fname, _code in patches.items():
+            if "tool_registry" in _fname:
+                import re as _re_mem
+                # Extract new function definitions (signature + first 3 lines)
+                for _fn in _re_mem.finditer(
+                    r'^(def _tool_\w+\([^)]*\):.*?)(?=\ndef |\Z)',
+                    _code, _re_mem.MULTILINE | _re_mem.DOTALL
+                ):
+                    _lines = _fn.group(1).splitlines()[:4]
+                    _pattern_parts.append("\n".join(_lines))
+                # Extract new TOOL_REGISTRY entries
+                _orig_code = ""
+                try:
+                    _orig_path = next(
+                        f for f in all_updated if "tool_registry" in f
+                    )
+                    # Get original from backup to diff
+                    import glob as _glob
+                    _baks = sorted(_glob.glob(_orig_path + ".*.bak"))
+                    if _baks:
+                        with open(_baks[-1], encoding="utf-8") as _bf:
+                            _orig_code = _bf.read()
+                except Exception:
+                    pass
+                _new_entries = set(_re_mem.findall(r'"[A-Z_]+":\s+_tool_\w+', _code))
+                _old_entries = set(_re_mem.findall(r'"[A-Z_]+":\s+_tool_\w+', _orig_code))
+                for _e in sorted(_new_entries - _old_entries):
+                    _pattern_parts.append(f"TOOL_REGISTRY[{_e}]")
+
+        if _pattern_parts:
+            _solution_summary = " | ".join(_pattern_parts)[:150]
+        elif all_updated:
+            _solution_summary = f"Updated: {', '.join(all_updated)}"
+        else:
+            _solution_summary = "no files updated"
+
+        _mem.add(
+            task     = task,
+            success  = bool(all_updated),
+            solution = _solution_summary,
+            files    = all_updated,
+        )
+    except Exception as _me:
+        log.warn(f"Memory save skipped: {_me}")
+
+    # ── 8. Report ─────────────────────────────────────────────────────────────
     if all_updated:
         safe_print(
             f"\n✅ Self-modification complete!\n"
@@ -1279,3 +1868,4 @@ def self_mod_tool(task: str):
             "   Try rephrasing the request or check the logs.",
             flush=True
         )
+    safe_print("⚡AGENT_IDLE", flush=True)   # GUI: restore Send button

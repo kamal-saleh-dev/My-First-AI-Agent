@@ -44,7 +44,8 @@ COMMANDS = [
         ("metrics",                   "Show performance stats dashboard"),
         ("health",                    "Show domain health report"),
         ("new_chat",                  "Start a fresh conversation"),
-        ("/date",                      "date command that shows today's date"),
+        ("/date",                      "Show today's date"),
+        ("/weather <city>",            "Show current weather for a city"),
         ("exit",                      "Exit the agent"),
     ]),
 ]
@@ -287,6 +288,7 @@ class ModernAgentGUI(QMainWindow):
 
         self._sessions={}; self._active_id=""; self._pending_id=""
         self._agent_buf=""; self._in_agent_turn=False; self._attached=[]
+        self._manually_busy = False   # True while agent is processing a command
         self._confirm_mode=False
         self._confirm_mode=False
         self._sess_file=os.path.join(os.path.dirname(os.path.abspath(__file__)),"gui_sessions.json")
@@ -344,7 +346,18 @@ class ModernAgentGUI(QMainWindow):
         self.send_btn=QPushButton("➤"); self.send_btn.setFixedSize(48,48); self.send_btn.setCursor(Qt.PointingHandCursor)
         self.send_btn.setStyleSheet("QPushButton{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #3355ff,stop:1 #1133cc);border-radius:24px;font-size:18px;color:white;font-weight:bold;}QPushButton:hover{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,stop:0 #4466ff,stop:1 #2244ee);}QPushButton:pressed{background:#1122aa;}QPushButton:disabled{background:#1a1a2a;color:#333355;}")
         self.send_btn.clicked.connect(self.send_msg); self.input_box.returnPressed.connect(self.send_msg)
-        ir.addWidget(self.input_box); ir.addWidget(self.send_btn); cl.addLayout(ir)
+        # Stop button — shown while agent is processing, hidden otherwise
+        self.stop_btn=QPushButton("⏹"); self.stop_btn.setFixedSize(48,48); self.stop_btn.setCursor(Qt.PointingHandCursor)
+        self.stop_btn.setStyleSheet(
+            "QPushButton{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00cc77,stop:1 #009955);border-radius:24px;font-size:18px;"
+            "color:white;font-weight:bold;}"
+            "QPushButton:hover{background:qlineargradient(x1:0,y1:0,x2:1,y2:1,"
+            "stop:0 #00dd88,stop:1 #00bb66);}"
+            "QPushButton:pressed{background:#007744;}")
+        self.stop_btn.clicked.connect(self._stop_agent)
+        self.stop_btn.hide()   # hidden by default — appears when agent is busy
+        ir.addWidget(self.input_box); ir.addWidget(self.send_btn); ir.addWidget(self.stop_btn); cl.addLayout(ir)
         rl.addWidget(ct,1)
 
     # Sessions
@@ -546,6 +559,31 @@ class ModernAgentGUI(QMainWindow):
         dlg.exec()
 
     # Messaging
+    def _set_busy(self, busy: bool):
+        """Swap Send ↔ Stop button and sync hologram color."""
+        self._manually_busy = busy
+        if busy:
+            self.send_btn.hide()
+            self.stop_btn.show()
+            self.hologram.set_state("typing")
+        else:
+            self.stop_btn.hide()
+            self.send_btn.show()
+            self.hologram.set_state("idle")
+
+    def _stop_agent(self):
+        """Send STOP signal to the agent process and restore idle state."""
+        if self.process:
+            try:
+                self.process.stdin.write("STOP_AGENT\n")
+                self.process.stdin.flush()
+            except Exception:
+                pass
+        self._set_busy(False)
+        self.chat_display.append(
+            "<span style='color:#ff6644;'>⛔ Stopped.</span>"
+        )
+
     def send_msg(self):
         msg=self.input_box.text().strip()
         if not msg or not self.process: return
@@ -555,13 +593,21 @@ class ModernAgentGUI(QMainWindow):
             self._exit_confirm_mode()
         self._flush_agent_turn()
         self._bubble("user",msg); self._save_msg("user",msg,msg)
-        try: self.process.stdin.write(msg+"\n"); self.process.stdin.flush()
+        try:
+            self.process.stdin.write(msg+"\n"); self.process.stdin.flush()
+            self._set_busy(True)   # ← show Stop, hide Send, hologram green
         except Exception as e: self.chat_display.append(f"<span style='color:red;'>❌ {e}</span>")
 
     # Streaming
     def _on_char(self,ch):
         self.hologram.set_state("typing"); self._typing_timer.start(1800)
         self._in_agent_turn=True; self._agent_buf+=ch
+        # Detect idle sentinel → restore Send button (never display it)
+        if "⚡AGENT_IDLE" in self._agent_buf[-20:]:
+            # Strip the marker from the buffer so it never appears in chat
+            self._agent_buf = self._agent_buf.replace("⚡AGENT_IDLE", "")
+            if self._manually_busy:
+                self._set_busy(False)
         c=self.chat_display.textCursor(); c.movePosition(QTextCursor.End)
         self.chat_display.setTextCursor(c); self.chat_display.insertPlainText(ch)
         self.chat_display.verticalScrollBar().setValue(self.chat_display.verticalScrollBar().maximum())
@@ -574,8 +620,11 @@ class ModernAgentGUI(QMainWindow):
         if "Type  YES  to apply" in self._agent_buf and not self._confirm_mode:
             self._enter_confirm_mode()
     def _agent_turn_ended(self):
-        self._typing_timer.stop(); self.hologram.set_state("idle"); self._flush_agent_turn()
-        # Reset confirm mode if still active after turn ends
+        self._typing_timer.stop(); self._flush_agent_turn()
+        # Only restore idle if NOT in a long-running background task.
+        # _manually_busy is cleared by completion signals in _on_char.
+        if not self._manually_busy:
+            self._set_busy(False)
         if self._confirm_mode:
             self._set_confirm_mode(False)
 
@@ -594,7 +643,7 @@ class ModernAgentGUI(QMainWindow):
                 "border-radius:24px;padding-left:20px;font-size:14px;color:#e0e0f0;}"
                 "QLineEdit:focus{border:1px solid #4466ff;}"
                 "QLineEdit:disabled{color:#334455;}")
-    def _on_stream_error(self,msg): self.hologram.set_state("idle"); self._flush_agent_turn(); self.chat_display.append(f"<span style='color:orange;'>⚠️ {msg}</span>")
+    def _on_stream_error(self,msg): self._set_busy(False); self._flush_agent_turn(); self.chat_display.append(f"<span style='color:orange;'>⚠️ {msg}</span>")
 
     # Attach/Screenshot
     def _lock(self,ph):

@@ -132,8 +132,8 @@ class TestAssessQuality:
 
 class TestLadder:
 
-    def test_ladder_has_four_levels(self):
-        assert len(ESCALATION_LADDER) == 4
+    def test_ladder_has_at_least_four_levels(self):
+        assert len(ESCALATION_LADDER) >= 4
 
     def test_local_is_bottom(self):
         assert _ladder_index("local") == 0

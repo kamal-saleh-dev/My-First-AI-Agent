@@ -19,14 +19,14 @@ from logger import log, safe_print
 # Aliases are resolved via MODEL_ALIASES in llm_client.py.
 
 ESCALATION_LADDER: list[tuple[str, str]] = [
-    ("local",      "Local model"),                # دايماً شغال، مجاني
-    ("or_qwen",    "Qwen3 8B Free"),              # free، سريع
-    ("or_deepseek","DeepSeek R1 0528 Free"),      # free، reasoning قوي، confirmed working
-    ("or_llama",   "Llama 4 Maverick Free"),      # free، confirmed working
-    ("or_free",    "OpenRouter Auto Free"),       # free، بيختار أحسن model تلقائي
-    ("gpt54",      "GPT-5.4"),                    # paid
-    ("kimi",       "Kimi K2.5"),                  # paid
-    ("claude",     "Claude Sonnet"),              # paid، الأقوى
+    ("local",      "Local model"),                      # دايماً شغال، مجاني
+    ("or_qwen",    "Qwen3 8B Free"),                   # free، سريع
+    ("or_deepseek","DeepSeek R1 0528 Free"),            # free، reasoning قوي
+    ("or_llama",   "Llama 3.3 70B Free"),              # free، confirmed working
+    ("or_free",    "OpenRouter Auto Free"),             # free، بيختار أحسن model تلقائي
+    ("gpt54",      "GPT-5.4"),                          # paid
+    ("kimi",       "Kimi K2.5"),                        # paid
+    ("claude",     "Claude Sonnet"),                    # paid، الأقوى
 ]
 
 # Map a raw model name → ladder position (for "above current" lookup)

@@ -111,7 +111,8 @@ def _validate_model(model_name: str, is_cloud: bool) -> bool:
 
 # ── Core LLM call ─────────────────────────────────────────────────────────────
 def safe_chat(model=None, messages=None, stream=False,
-              retries=_cfg.LLM_RETRIES, timeout=_cfg.LLM_TIMEOUT):
+              retries=_cfg.LLM_RETRIES, timeout=_cfg.LLM_TIMEOUT,
+              max_tokens: int = None):
     """
     Unified LLM call — handles Ollama (local) and OpenRouter (cloud).
     Always returns a response object or _FallbackResp on total failure.
@@ -150,6 +151,7 @@ def safe_chat(model=None, messages=None, stream=False,
                     model=full_model_name,
                     messages=messages,
                     stream=stream,
+                    **({"max_tokens": max_tokens} if max_tokens else {}),
                     extra_headers={
                         "HTTP-Referer": "https://localhost",
                         "X-Title": "Kamal Game Agent",
