@@ -86,3 +86,7 @@ LLM_RETRIES          = _env("LLM_RETRIES",          LLM_RETRIES,          int)
 LLM_TIMEOUT          = _env("LLM_TIMEOUT",          LLM_TIMEOUT,          int)
 COMPILE_FIX_ATTEMPTS = _env("COMPILE_FIX_ATTEMPTS", COMPILE_FIX_ATTEMPTS, int)
 LOG_MIN_LEVEL        = _env("LOG_MIN_LEVEL",        LOG_MIN_LEVEL)
+
+# ── Testing / Debug ──────────────────────────────────────────────────────────
+# Set AGENT_SCRIPT_DELAY=5 to slow generation for manual checkpoint testing
+SCRIPT_DELAY: int = _env("SCRIPT_DELAY", 0, int)

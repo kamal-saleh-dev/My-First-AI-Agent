@@ -542,29 +542,28 @@ def _patch_agent_py(task: str, cmd_name: str, tool_key: str) -> bool:
         return False
 
     # ── 1. Add handler after /time block ─────────────────────────────────────
-    # Support both old (if) and new (elif) agent.py structure
-    TIME_ANCHOR_ELIF = (
-        "        elif user.strip() == \"/time\":\n"
+    # Use regex to find the /time handler regardless of indentation depth
+    import re as _re_anchor
+    _time_match = _re_anchor.search(
+        r'^([ \t]*)(el)?if\s+user\.strip\(\)\s*==\s*"/time"\s*:\s*$',
+        content, _re_anchor.MULTILINE
     )
-    TIME_ANCHOR_IF = (
-        "        if user.strip() == \"/time\":\n"
-    )
-    TIME_ANCHOR = TIME_ANCHOR_ELIF if TIME_ANCHOR_ELIF in content else TIME_ANCHOR_IF
-
-    new_handler = (
-        f"\n\n        elif user.strip() == \"/{cmd_name}\":\n"
-        f"            from tool_registry import TOOL_REGISTRY\n"
-        f"            if \"{tool_key}\" in TOOL_REGISTRY:\n"
-        f"                TOOL_REGISTRY[\"{tool_key}\"](user)\n"
-    )
+    if not _time_match:
+        safe_print(f"   ⚠️  Could not find /time anchor in agent.py — skipping agent.py patch.")
+        return False
+    TIME_ANCHOR = _time_match.group(0) + "\n"
+    indent = _time_match.group(1)   # preserve same indentation for new handler
 
     if f'"/{cmd_name}"' in content:
         safe_print(f"   ℹ️  /{cmd_name} handler already exists in agent.py — skipping.")
         return True   # already patched
 
-    if TIME_ANCHOR not in content:
-        safe_print(f"   ⚠️  Could not find /time anchor in agent.py — skipping agent.py patch.")
-        return False
+    new_handler = (
+        f"\n\n{indent}elif user.strip() == \"/{cmd_name}\":\n"
+        f"{indent}    from tool_registry import TOOL_REGISTRY\n"
+        f"{indent}    if \"{tool_key}\" in TOOL_REGISTRY:\n"
+        f"{indent}        TOOL_REGISTRY[\"{tool_key}\"](user)\n"
+    )
 
     content = content.replace(TIME_ANCHOR, TIME_ANCHOR + new_handler, 1)
 
