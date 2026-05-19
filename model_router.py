@@ -121,6 +121,8 @@ def detect_mode(user: str) -> tuple:
     if t.startswith("attach "):       return "ATTACH",       "general"
     if t == "clear":                  return "CLEAR",        "general"
     if t == "run":                    return "RUN",          "general"
+    if t.startswith("/auto ") or t.startswith("/autonomous "):
+        return "AUTO", "general"
     if t.startswith("load_session "): return "LOAD_SESSION", "general"
 
     # ── 2. Keyword sets ───────────────────────────────────────────────────────

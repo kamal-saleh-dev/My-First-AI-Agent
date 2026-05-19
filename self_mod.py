@@ -120,7 +120,8 @@ _MODIFIABLE = {
     "script_generator.py", "script_reviewer.py", "project_builder.py",
     "planner.py", "file_handler.py", "model_router.py",
     "project_tools.py", "model_advisor.py", "compiler_tools.py",
-    "unity_pipeline.py", "tool_registry.py",
+    "unity_pipeline.py", "tool_registry.py", "autonomous_loop.py",
+    "autonomous_prompts.py", "autonomous_repetition.py",
 }
 
 # Max chars to read from each source file as context for the LLM
@@ -519,6 +520,9 @@ def _detect_target_files(task: str) -> list[str]:
         (["unity", "csharp", "c#", "compile"],                            "compiler_tools.py"),
         (["pipeline", "fix", "auto fix"],                                 "unity_pipeline.py"),
         (["tool registry", "register", "command"],                        "tool_registry.py"),
+        (["autonomous", "tool loop", "think act observe"],                 "autonomous_loop.py"),
+        (["autonomous prompt", "observation summary"],                     "autonomous_prompts.py"),
+        (["repetition", "repeated loop", "semantic repetition"],           "autonomous_repetition.py"),
         (["review", "reviewer"],                                           "script_reviewer.py"),
         (["agent", "main loop", "startup"],                               "agent.py"),
     ]

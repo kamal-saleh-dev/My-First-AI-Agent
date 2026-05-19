@@ -27,6 +27,12 @@ PYTHON_SANDBOX_TIMEOUT  = 5       # seconds for sandbox test run
 PYTHON_RUN_TIMEOUT      = 15      # seconds for normal project run
 PLACEHOLDER_REGEN       = True    # regenerate scripts that still contain placeholders
 
+# Autonomous think/act/observe loop
+AUTONOMOUS_MAX_STEPS     = 12
+AUTONOMOUS_MAX_RETRIES   = 2
+AUTONOMOUS_TOOL_TIMEOUT  = 30
+AUTONOMOUS_REPEAT_LIMIT  = 3
+
 # ══════════════════════════════════════════════════════════════════════════════
 # CONTEXT / HISTORY
 # ══════════════════════════════════════════════════════════════════════════════
@@ -86,6 +92,10 @@ LLM_RETRIES          = _env("LLM_RETRIES",          LLM_RETRIES,          int)
 LLM_TIMEOUT          = _env("LLM_TIMEOUT",          LLM_TIMEOUT,          int)
 COMPILE_FIX_ATTEMPTS = _env("COMPILE_FIX_ATTEMPTS", COMPILE_FIX_ATTEMPTS, int)
 LOG_MIN_LEVEL        = _env("LOG_MIN_LEVEL",        LOG_MIN_LEVEL)
+AUTONOMOUS_MAX_STEPS    = _env("AUTONOMOUS_MAX_STEPS",    AUTONOMOUS_MAX_STEPS,    int)
+AUTONOMOUS_MAX_RETRIES  = _env("AUTONOMOUS_MAX_RETRIES",  AUTONOMOUS_MAX_RETRIES,  int)
+AUTONOMOUS_TOOL_TIMEOUT = _env("AUTONOMOUS_TOOL_TIMEOUT", AUTONOMOUS_TOOL_TIMEOUT, int)
+AUTONOMOUS_REPEAT_LIMIT = _env("AUTONOMOUS_REPEAT_LIMIT", AUTONOMOUS_REPEAT_LIMIT, int)
 
 # ── Testing / Debug ──────────────────────────────────────────────────────────
 # Set AGENT_SCRIPT_DELAY=5 to slow generation for manual checkpoint testing
