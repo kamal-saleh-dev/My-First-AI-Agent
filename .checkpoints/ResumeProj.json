@@ -1,0 +1,28 @@
+{
+  "task": "task",
+  "engine": "unity",
+  "project_name": "ResumeProj",
+  "script_pairs": [
+    [
+      "A",
+      "player"
+    ],
+    [
+      "B",
+      "enemy"
+    ],
+    [
+      "C",
+      "manager"
+    ]
+  ],
+  "model_name": "model",
+  "created_at": 1779221251.0227063,
+  "completed": [
+    "A"
+  ],
+  "failed": [],
+  "current": "B",
+  "attempts": 0,
+  "status": "in_progress"
+}

@@ -4,8 +4,8 @@
 # with a stronger model. Keeps trying up the ladder until quality passes
 # or all models are exhausted — then returns the best result seen.
 #
-# Escalation ladder (weakest → strongest):
-#   local  →  free_cloud  →  kimi  →  claude
+# Escalation ladder (weakest -> strongest):
+#   local -> free OpenRouter aliases -> paid models -> Claude
 #
 # Integration: called from script_generator.generate_single() after generation.
 
@@ -20,8 +20,8 @@ from logger import log, safe_print
 
 ESCALATION_LADDER: list[tuple[str, str]] = [
     ("local",      "Local model"),                      # دايماً شغال، مجاني
-    ("or_qwen",    "Qwen3 8B Free"),                   # free، سريع
-    ("or_deepseek","DeepSeek R1 0528 Free"),            # free، reasoning قوي
+    ("or_qwen",    "Qwen3 Coder Free"),                # free، coding قوي
+    ("or_deepseek","DeepSeek R1 0528 Qwen3 8B Free"),   # free، reasoning قوي
     ("or_llama",   "Llama 3.3 70B Free"),              # free، confirmed working
     ("or_free",    "OpenRouter Auto Free"),             # free، بيختار أحسن model تلقائي
     ("gpt54",      "GPT-5.4"),                          # paid
@@ -31,7 +31,7 @@ ESCALATION_LADDER: list[tuple[str, str]] = [
 
 # Map a raw model name → ladder position (for "above current" lookup)
 def _ladder_index(model_name: str) -> int:
-    """Return the ladder position of model_name, or -1 if not on the ladder."""
+    """Return the ladder position of model_name, or 0 if not on the ladder."""
     import llm_client
     aliases = getattr(llm_client, "MODEL_ALIASES", {})
 

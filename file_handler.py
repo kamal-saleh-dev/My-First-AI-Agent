@@ -505,16 +505,31 @@ def attach_tool(file_path: str) -> None:
 
     # Resolve active project_context (prefer injected, fall back to module-level alias)
     ctx = _deps.project_context if _deps.project_context is not None else project_context
+    contexts = [ctx] if ctx is not None else []
+    try:
+        from state_manager import project_context as canonical_context
+        if canonical_context is not None and all(c is not canonical_context for c in contexts):
+            contexts.append(canonical_context)
+    except Exception:
+        pass
 
     # Replace live_screen frames — mutate in-place to keep reference valid
     if "live_screen" in file_path and _deps._state is not None:
-        _deps._state.project_context[:] = [
-            item for item in _deps._state.project_context
-            if "live_screen" not in item["path"]
-        ]
+        for one_context in contexts:
+            one_context[:] = [
+                item for item in one_context
+                if "live_screen" not in item["path"]
+            ]
 
-    if ctx is not None and not any(item["path"] == file_path for item in ctx):
-        ctx.append({"path": file_path, "type": file_type})
+    already_attached = any(
+        item["path"] == file_path
+        for one_context in contexts
+        for item in one_context
+    )
+    if contexts and not already_attached:
+        entry = {"path": file_path, "type": file_type}
+        for one_context in contexts:
+            one_context.append(dict(entry))
     else:
         print("⚡ File already in context, skipped.")
 

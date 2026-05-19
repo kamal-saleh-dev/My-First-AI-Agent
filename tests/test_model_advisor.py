@@ -132,8 +132,18 @@ class TestAssessQuality:
 
 class TestLadder:
 
-    def test_ladder_has_at_least_four_levels(self):
-        assert len(ESCALATION_LADDER) >= 4
+    def test_ladder_has_ordered_registered_aliases(self):
+        import llm_client
+        aliases = [alias for alias, _ in ESCALATION_LADDER]
+        assert aliases[0] == "local"
+        assert aliases[-1] == "claude"
+        assert len(aliases) == len(set(aliases))
+        assert _ladder_index("or_free") < _ladder_index("kimi")
+        missing = [
+            alias for alias in aliases
+            if alias != "local" and alias not in llm_client.MODEL_ALIASES
+        ]
+        assert missing == []
 
     def test_local_is_bottom(self):
         assert _ladder_index("local") == 0
@@ -151,7 +161,10 @@ class TestLadder:
     def test_models_above_or_free_excludes_local(self):
         above = _models_above("or_free")
         assert "local" not in above
-        assert len(above) == len(ESCALATION_LADDER) - 2
+        # Dynamic: count models after or_free's position
+        or_free_idx = _ladder_index("or_free")
+        expected = len(ESCALATION_LADDER) - or_free_idx - 1
+        assert len(above) == expected
 
     def test_unknown_model_treated_as_local(self):
         # Unknown model → index 0 (local), so all others are "above"

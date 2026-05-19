@@ -209,8 +209,10 @@ class AgentStreamer(QThread):
         try:
             while self.is_running and self.process and self.process.poll() is None:
                 try:
-                    ch=self.process.stdout.read(1)
-                    if ch: self.new_char.emit(ch)
+                    chunk=self.process.stdout.read(1024)
+                    if chunk:
+                        for ch in chunk:   # emit char-by-char so GUI logic unchanged
+                            self.new_char.emit(ch)
                     else: break
                 except OSError: break
                 except Exception as e: self.error_sig.emit(f"Stream error: {e}"); break

@@ -1,0 +1,33 @@
+{"ts": "23:07:01", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\TestGame\\Player.cs"}
+{"ts": "23:07:01", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\MyProject\\main.py"}
+{"ts": "23:07:01", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\BadName\\app.py"}
+{"ts": "23:07:18", "level": "WARN", "msg": "Checkpoint save failed for SpaceShooter: [WinError 5] Access is denied: 'C:\\\\Users\\\\kamal\\\\Desktop\\\\Projects\\\\AI-Agent\\\\.checkpoints\\\\SpaceShooter.json.tmp' -> 'C:\\\\Users\\\\kamal\\\\Desktop\\\\Projects\\\\AI-Agent\\\\.checkpoints\\\\SpaceShooter.json'"}
+{"ts": "23:07:18", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\SpaceShooter\\ShipController.cs"}
+{"ts": "23:07:18", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\SpaceShooter\\EnemySpawner.cs"}
+{"ts": "23:07:18", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\SpaceShooter\\EnemyScript.cs"}
+{"ts": "23:07:18", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\SpaceShooter\\GameManager.cs"}
+{"ts": "23:07:18", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\SpaceShooter\\HealthBar.cs"}
+{"ts": "23:07:18", "level": "INFO", "msg": "⏱ Generation done in 0.0s — saved=5"}
+{"ts": "23:07:30", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\ShipController.cs"}
+{"ts": "23:07:30", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\EnemySpawner.cs"}
+{"ts": "23:07:30", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\EnemyScript.cs"}
+{"ts": "23:07:30", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\GameManager.cs"}
+{"ts": "23:07:30", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\HealthBar.cs"}
+{"ts": "23:07:30", "level": "INFO", "msg": "⏱ Generation done in 0.0s — saved=5"}
+{"ts": "23:07:30", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\ShipController.cs"}
+{"ts": "23:07:30", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\EnemySpawner.cs"}
+{"ts": "23:07:30", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\EnemyScript.cs"}
+{"ts": "23:07:30", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\GameManager.cs"}
+{"ts": "23:07:30", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\HealthBar.cs"}
+{"ts": "23:07:30", "level": "INFO", "msg": "⏱ Generation done in 0.0s — saved=5"}
+{"ts": "23:07:31", "level": "INFO", "msg": "Backup: C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-28\\test_add_command_flow0\\agent_root\\tool_registry.py.1779221251.bak"}
+{"ts": "23:07:31", "level": "SUCCESS", "msg": "✅ tool_registry.py updated"}
+{"ts": "23:07:34", "level": "WARN", "msg": "Advisor: skipping or_qwen — OpenRouter not configured"}
+{"ts": "23:07:34", "level": "WARN", "msg": "Advisor: skipping or_deepseek — OpenRouter not configured"}
+{"ts": "23:07:34", "level": "WARN", "msg": "Advisor: skipping or_llama — OpenRouter not configured"}
+{"ts": "23:07:34", "level": "WARN", "msg": "Advisor: skipping or_free — OpenRouter not configured"}
+{"ts": "23:07:34", "level": "WARN", "msg": "Advisor: skipping gpt54 — OpenRouter not configured"}
+{"ts": "23:07:34", "level": "WARN", "msg": "Advisor: skipping kimi — OpenRouter not configured"}
+{"ts": "23:07:34", "level": "WARN", "msg": "Advisor: skipping claude — OpenRouter not configured"}
+{"ts": "23:08:03", "level": "INFO", "msg": "Backup: C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-28\\test_full_flow_with_mocked_llm0\\agent_root\\tool_registry.py.1779221283.bak"}
+{"ts": "23:08:03", "level": "SUCCESS", "msg": "✅ tool_registry.py updated"}

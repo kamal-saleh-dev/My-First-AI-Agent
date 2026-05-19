@@ -36,12 +36,12 @@ _LOCAL_ALIAS = "local"
 MODEL_ALIASES = {
     # ── Free models (no credits needed) ─────────────────────────────────────
     "or_free":     "openrouter/free",                          # auto-picks best available free model
-    "or_deepseek": "deepseek/deepseek-r1:free",               # DeepSeek R1 free
+    "or_deepseek": "deepseek/deepseek-r1-0528-qwen3-8b:free", # DeepSeek R1 0528 Qwen3 8B free
     "or_deepseek2":"deepseek/deepseek-chat-v3-0324:free",     # DeepSeek V3 free
     "or_llama":    "meta-llama/llama-3.3-70b-instruct:free",  # Llama 3.3 70B free
     "or_mistral":  "mistralai/mistral-small-3.1-24b-instruct:free",  # Mistral free
     "or_gemma":    "google/gemma-3-27b-it:free",              # Gemma 3 27B free
-    "or_qwen":     "qwen/qwen3-8b:free",                      # Qwen3 8B free
+    "or_qwen":     "qwen/qwen3-coder:free",                   # Qwen3 Coder free
 
     # ── Paid models (تحتاج credits على OpenRouter) ────────────────────────
     "gpt54":  "openai/gpt-5.4",

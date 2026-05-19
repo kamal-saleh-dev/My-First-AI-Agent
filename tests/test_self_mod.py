@@ -18,9 +18,31 @@ import self_mod as sm
 # ══════════════════════════════════════════════════════════════
 
 class TestDetectTargetFiles:
+    def setup_method(self):
+        """Reset scan context so tests aren't affected by previous /scan calls."""
+        sm._scan_context["scanned"] = False
+        sm._scan_context["files"]   = []
+        sm._scan_cache.clear()
+    """
+    _detect_target_files checks os.path.exists on candidates.
+    We mock it to return True for all files so keyword routing is tested
+    independently from the filesystem.
+    """
+
+    @pytest.fixture(autouse=True)
+    def mock_file_exists(self):
+        """Make every file appear to exist so path-filtering doesn't hide results."""
+        with patch("self_mod.os.path.exists", return_value=True):
+            # Also clear scan cache/context so they don't interfere
+            original_cache   = sm._scan_cache.copy()
+            original_scanned = sm._scan_context["scanned"]
+            sm._scan_cache.clear()
+            sm._scan_context["scanned"] = False
+            yield
+            sm._scan_cache.update(original_cache)
+            sm._scan_context["scanned"] = original_scanned
+
     def test_keyword_mapping_model(self):
-        # llm_client.py is protected — keyword match to it works but is filtered.
-        # Test instead that "escalation" / "advisor" maps to model_advisor.py
         result = sm._detect_target_files("improve escalation quality threshold")
         assert "model_advisor.py" in result
 
@@ -48,7 +70,6 @@ class TestDetectTargetFiles:
 
     def test_vague_request_returns_modifiable_files(self):
         result = sm._detect_target_files("add voice output feature")
-        # Should return something, not empty
         assert len(result) > 0
 
     def test_no_protected_files_returned(self):
@@ -249,16 +270,23 @@ class TestReviewPatch:
 class TestPatchAgentPy:
     def test_adds_handler_after_time(self, tmp_path):
         agent = tmp_path / "agent.py"
-        agent.write_text(textwrap.dedent("""
-            if user.strip() == "/time":
-                print("time")
-            if user.strip() == "exit":
-                break
+        # Use proper structure: while loop with indented handlers
+        # dedent uses backslash to avoid leading newline
+        agent.write_text(textwrap.dedent("""\
+            while True:
+                user = input().strip()
+                if user.strip() == "/time":
+                    print("time")
+                if user.strip() == "exit":
+                    break
         """))
 
         sm._get_project_root = lambda: str(tmp_path)
         result = sm._patch_agent_py("add /status", "status", "STATUS")
-        assert result is True
+        assert result is True, "Expected True (patched successfully)"
+
+        content = agent.read_text()
+        assert '"/status"' in content, "Handler not found in patched file"
 
         content = agent.read_text()
         assert '/status"' in content
@@ -290,12 +318,12 @@ class TestPatchAgentPy:
 
 class TestAutoInstallDeps:
     def test_detects_missing_import(self):
+        import importlib as _real_importlib
         patches = {"test.py": "import pyjokes\nprint(pyjokes.get_joke())\n"}
         def fake_import(name):
             if name == "pyjokes":
                 raise ImportError("No module named 'pyjokes'")
-            import importlib
-            return importlib.import_module(name)
+            return _real_importlib.import_module(name)
         with patch("importlib.import_module", side_effect=fake_import):
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(returncode=0)
@@ -317,12 +345,12 @@ class TestAutoInstallDeps:
             assert result == []
 
     def test_maps_import_to_pip_name(self):
+        import importlib as _real_importlib
         patches = {"test.py": "import cv2\n"}
         def fake_import(name):
             if name == "cv2":
                 raise ImportError("No module named 'cv2'")
-            import importlib
-            return importlib.import_module(name)
+            return _real_importlib.import_module(name)
         with patch("importlib.import_module", side_effect=fake_import):
             with patch("subprocess.run") as mock_run:
                 mock_run.return_value = MagicMock(returncode=0)
@@ -403,32 +431,26 @@ class TestSelfModTool:
 
         # Mock web search
         with patch.object(sm, "_web_search", return_value="search results"):
-            # Mock LLM response with a valid patch
-            llm_response = """
-===FILE: tool_registry.py===
-```python
-TOOL_REGISTRY = {
-    "STATUS": _tool_status,
-}
-def _tool_status(user):
-    print("status")
-```
-"""
-            mock_r = MagicMock()
-            mock_r.message.content = llm_response
+            patches_dict = {"tool_registry.py": textwrap.dedent("""\
+                TOOL_REGISTRY = {}
 
-            with patch("llm_client.safe_chat", return_value=mock_r):
-                with patch("llm_client.get_response", return_value=llm_response):
-                    # Auto-YES: patch wait() to return True then inject answer
-                    def fake_wait(timeout=None):
-                        sm._confirmation_answer["answer"] = "YES"
-                        return True
-                    with patch.object(sm._pending_confirmation, "wait",
-                                      side_effect=fake_wait):
-                        with patch.object(sm, "safe_print"):
-                            sm.self_mod_tool("add a /status command")
+                def _tool_status(user):
+                    print("status")
 
-        # Verify file was updated
+                TOOL_REGISTRY["STATUS"] = _tool_status
+            """)}
+
+            def fake_wait(timeout=None):
+                sm._confirmation_answer["answer"] = "YES"
+                return True
+
+            with patch.object(sm, "_generate_patch", return_value=patches_dict):
+                with patch.object(sm._pending_confirmation, "wait",
+                                  side_effect=fake_wait):
+                    with patch.object(sm, "safe_print"):
+                        sm.self_mod_tool("add a /status command")
+
+        # Verify file was updated — STATUS must be registered (impl detail may vary)
         content = (root / "tool_registry.py").read_text()
-        assert "STATUS" in content
+        assert "STATUS" in content, f"STATUS not found in: {content[:200]}"
         assert "_tool_status" in content

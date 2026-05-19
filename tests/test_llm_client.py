@@ -128,6 +128,14 @@ class TestModelAliases:
                     f"Free alias '{alias}' → '{model_id}' doesn't end in :free"
                 )
 
+    def test_problem_free_aliases_use_current_openrouter_slugs(self):
+        import llm_client
+        assert llm_client.MODEL_ALIASES["or_qwen"] == "qwen/qwen3-coder:free"
+        assert (
+            llm_client.MODEL_ALIASES["or_deepseek"]
+            == "deepseek/deepseek-r1-0528-qwen3-8b:free"
+        )
+
     def test_paid_aliases_have_no_free_suffix(self):
         """Paid model aliases must NOT end in :free."""
         import llm_client
