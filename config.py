@@ -33,6 +33,11 @@ AUTONOMOUS_MAX_RETRIES   = 2
 AUTONOMOUS_TOOL_TIMEOUT  = 30
 AUTONOMOUS_REPEAT_LIMIT  = 3
 
+# Multi-agent model preferences use aliases from llm_client.MODEL_ALIASES.
+MULTI_AGENT_MODEL_DEEPSEEK   = "or_deepseek"
+MULTI_AGENT_MODEL_QWEN_CODER = "or_qwen"
+MULTI_AGENT_MODEL_LLAMA      = "or_llama"
+
 # ══════════════════════════════════════════════════════════════════════════════
 # CONTEXT / HISTORY
 # ══════════════════════════════════════════════════════════════════════════════
@@ -96,6 +101,9 @@ AUTONOMOUS_MAX_STEPS    = _env("AUTONOMOUS_MAX_STEPS",    AUTONOMOUS_MAX_STEPS, 
 AUTONOMOUS_MAX_RETRIES  = _env("AUTONOMOUS_MAX_RETRIES",  AUTONOMOUS_MAX_RETRIES,  int)
 AUTONOMOUS_TOOL_TIMEOUT = _env("AUTONOMOUS_TOOL_TIMEOUT", AUTONOMOUS_TOOL_TIMEOUT, int)
 AUTONOMOUS_REPEAT_LIMIT = _env("AUTONOMOUS_REPEAT_LIMIT", AUTONOMOUS_REPEAT_LIMIT, int)
+MULTI_AGENT_MODEL_DEEPSEEK   = _env("MULTI_AGENT_MODEL_DEEPSEEK",   MULTI_AGENT_MODEL_DEEPSEEK)
+MULTI_AGENT_MODEL_QWEN_CODER = _env("MULTI_AGENT_MODEL_QWEN_CODER", MULTI_AGENT_MODEL_QWEN_CODER)
+MULTI_AGENT_MODEL_LLAMA      = _env("MULTI_AGENT_MODEL_LLAMA",      MULTI_AGENT_MODEL_LLAMA)
 
 # ── Testing / Debug ──────────────────────────────────────────────────────────
 # Set AGENT_SCRIPT_DELAY=5 to slow generation for manual checkpoint testing

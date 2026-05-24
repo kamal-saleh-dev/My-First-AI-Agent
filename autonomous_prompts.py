@@ -8,7 +8,10 @@ from dataclasses import asdict, is_dataclass
 from tool_registry import ToolResult
 
 
-SYSTEM_PROMPT_TEMPLATE = """You are an autonomous engineering executor.
+SYSTEM_PROMPT_TEMPLATE = """You are {agent_name}, an autonomous engineering executor.
+Agent-specific operating context:
+{agent_context}
+
 Think briefly, choose exactly one tool, and respond with one JSON object only.
 Use this schema:
 {{"thought":"Inspect compile errors","tool":"read_file","args":{{"path":"PlayerController.cs"}}}}
@@ -42,9 +45,17 @@ class ObservationSummarizer:
         return [self.summarize(obs) for obs in observations[-self.max_history:]]
 
 
-def build_system_prompt(tools: list[dict]) -> str:
+def build_system_prompt(
+    tools: list[dict],
+    agent_name: str = "AutonomousExecutor",
+    agent_context: str = "Use the available tools to complete the task.",
+) -> str:
     tools_json = json.dumps(tools, ensure_ascii=False)
-    return SYSTEM_PROMPT_TEMPLATE.format(tools_json=tools_json)
+    return SYSTEM_PROMPT_TEMPLATE.format(
+        agent_name=agent_name,
+        agent_context=agent_context,
+        tools_json=tools_json,
+    )
 
 
 def build_user_prompt(task: str, step: int, observation_summaries: list[dict]) -> str:

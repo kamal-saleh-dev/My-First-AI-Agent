@@ -65,6 +65,10 @@ class AutonomousExecutor:
         max_retries: int | None = None,
         tool_timeout: int | None = None,
         repeat_limit: int | None = None,
+        allowed_tools: set[str] | list[str] | tuple[str, ...] | None = None,
+        agent_name: str = "AutonomousExecutor",
+        system_context: str = "",
+        event_handler: Optional[Callable[[str, dict], None]] = None,
     ):
         self.model_name = model_name
         self.decision_fn = decision_fn
@@ -72,6 +76,10 @@ class AutonomousExecutor:
         self.max_retries = max_retries if max_retries is not None else _cfg.AUTONOMOUS_MAX_RETRIES
         self.tool_timeout = tool_timeout or _cfg.AUTONOMOUS_TOOL_TIMEOUT
         self.repeat_limit = repeat_limit or _cfg.AUTONOMOUS_REPEAT_LIMIT
+        self.allowed_tools = set(allowed_tools) if allowed_tools is not None else None
+        self.agent_name = agent_name
+        self.system_context = system_context or "Use the available tools to complete the task."
+        self.event_handler = event_handler
         self.summarizer = ObservationSummarizer()
         if model_name:
             log.info("Autonomous executor model selected", model=model_name)
@@ -80,10 +88,12 @@ class AutonomousExecutor:
         state = ExecutionState(task=task)
         repetition_detector = RepetitionDetector(self.repeat_limit)
         log.info("Autonomous loop started", task=task, max_steps=self.max_steps)
+        self._emit("loop_started", state=state, task=task, max_steps=self.max_steps)
 
         while state.step < self.max_steps and state.status == "running":
             state.step += 1
             raw = self._decide(state)
+            self._emit("decision_received", state=state, raw=raw)
             action, parse_error = parse_action(raw)
 
             if parse_error:
@@ -103,6 +113,7 @@ class AutonomousExecutor:
                 state.final_answer = str(args.get("answer") or action.get("answer") or thought)
                 state.updated_at = time.time()
                 log.success("Autonomous loop completed", steps=state.step)
+                self._emit("stop_condition", state=state, reason="finish", tool=tool_name, args=args)
                 break
 
             if not isinstance(args, dict):
@@ -124,7 +135,28 @@ class AutonomousExecutor:
                     args=args,
                     fingerprint=fingerprint.key,
                 )
+                self._emit(
+                    "stop_condition",
+                    state=state,
+                    reason="repetition",
+                    tool=tool_name,
+                    args=args,
+                    fingerprint=fingerprint.key,
+                )
                 break
+
+            if self.allowed_tools is not None and tool_name not in self.allowed_tools:
+                self._record_failure(
+                    state,
+                    tool_name,
+                    args,
+                    "",
+                    f"tool_not_allowed: {tool_name}",
+                    thought=thought,
+                )
+                if self._should_stop_after_failure(state):
+                    break
+                continue
 
             tool = get_tool(tool_name, structured=True)
             log.info("Autonomous decision", step=state.step, thought=thought, tool=tool_name, args=args)
@@ -137,22 +169,53 @@ class AutonomousExecutor:
             started = time.time()
             try:
                 log.run("Tool call started", tool=tool_name, args=args)
+                self._emit("before_tool", state=state, thought=thought, tool=tool_name, args=args)
                 result = self._execute_tool(tool, args)
                 elapsed = time.time() - started
-                self._record_observation(
+                observation = self._record_observation(
                     state, thought, tool_name, args, result, result.success, elapsed=elapsed
+                )
+                self._emit(
+                    "after_tool",
+                    state=state,
+                    thought=thought,
+                    tool=tool_name,
+                    args=args,
+                    result=result,
+                    observation=observation,
+                    elapsed=round(elapsed, 3),
                 )
                 if result.success:
                     state.consecutive_failures = 0
                     log.info("Tool call completed", tool=tool_name, elapsed=round(elapsed, 3))
                 else:
                     state.consecutive_failures += 1
+                    self._emit(
+                        "failure",
+                        state=state,
+                        tool=tool_name,
+                        args=args,
+                        error=result.error or "tool returned failure",
+                        observation=observation,
+                    )
                     log.warn("Tool returned failure", tool=tool_name, result=result.brief(500))
                     if self._should_stop_after_failure(state):
                         break
             except Exception as e:
                 elapsed = time.time() - started
-                self._record_failure(state, tool_name, args, "", str(e), thought=thought, elapsed=elapsed)
+                observation = self._record_failure(
+                    state, tool_name, args, "", str(e), thought=thought, elapsed=elapsed
+                )
+                self._emit(
+                    "after_tool",
+                    state=state,
+                    thought=thought,
+                    tool=tool_name,
+                    args=args,
+                    result=observation.result,
+                    observation=observation,
+                    elapsed=round(elapsed, 3),
+                )
                 if self._should_stop_after_failure(state):
                     break
 
@@ -161,6 +224,7 @@ class AutonomousExecutor:
             state.failure_reason = "max_steps_reached"
             state.updated_at = time.time()
             log.warn("Autonomous loop reached max steps", steps=state.step)
+            self._emit("stop_condition", state=state, reason="max_steps_reached")
 
         return state
 
@@ -180,7 +244,14 @@ class AutonomousExecutor:
         return llm_client.get_response(response)
 
     def _build_messages(self, state: ExecutionState) -> list[dict]:
-        system = build_system_prompt(list_tools())
+        tools = list_tools()
+        if self.allowed_tools is not None:
+            tools = [tool for tool in tools if tool["name"] in self.allowed_tools]
+        system = build_system_prompt(
+            tools,
+            agent_name=self.agent_name,
+            agent_context=self.system_context,
+        )
         user = build_user_prompt(
             state.task,
             state.step,
@@ -202,6 +273,14 @@ class AutonomousExecutor:
         finally:
             executor.shutdown(wait=False, cancel_futures=True)
 
+    def _emit(self, event_type: str, **payload) -> None:
+        if not self.event_handler:
+            return
+        try:
+            self.event_handler(event_type, payload)
+        except Exception as exc:
+            log.warn("Autonomous event handler failed", event=event_type, error=str(exc))
+
     def _record_observation(
         self,
         state: ExecutionState,
@@ -212,7 +291,7 @@ class AutonomousExecutor:
         success: bool,
         error: str = "",
         elapsed: float = 0.0,
-    ) -> None:
+    ) -> Observation:
         preview = self.summarizer.summarize(
             Observation(
                 step=state.step,
@@ -225,20 +304,21 @@ class AutonomousExecutor:
                 elapsed=round(elapsed, 3),
             )
         )["summary"]
-        state.observations.append(
-            Observation(
-                step=state.step,
-                thought=thought,
-                tool=tool,
-                args=args,
-                result=result,
-                success=success,
-                error=error,
-                elapsed=round(elapsed, 3),
-                summary=preview,
-            )
+        observation = Observation(
+            step=state.step,
+            thought=thought,
+            tool=tool,
+            args=args,
+            result=result,
+            success=success,
+            error=error,
+            elapsed=round(elapsed, 3),
+            summary=preview,
         )
+        state.observations.append(observation)
         state.updated_at = time.time()
+        self._emit("observation_recorded", state=state, observation=observation)
+        return observation
 
     def _record_failure(
         self,
@@ -249,13 +329,16 @@ class AutonomousExecutor:
         error: str,
         thought: str = "",
         elapsed: float = 0.0,
-    ) -> None:
+    ) -> Observation:
         state.consecutive_failures += 1
         result_obj = ToolResult.from_value(result)
         result_obj.success = False
         if error and not result_obj.error:
             result_obj.error = error
-        self._record_observation(state, thought, tool, args, result_obj, False, error=error, elapsed=elapsed)
+        observation = self._record_observation(
+            state, thought, tool, args, result_obj, False, error=error, elapsed=elapsed
+        )
+        self._emit("failure", state=state, tool=tool, args=args, error=error, observation=observation)
         log.warn(
             "Autonomous step failed",
             step=state.step,
@@ -263,6 +346,7 @@ class AutonomousExecutor:
             error=error,
             consecutive_failures=state.consecutive_failures,
         )
+        return observation
 
     def _should_stop_after_failure(self, state: ExecutionState) -> bool:
         if state.consecutive_failures <= self.max_retries:
@@ -271,11 +355,13 @@ class AutonomousExecutor:
                 consecutive_failures=state.consecutive_failures,
                 max_retries=self.max_retries,
             )
+            self._emit("retry", state=state, consecutive_failures=state.consecutive_failures)
             return False
         state.status = "failed"
         state.failure_reason = state.observations[-1].error or "retry_limit_exceeded"
         state.updated_at = time.time()
         log.error("Autonomous retry limit exceeded", reason=state.failure_reason)
+        self._emit("stop_condition", state=state, reason=state.failure_reason)
         return True
 
 
