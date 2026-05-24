@@ -44,13 +44,12 @@ MODEL_ALIASES = {
     "or_qwen":     "qwen/qwen3-coder:free",                   # Qwen3 Coder free
 
     # ── Paid models (تحتاج credits على OpenRouter) ────────────────────────
-    "gpt54":  "openai/gpt-5.4",
+    "gpt54":  "openai/gpt-5.5",
     "gpt4":   "openai/gpt-4o",
-    "kimi":   "moonshotai/kimi-k2.5",
     "claude":      "anthropic/claude-sonnet-4-6",
     "opus":        "anthropic/claude-opus-4-6",
     "codex":       "openai/gpt-4o",
-    "kimi":        "moonshotai/kimi-k2.5",
+    "kimi":        "moonshotai/kimi-k2.6",
 }
 
 # ── Lazy imports — SINGLE source of truth. Import from here, not from agent.py ─
