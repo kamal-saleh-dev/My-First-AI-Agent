@@ -20,19 +20,22 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
     sys.stdin.reconfigure(encoding="utf-8", errors="replace")
 else:
-    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
-    sys.stdin.reconfigure(encoding="utf-8")
+        sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
+        sys.stdin.reconfigure(encoding="utf-8")
+
+# Load .env FIRST — before importing llm_client (it reads OPENROUTER_API_KEY at import time)
+try:
+    from dotenv import load_dotenv as _load_dotenv
+    from pathlib import Path as _Path
+    _env_path = _Path(__file__).resolve().parent / ".env"
+    _loaded = _load_dotenv(dotenv_path=_env_path, override=True)
+    print(f"✅ .env loaded from {_env_path}" if _loaded else f"⚠️ .env NOT found at {_env_path}")
+except ImportError:
+    print("⚠️ python-dotenv NOT installed — .env will be ignored. Run: pip install python-dotenv")
 
 from logger          import log, safe_print
 from state_manager   import _state, chat_history, project_context
 import llm_client
-
-# Load .env file — for OpenRouter key and any other API keys
-try:
-    from dotenv import load_dotenv as _load_dotenv
-    _load_dotenv()
-except ImportError:
-    pass  # python-dotenv not installed — set env vars manually or: pip install python-dotenv
 
 from model_router    import detect_mode
 from file_handler    import detect_intent, inject_globals as _fh_inject
