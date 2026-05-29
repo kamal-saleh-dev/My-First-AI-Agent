@@ -69,6 +69,18 @@ def _switch_model(new_model: str):
 check_and_exit_if_missing()
 register_shutdown_hooks()
 
+# ── Self-modification safety guard ──────────────────────────────────────
+# Route the live SELF_MOD apply path (self_mod._apply_patches) through
+# verify-and-rollback. Installed once here, at the production entry point, so
+# the detect/generate/review/preview/confirmation flow is unchanged and the
+# unit-test suite (which imports self_mod directly and never imports agent.py)
+# is unaffected. Never block startup if the guard cannot be installed.
+try:
+    import self_mod_runtime_guard as _self_mod_guard
+    _self_mod_guard.install()
+except Exception as _guard_err:
+    log.warn(f"Self-mod runtime guard not installed: {_guard_err}")
+
 _fh_inject(
     safe_chat=llm_client.safe_chat,
     get_response=llm_client.get_response,
@@ -82,12 +94,12 @@ _fh_inject(
 load_project_context()
 log.success("AGENT READY — type your request")
 
-# ── Help menu ─────────────────────────────────────────────────────────────────
+# ── Help menu ───────────────────────────────────────────────────────
 def _print_help():
     print("""
-╔══════════════════════════════════════════════════════════════╗
+╔═══════════════════════════════════════════════════════════╗
 ║                    AGENT COMMANDS                            ║
-╠══════════════════════════════════════════════════════════════╣
+╠═══════════════════════════════════════════════════════════╣
 ║  GENERATION                                                  ║
 ║  make a <game/app/website>   Start a full generation         ║
 ║  /resume <project>           Resume interrupted generation   ║
@@ -121,7 +133,7 @@ def _print_help():
 ║  /memory                     Show recent memories            ║
 ║  /memory search <q>          Search past tasks               ║
 ║  exit                        Quit the agent                  ║
-╚══════════════════════════════════════════════════════════════╝
+╚═══════════════════════════════════════════════════════════╝
 """, flush=True)
 
 
@@ -148,7 +160,7 @@ while True:
         if not user:
             continue
 
-        # ── Confirmation intercept ────────────────────────────────────────────
+        # ── Confirmation intercept ───────────────────────────────────────────
         # Only intercept YES/NO when self_mod is explicitly waiting for an answer
         try:
             from self_mod import is_waiting_for_confirmation, provide_confirmation
@@ -160,7 +172,7 @@ while True:
         except ImportError:
             pass
 
-        # ── All inline commands — try/finally guarantees ⚡AGENT_IDLE ─────────
+        # ── All inline commands — try/finally guarantees ⚡AGENT_IDLE ──────────
         try:
             intent = detect_intent(user)
             if intent != "default":
@@ -244,9 +256,9 @@ while True:
 
             elif user.strip() == "/help":
                 print("""
-╔══════════════════════════════════════════════════════════╗
+╔═════════════════════════════════════════════════════════╗
 ║                    AGENT COMMANDS                        ║
-╠══════════════════════════════════════════════════════════╣
+╠═══════════════════════════════════════════════════════╣
 ║  GENERATION                                              ║
 ║  make a <type> game         Generate Unity/Unreal game   ║
 ║  build a <type> website     Generate web project         ║
@@ -285,7 +297,7 @@ while True:
 ║  /memory                    Show recent memories         ║
 ║  /memory search <q>         Search past tasks            ║
 ║  exit                       Exit the agent               ║
-╚══════════════════════════════════════════════════════════╝
+╚═══════════════════════════════════════════════════════╝
 """, flush=True)
 
             elif user.startswith("/resume "):
