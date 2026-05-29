@@ -4,6 +4,9 @@ This project is a modular autonomous coding agent. The current system still
 preserves the legacy generation pipeline, while Phase 1 adds an autonomous
 think-act-observe tool loop through `/auto` and `AutonomousExecutor`.
 
+A Phase 2 multi-agent package exists under `agents/` (built but not yet wired
+into the runtime). See `docs/multi_agent_architecture.md` for details.
+
 ## Current Architecture
 
 The agent is split by responsibility:
@@ -20,9 +23,12 @@ The agent is split by responsibility:
 - `autonomous_loop.py`: Phase 1 autonomous executor.
 - `autonomous_prompts.py`: autonomous-loop prompt builders and observation summaries.
 - `autonomous_repetition.py`: repeat-action detection abstraction.
+- `autonomous_checkpoint.py`: opt-in persistence for autonomous `ExecutionState`.
 - `recovery.py`: generation checkpoint persistence and resume context.
 - `self_mod.py`: guarded self-modification workflow.
 - `llm_client.py`: local/cloud model calls and alias resolution.
+- `agents/`: Phase 2 multi-agent package (built, not yet wired). See
+  `docs/multi_agent_architecture.md`.
 
 ## Execution Flow
 
@@ -60,7 +66,9 @@ Loop:
 6. Observation is summarized for the next prompt.
 7. Loop stops on `finish`, retry exhaustion, timeout, max steps, or repeated action.
 
-No multi-agent coordination exists yet.
+Multi-agent coordination is implemented in the `agents/` package but is not yet
+wired into the CLI/GUI runtime. The autonomous loop itself remains a single
+executor. See `docs/multi_agent_architecture.md`.
 
 ## Tool System
 
@@ -86,7 +94,9 @@ include `filesystem`, `testing`, `analysis`, `project`, and `memory`.
 - `Observation`: one loop step result.
 - `ExecutionState`: full loop state and history.
 - `ObservationSummarizer`: compact observation history for prompts.
-- `RepetitionDetector`: exact repeated-action detection with a future semantic hook.
+- `RepetitionDetector`: repeated-action detection with deterministic argument
+  normalization and a sliding-window check, plus an optional semantic-key hook.
+- `AutonomousCheckpointStore`: opt-in JSON persistence/restore of `ExecutionState`.
 - `RecoveryContext`: checkpoint lifecycle wrapper around generation.
 - `DOMAIN_REGISTRY`: domain/plugin-style routing metadata.
 
@@ -99,7 +109,8 @@ autonomous execution uses `Tool.execute_structured()`.
 - Keep legacy generation, recovery, plugins, reviewer, self-mod, and tests working.
 - Prefer registries and interfaces over new if/elif chains.
 - Avoid hardcoded models where aliases/config already exist.
-- Keep autonomous loop single-agent until Phase 2 explicitly introduces agents.
+- Keep the autonomous loop single-executor; multi-agent orchestration in
+  `agents/` stays opt-in and unwired until a runtime-integration phase.
 - File tools must stay workspace-scoped.
 - Tool outputs should remain structured internally.
 
@@ -126,8 +137,13 @@ Generation recovery is handled by `recovery.py`.
 - Exceptions, interrupts, or incomplete runs keep the checkpoint resumable.
 - `/resume <project>` loads checkpoint state and re-enters generation.
 
-The autonomous loop currently keeps in-memory `ExecutionState` only. Persistent
-autonomous-loop checkpoints are a future phase.
+The autonomous loop keeps in-memory `ExecutionState` by default. Optional,
+opt-in persistence is available through `autonomous_checkpoint.py`
+(`AutonomousCheckpointStore`). When `AutonomousExecutor(enable_checkpoints=True)`
+is set, the loop serializes `ExecutionState` after each step under
+`.checkpoints/autonomous/` and can be resumed by passing a restored state to
+`execute(resume_state=...)`. Persistence is OFF by default, so default behavior
+is unchanged. Resume restores prior state only; it does not replan.
 
 ## Testing Architecture
 
@@ -144,6 +160,18 @@ Tests are under `tests/` and are grouped by subsystem:
   summarization, repetition detection, timeout handling.
 - `test_tool_registry_structured.py`: structured registry, `ToolResult`, metadata,
   and default tool execution.
+- `test_autonomous_repetition.py`: argument normalization, consecutive and
+  windowed repetition detection, semantic-key hook.
+- `test_autonomous_checkpoint.py`: `ExecutionState` round-trip save/load and
+  opt-in executor checkpointing.
+- `test_base_agent.py`: isolated agent state, tool-permission enforcement,
+  bounded-state compaction, executor bridge.
+- `test_agent_manager.py`: registration, delegation, lifecycle, orchestration.
+- `test_orchestration.py`: execution plan/step shapes and sequential strategy.
+- `test_message_bus.py`: mailboxes, broadcast, history, events, subscriber safety.
+- `test_shared_execution_context.py`: shared goals, tasks, metadata, snapshots.
+- `test_specialized_agents.py`: role models and effective tool allowlists.
+- `test_agents_exports.py`: `agents` package import/export surface.
 
 For future phases, add focused unit tests first, then integration tests only when
 the new behavior crosses module boundaries.

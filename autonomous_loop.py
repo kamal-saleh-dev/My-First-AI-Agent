@@ -1,6 +1,12 @@
 """Autonomous think/act/observe execution loop.
 
-Phase 1 only: one executor, one tool registry, no multi-agent orchestration.
+Single-executor loop: one executor, one tool registry. A separate Phase 2
+multi-agent package exists under `agents/` but is not wired into this loop or
+the runtime; see docs/multi_agent_architecture.md.
+
+State is in-memory by default. Optional, opt-in persistence is provided via
+autonomous_checkpoint.AutonomousCheckpointStore (enable_checkpoints=True). Resume
+restores prior ExecutionState only and does not replan.
 """
 
 from __future__ import annotations
@@ -17,9 +23,7 @@ from autonomous_repetition import RepetitionDetector
 from logger import log
 from tool_registry import Tool, ToolResult, get_tool, list_tools
 
-
 STOP_TOOLS = {"finish", "final_answer", "done", "stop"}
-
 
 @dataclass
 class Observation:
@@ -32,7 +36,6 @@ class Observation:
     error: str = ""
     elapsed: float = 0.0
     summary: str = ""
-
 
 @dataclass
 class ExecutionState:
@@ -53,7 +56,6 @@ class ExecutionState:
         data["elapsed"] = round(self.updated_at - self.started_at, 3)
         return data
 
-
 class AutonomousExecutor:
     """Run a task through repeated model-selected tool calls."""
 
@@ -69,6 +71,9 @@ class AutonomousExecutor:
         agent_name: str = "AutonomousExecutor",
         system_context: str = "",
         event_handler: Optional[Callable[[str, dict], None]] = None,
+        enable_checkpoints: bool = False,
+        checkpoint_store=None,
+        checkpoint_id: str = "",
     ):
         self.model_name = model_name
         self.decision_fn = decision_fn
@@ -81,14 +86,24 @@ class AutonomousExecutor:
         self.system_context = system_context or "Use the available tools to complete the task."
         self.event_handler = event_handler
         self.summarizer = ObservationSummarizer()
+        # Opt-in persistence. Default OFF preserves the original in-memory behavior.
+        self.enable_checkpoints = bool(enable_checkpoints)
+        self._checkpoint_store = checkpoint_store
+        self.checkpoint_id = checkpoint_id or agent_name
         if model_name:
             log.info("Autonomous executor model selected", model=model_name)
 
-    def execute(self, task: str) -> ExecutionState:
-        state = ExecutionState(task=task)
+    def execute(self, task: str, resume_state: "ExecutionState | None" = None) -> ExecutionState:
+        state = resume_state if resume_state is not None else ExecutionState(task=task)
+        if resume_state is not None:
+            # Restore-only: continue from the persisted state without replanning.
+            state.status = "running"
+            state.updated_at = time.time()
+            log.info("Autonomous loop resuming", task=state.task, step=state.step)
         repetition_detector = RepetitionDetector(self.repeat_limit)
-        log.info("Autonomous loop started", task=task, max_steps=self.max_steps)
-        self._emit("loop_started", state=state, task=task, max_steps=self.max_steps)
+        log.info("Autonomous loop started", task=state.task, max_steps=self.max_steps)
+        self._emit("loop_started", state=state, task=state.task, max_steps=self.max_steps)
+        self._save_checkpoint(state)
 
         while state.step < self.max_steps and state.status == "running":
             state.step += 1
@@ -219,6 +234,9 @@ class AutonomousExecutor:
                 if self._should_stop_after_failure(state):
                     break
 
+            # Opt-in: persist after each completed step for crash recovery.
+            self._save_checkpoint(state)
+
         if state.status == "running":
             state.status = "failed"
             state.failure_reason = "max_steps_reached"
@@ -226,6 +244,8 @@ class AutonomousExecutor:
             log.warn("Autonomous loop reached max steps", steps=state.step)
             self._emit("stop_condition", state=state, reason="max_steps_reached")
 
+        # Opt-in: persist the terminal state.
+        self._save_checkpoint(state)
         return state
 
     def run(self, task: str) -> str:
@@ -280,6 +300,21 @@ class AutonomousExecutor:
             self.event_handler(event_type, payload)
         except Exception as exc:
             log.warn("Autonomous event handler failed", event=event_type, error=str(exc))
+
+    def _get_checkpoint_store(self):
+        if self._checkpoint_store is None:
+            # Lazy import avoids a circular import with autonomous_checkpoint.
+            from autonomous_checkpoint import AutonomousCheckpointStore
+            self._checkpoint_store = AutonomousCheckpointStore()
+        return self._checkpoint_store
+
+    def _save_checkpoint(self, state: ExecutionState) -> None:
+        if not self.enable_checkpoints:
+            return
+        try:
+            self._get_checkpoint_store().save(state, self.checkpoint_id)
+        except Exception as exc:
+            log.warn("Autonomous checkpoint save failed", id=self.checkpoint_id, error=str(exc))
 
     def _record_observation(
         self,
@@ -363,7 +398,6 @@ class AutonomousExecutor:
         log.error("Autonomous retry limit exceeded", reason=state.failure_reason)
         self._emit("stop_condition", state=state, reason=state.failure_reason)
         return True
-
 
 def parse_action(raw: str | dict) -> tuple[dict, str]:
     """Parse a model action, recovering fenced or surrounded JSON objects."""

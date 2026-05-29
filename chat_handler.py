@@ -16,12 +16,10 @@ from model_router  import detect_domain
 from generation_engine import CREATION_VERBS as _CREATION_VERBS, WEB_ENGINES as _WEB_DOMAINS
 from generation_engine import is_generation_request as _is_generation_request
 
-
 def _get_model() -> str:
     return llm_client.DEFAULT_MODEL
 
-
-# ── System prompt builder ─────────────────────────────────────────────────────
+# ── System prompt builder ─────────────────────────────────────────
 
 def _build_system_prompt(intent: str, working_context: list,
                           domain: str, images: list, videos: list) -> str:
@@ -67,14 +65,14 @@ def _build_system_prompt(intent: str, working_context: list,
         "  - planner.py        : script planning for game generation\n"
         "  - model_advisor.py  : model escalation ladder\n"
         "  - llm_client.py     : LLM calls + model aliases\n"
+        "  - agents/           : multi-agent package (built, not yet wired into runtime)\n"
         "  - plugins/          : Unity/Unreal/Web/Python domain plugins\n"
         "  - tests/            : pytest test files\n\n"
         "When asked about which file does X, answer from the list above.\n"
         "Answer naturally and clearly in the same language the user is speaking."
     )
 
-
-# ── Context reader ────────────────────────────────────────────────────────────
+# ── Context reader ───────────────────────────────────────────────
 
 def _read_text_context(working_context: list) -> str:
     text_context = ""
@@ -92,8 +90,7 @@ def _read_text_context(working_context: list) -> str:
                 safe_print(f"⚠ context read error: {e}")
     return text_context
 
-
-# ── Stream output helper ──────────────────────────────────────────────────────
+# ── Stream output helper ─────────────────────────────────────────
 
 def _stream_response(stream) -> str:
     """Print a streaming response token-by-token. Returns full text."""
@@ -124,8 +121,7 @@ def _stream_response(stream) -> str:
     sys.stdout.flush()
     return full
 
-
-# ── Main chat dispatcher ──────────────────────────────────────────────────────
+# ── Main chat dispatcher ─────────────────────────────────────────
 
 def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
     """
@@ -143,7 +139,7 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
     if task == "Analyze and describe the attached files in detail.":
         task = ""
 
-    # ── Waiting for project name ──────────────────────────────────────────────
+    # ── Waiting for project name ────────────────────────────────────
     if _state.awaiting_project_name and task:
         _state.current_project_name  = task
         _state.awaiting_project_name = False
@@ -164,12 +160,12 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
         _state.active_intent = "default"
         return
 
-    # ── Intent + domain (computed ONCE) ──────────────────────────────────────
+    # ── Intent + domain (computed ONCE) ──────────────────────────────
     intent               = detect_intent(task)
     _state.active_intent = intent
     domain               = _hint_domain if _hint_domain != "general" else detect_domain(task.lower())
 
-    # ── Context resolution ────────────────────────────────────────────────────
+    # ── Context resolution ────────────────────────────────────────
     working_context = select_relevant_files(task, project_context)
     images   = [i["path"] for i in working_context if i["type"] == "image"]
     videos   = [i["path"] for i in working_context if i["type"] == "video"]
@@ -177,28 +173,28 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
 
     model_name = "llava" if images else _get_model()
 
-    # ── System prompt ─────────────────────────────────────────────────────────
+    # ── System prompt ────────────────────────────────────────────
     system_prompt = _build_system_prompt(intent, working_context, domain, images, videos)
 
-    # ── Prepend file context to task ──────────────────────────────────────────
+    # ── Prepend file context to task ───────────────────────────────
     task_with_ctx = (
         f"Context from text files:\n{text_ctx}\n\nUser Task: {task}"
         if text_ctx else task
     )
 
-    # ── History management ────────────────────────────────────────────────────
+    # ── History management ────────────────────────────────────────
     chat_history.append({"role": "user", "content": task_with_ctx})
     chat_history[:] = smart_trim_history(chat_history, max_tokens=3000)
     messages = [{"role": "system", "content": system_prompt}] + chat_history
 
-    # ── Force generation pipeline for web/code domains ────────────────────────
+    # ── Force generation pipeline for web/code domains ────────────────────
     if domain in _WEB_DOMAINS and any(w in task.lower() for w in _CREATION_VERBS):
         text_ctx = ""
         images   = []
         videos   = []
 
     try:
-        # ── No attached files — text-only branch ─────────────────────────────
+        # ── No attached files — text-only branch ────────────────────────
         if not text_ctx and not images and not videos:
             _t = task.lower()
 
@@ -260,7 +256,7 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
             save_session()
 
         else:
-            # ── With attached files ───────────────────────────────────────────
+            # ── With attached files ─────────────────────────────────
             chat_history[-1]["images"] = images if images else None
             r = safe_chat(
                 model=model_name,
