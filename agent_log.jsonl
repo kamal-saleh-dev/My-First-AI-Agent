@@ -1,0 +1,1192 @@
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m1"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m2"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m3"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "", "escalation": 1, "base": "base", "chosen": "m1"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "", "escalation": 2, "base": "base", "chosen": "m2"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "", "escalation": 3, "base": "base", "chosen": "m3"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m1"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m2"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "", "escalation": 9, "base": "base", "chosen": "m2"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "base"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m2"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "37274df3-f838-4c73-b910-d531b286975c", "correlation_id": "fe7b3d62-9344-4b6a-9d44-b0c326d72354"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "build a small feature", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "d3a2f939-1414-47ea-9e0f-39bea3299d99", "correlation_id": "4732b694-8b65-4e0a-9a61-e82e763bb7ed"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "build a small feature\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ✅ [success] Similar task: build a small feature\\n     Pattern used:\\n       ok\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive runtime finished", "status": "completed", "steps": 2, "progress": 1.0}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "0866fab3-255a-46fb-aee4-0c48eade300c", "correlation_id": "4a3947ff-893b-4a47-84b9-1cec9b6a10e0"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "do something", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "PlannerAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "PlannerAgent", "escalation": 1, "base": "or_deepseek", "chosen": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "e6c60462-a55f-4e34-8a79-45d5ee30ee83", "correlation_id": "3cc689c8-c475-4a8d-b515-b6419654d877"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "do something\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: do something\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "PlannerAgent", "step": 1, "decision": "switch_model", "attempts": 2, "repeated": 2, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "PlannerAgent", "escalation": 2, "base": "or_deepseek", "chosen": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "87dc867e-c28c-421a-83a2-3acd875425c4", "correlation_id": "7ea8ff61-fec5-4710-a154-981c9711a39e"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "do something\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: do something\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\n  ❌ [failed] Similar task: do something\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "PlannerAgent", "step": 1, "decision": "stop", "attempts": 3, "repeated": 3, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive runtime finished", "status": "failed", "steps": 1, "progress": 0.0}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "16ed1371-2c72-4704-abfa-389dd7a4c1d4", "correlation_id": "6bf7cabe-d367-4215-b0b8-9bef538c91ee"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "implement", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "CodingAgent", "escalation": 1, "base": "or_qwen", "chosen": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "9c171eb2-8492-4392-8b30-be9c904f1b69", "correlation_id": "d6290594-2be0-4bec-b2a9-014256e80dbf"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "implement\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: implement\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "switch_model", "attempts": 2, "repeated": 2, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "CodingAgent", "escalation": 2, "base": "or_qwen", "chosen": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "a2460b93-675f-4c6b-94b4-7e1f42f24d83", "correlation_id": "72138bdd-3707-4c51-a482-52d02b3b0540"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "implement\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: implement\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\n  ❌ [failed] Similar task: implement\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "stop", "attempts": 3, "repeated": 3, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive runtime finished", "status": "failed", "steps": 1, "progress": 0.0}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "428b02d4-1a71-4853-b0e0-305d2daa0ba9", "correlation_id": "9dbaeb40-f2bf-4033-bf31-ec3ee88ef4fc"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "run the tests", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "TestingAgent", "escalation": 1, "base": "or_qwen", "chosen": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "0043609d-5f87-4b2e-ab7c-be859d35eaf3", "correlation_id": "ebe978b5-5694-41ec-9694-7d74245c473c"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "run the tests\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "switch_model", "attempts": 2, "repeated": 2, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "TestingAgent", "escalation": 2, "base": "or_qwen", "chosen": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "7fc78360-4b6f-4cc4-baf9-d9bb8547a369", "correlation_id": "692dc323-0a60-4445-80cc-5e4cc82f1f03"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "run the tests\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "delegate_debug", "attempts": 3, "repeated": 3, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "DebuggerAgent", "role": "debugging", "task_id": "61650642-ce25-42fc-b027-70121a1358b0", "correlation_id": "a1fefaa7-7816-4c35-b985-9df602835d61"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "Diagnose and repair the failure from TestingAgent: malformed_json: no JSON object found\n\nShared context:\n{'failed_agent': 'TestingAgent', 'original_task': 'run the tests'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "DebuggerAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "TestingAgent", "escalation": 3, "base": "or_qwen", "chosen": "or_llama"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "382a2e39-27c2-4b72-94dc-6289b704eed2", "correlation_id": "857bf647-016f-497d-b47c-fbc0bea01fc2"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "run the tests\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "stop", "attempts": 4, "repeated": 4, "stuck": true}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive runtime finished", "status": "failed", "steps": 1, "progress": 0.0}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "0ff84b17-568f-4969-9b6f-1ed4df69cb64", "correlation_id": "2b9a2915-4eb3-4d20-b85b-a15063bd292b"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "quick task", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive runtime finished", "status": "completed", "steps": 1, "progress": 1.0}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "293d7918-0a3e-44bf-b55c-ce05084d9847", "correlation_id": "8779e6cc-fd3d-45e7-b24f-fbcae8122f32"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "plan the work", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent unregistered", "agent": "ContextAgent"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "4d6a3dd7-5e7a-49c3-b839-c14e8acd88be", "workflow": ["PlannerAgent", "CodingAgent"], "strategy": "sequential"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "07844590-3e1d-4927-a954-640df25bcd2a", "correlation_id": "4d6a3dd7-5e7a-49c3-b839-c14e8acd88be"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "build feature\n\nShared context:\n{'original_task': 'build feature'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "db9252bb-788b-4d84-9ced-f1ee5a187e38", "correlation_id": "4d6a3dd7-5e7a-49c3-b839-c14e8acd88be"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "build feature\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'build feature', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'build feature', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '07844590-3e1d-4927-a954-640df25bcd2a', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "do something", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "task", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop resuming", "task": "demo task", "step": 3}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "demo task", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 4}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "finish after malformed json", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 1}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "recover from invalid tool", "max_steps": 12}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous decision", "step": 1, "thought": "try missing", "tool": "missing_tool", "args": {}}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "missing_tool", "error": "invalid_tool: missing_tool", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 1}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "retry flaky tool", "max_steps": 12}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous decision", "step": 1, "thought": "first", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "RUN", "msg": "Tool call started", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "test_flaky", "error": "temporary failure", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous decision", "step": 2, "thought": "retry", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "RUN", "msg": "Tool call started", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "INFO", "msg": "Tool call completed", "tool": "test_flaky", "elapsed": 0.0}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 3}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "detect repeated loop", "max_steps": 5}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous decision", "step": 1, "thought": "loop", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "RUN", "msg": "Tool call started", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "test_flaky", "error": "temporary failure", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous loop stopped for repetition", "tool": "test_flaky", "args": {}, "fingerprint": "test_flaky:{}"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "timeout", "max_steps": 12}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous decision", "step": 1, "thought": "sleep", "tool": "test_sleep", "args": {"seconds": 0.05}}
+{"ts": "19:07:41", "level": "RUN", "msg": "Tool call started", "tool": "test_sleep", "args": {"seconds": 0.05}}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "test_sleep", "error": "tool 'test_sleep' timed out after 0.01s", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "tool 'test_sleep' timed out after 0.01s"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "113ca462-5e4d-4262-9bbb-5d500f0787c5", "correlation_id": "7b1b8982-6c62-4899-971e-349c7aeaee6b"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "draft a plan", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "c201d64e-3fd8-4f33-9721-89dac5da9f67", "correlation_id": "e02ef47e-da4a-407b-892a-1a8d162f9b05"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\PlayerController.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\EnemySpawner.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\EnemyAI.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\HealthBar.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\UIController.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\GameManager.cs"}
+{"ts": "19:08:40", "level": "INFO", "msg": "⏱ Generation done in 0.0s — saved=6"}
+{"ts": "19:08:40", "level": "INFO", "msg": "Backup: C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_add_command_flow0\\agent_root\\tool_registry.py.1780070920.bak"}
+{"ts": "19:08:40", "level": "SUCCESS", "msg": "✅ tool_registry.py updated"}
+{"ts": 1780070920.220181, "level": "WARN", "msg": "MessageBus subscriber failed", "subscription_id": "9c4c1e2c-04f6-464b-9eea-e05326c789cd", "subscribed_type": "task_done", "event_type": "task_done", "event_id": "206bdf58-4223-4cac-8156-79942fda85ae", "correlation_id": "", "error": "boom"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping or_qwen — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping or_deepseek — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping or_llama — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping or_free — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping gpt54 — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping kimi — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping claude — OpenRouter not configured"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "RUN", "msg": "Agent tool call started", "agent": "CodingAgent", "tool": "write_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_tool_permission_enforceme0", "path": "code.txt", "content": "allowed"}}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ContextAgent", "role": "context", "task_id": "34c60c7f-42f9-46a2-96c9-a6c310d957ce", "correlation_id": "ctx-1"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Summarize project\n\nShared context:\n{'scope': 'tests'}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ContextAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "orch-1", "workflow": ["PlannerAgent", "ReviewerAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "8998cf3f-eea7-457d-8cab-d4e59d9b3b32", "correlation_id": "orch-1"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Add feature safely\n\nShared context:\n{'original_task': 'Add feature safely'}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "a49cd7c9-bf0f-4591-8ff6-ca13f468e3ae", "correlation_id": "orch-1"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Add feature safely\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'Add feature safely', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'Add feature safely', 'status': 'completed', 'final_answer': 'plan ready', 'error': '', 'observations': [], 'metadata': {'task_id': '8998cf3f-eea7-457d-8cab-d4e59d9b3b32', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "5b46b485-b571-43a5-b6d0-efda11b3e87a", "correlation_id": "048f6049-4a28-4993-af3a-f24188d6f515"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Try to modify a file", "max_steps": 1}
+{"ts": "19:08:56", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "write_file", "error": "tool_not_allowed: write_file", "consecutive_failures": 1}
+{"ts": "19:08:56", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "tool_not_allowed: write_file"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "failed", "error": "tool_not_allowed: write_file"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493", "workflow": ["PlannerAgent", "CodingAgent", "ReviewerAgent", "TestingAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "3217b0be-574a-4b14-990a-d2b5865ca775", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "demo runtime task\n\nShared context:\n{'original_task': 'demo runtime task'}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "5e5ff0a2-35b0-450f-a5b3-f57e8f9e594d", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "demo runtime task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'demo runtime task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'demo runtime task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '3217b0be-574a-4b14-990a-d2b5865ca775', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "cb3ab7cc-4812-481a-bc3b-1c406a802d7f", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "demo runtime task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'demo runtime task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'demo runtime task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '3217b0be-574a-4b14-990a-d2b5865ca775', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'demo runtime task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '5e5ff0a2-35b0-450f-a5b3-f57e8f9e594d', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "c99d0c56-ba1c-4489-bd0b-13419dec40c9", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "demo runtime task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'demo runtime task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'demo runtime task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '3217b0be-574a-4b14-990a-d2b5865ca775', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'demo runtime task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '5e5ff0a2-35b0-450f-a5b3-f57e8f9e594d', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}, {'agent_name': 'ReviewerAgent', 'task': 'demo runtime task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'cb3ab7cc-4812-481a-bc3b-1c406a802d7f', 'steps': 1, 'preferred_model': 'or_llama', 'allowed_tools': ['read_file', 'search_files', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Multi-agent runtime finished", "status": "completed", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493", "steps": 4}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06", "workflow": ["PlannerAgent", "CodingAgent", "ReviewerAgent", "TestingAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "921773a6-b16c-48f0-a212-c70010abcd67", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "visible task\n\nShared context:\n{'original_task': 'visible task'}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "a5c04e83-9b75-4910-b5de-bb87511d068c", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "visible task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'visible task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'visible task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '921773a6-b16c-48f0-a212-c70010abcd67', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "f8e5c9fd-7618-421c-8508-d7bf6825452b", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "visible task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'visible task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'visible task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '921773a6-b16c-48f0-a212-c70010abcd67', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'visible task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'a5c04e83-9b75-4910-b5de-bb87511d068c', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "cb496995-66e9-459c-9e11-b250c49e90be", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "visible task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'visible task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'visible task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '921773a6-b16c-48f0-a212-c70010abcd67', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'visible task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'a5c04e83-9b75-4910-b5de-bb87511d068c', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}, {'agent_name': 'ReviewerAgent', 'task': 'visible task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'f8e5c9fd-7618-421c-8508-d7bf6825452b', 'steps': 1, 'preferred_model': 'or_llama', 'allowed_tools': ['read_file', 'search_files', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Multi-agent runtime finished", "status": "completed", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06", "steps": 4}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88", "workflow": ["PlannerAgent", "CodingAgent", "ReviewerAgent", "TestingAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "fb620cdf-d1fc-407e-a1f9-6adade7547a4", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "cleanup task\n\nShared context:\n{'original_task': 'cleanup task'}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "13892e32-5c40-4086-984d-3b084d31ccde", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "cleanup task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'cleanup task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'cleanup task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'fb620cdf-d1fc-407e-a1f9-6adade7547a4', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "1bdedffa-e943-4ef1-ab6b-b6a75ee9974c", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "cleanup task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'cleanup task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'cleanup task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'fb620cdf-d1fc-407e-a1f9-6adade7547a4', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'cleanup task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '13892e32-5c40-4086-984d-3b084d31ccde', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "c5052972-c712-48d4-8769-39d887d61f5c", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "cleanup task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'cleanup task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'cleanup task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'fb620cdf-d1fc-407e-a1f9-6adade7547a4', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'cleanup task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '13892e32-5c40-4086-984d-3b084d31ccde', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}, {'agent_name': 'ReviewerAgent', 'task': 'cleanup task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '1bdedffa-e943-4ef1-ab6b-b6a75ee9974c', 'steps': 1, 'preferred_model': 'or_llama', 'allowed_tools': ['read_file', 'search_files', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Multi-agent runtime finished", "status": "completed", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88", "steps": 4}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370", "workflow": ["PlannerAgent", "CodingAgent", "ReviewerAgent", "TestingAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "eff5e995-3f29-4e42-829c-fc02fc434b58", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "helper task\n\nShared context:\n{'original_task': 'helper task'}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "b45d11e1-0b7e-440e-badf-ce6b0ffd9156", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "helper task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'helper task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'helper task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'eff5e995-3f29-4e42-829c-fc02fc434b58', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "b28b9640-f112-4411-b9a1-cfafc3148cf6", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "helper task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'helper task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'helper task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'eff5e995-3f29-4e42-829c-fc02fc434b58', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'helper task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'b45d11e1-0b7e-440e-badf-ce6b0ffd9156', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "583d5321-475b-4c26-b074-e29f655a1ae3", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "helper task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'helper task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'helper task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'eff5e995-3f29-4e42-829c-fc02fc434b58', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'helper task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'b45d11e1-0b7e-440e-badf-ce6b0ffd9156', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}, {'agent_name': 'ReviewerAgent', 'task': 'helper task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'b28b9640-f112-4411-b9a1-cfafc3148cf6', 'steps': 1, 'preferred_model': 'or_llama', 'allowed_tools': ['read_file', 'search_files', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Multi-agent runtime finished", "status": "completed", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370", "steps": 4}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "bc8d2cb2-5282-4896-885d-a501a8016deb", "correlation_id": "strategy-1"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Stabilize Phase 2\n\nShared context:\n{'original_task': 'Stabilize Phase 2'}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "37c09602-3b38-497f-9b03-32ee4ff77b9a", "correlation_id": "strategy-1"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Stabilize Phase 2\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'Stabilize Phase 2', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'Stabilize Phase 2', 'status': 'completed', 'final_answer': 'planned', 'error': '', 'observations': [], 'metadata': {'task_id': 'bc8d2cb2-5282-4896-885d-a501a8016deb', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "orch-strategy", "workflow": ["PlannerAgent", "ReviewerAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "8d9e6933-8c4b-4526-ad86-e1d2899e9191", "correlation_id": "orch-strategy"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Refactor orchestration\n\nShared context:\n{'original_task': 'Refactor orchestration'}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "6af5dfb3-108b-40ff-b5aa-39ff174a9b6d", "correlation_id": "orch-strategy"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Refactor orchestration\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'Refactor orchestration', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'Refactor orchestration', 'status': 'completed', 'final_answer': 'plan ok', 'error': '', 'observations': [], 'metadata': {'task_id': '8d9e6933-8c4b-4526-ad86-e1d2899e9191', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "HookedCodingAgent", "role": "coding", "task_id": "ea5377a6-6a52-4f0a-92cb-99f8334c3b5c", "correlation_id": "af7f8cbf-bc58-4dda-a6eb-bb2078ac0513"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Read a file then finish", "max_steps": 2}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous decision", "step": 1, "thought": "read", "tool": "read_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_lifecycle_hooks_order_and0", "path": "sample.txt"}}
+{"ts": "19:08:56", "level": "RUN", "msg": "Tool call started", "tool": "read_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_lifecycle_hooks_order_and0", "path": "sample.txt"}}
+{"ts": "19:08:56", "level": "INFO", "msg": "Tool call completed", "tool": "read_file", "elapsed": 0.002}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 2}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "HookedCodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "HookedCodingAgent", "role": "coding", "task_id": "eda771de-3270-4b90-919d-d5521eadb693", "correlation_id": "df6e9c52-75f1-4930-9591-549d67380c25"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Recover from malformed output", "max_steps": 2}
+{"ts": "19:08:56", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 2}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "HookedCodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "RUN", "msg": "Agent tool call started", "agent": "HookedCodingAgent", "tool": "write_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_bounded_agent_state_prune0", "path": "file_0.txt", "content": "0"}}
+{"ts": "19:08:56", "level": "RUN", "msg": "Agent tool call started", "agent": "HookedCodingAgent", "tool": "write_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_bounded_agent_state_prune0", "path": "file_1.txt", "content": "1"}}
+{"ts": "19:08:56", "level": "RUN", "msg": "Agent tool call started", "agent": "HookedCodingAgent", "tool": "write_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_bounded_agent_state_prune0", "path": "file_2.txt", "content": "2"}}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ContextAgent", "role": "context", "task_id": "93dd926c-8950-45c5-8d0c-bcbfbe817374", "correlation_id": "failed-plan"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Stop after failure\n\nShared context:\n{'original_task': 'Stop after failure'}", "max_steps": 1}
+{"ts": "19:08:56", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "missing_tool", "error": "tool_not_allowed: missing_tool", "consecutive_failures": 1}
+{"ts": "19:08:56", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "tool_not_allowed: missing_tool"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ContextAgent", "status": "failed", "error": "tool_not_allowed: missing_tool"}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "switch_model", "attempts": 2, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "delegate_debug", "attempts": 3, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "stop", "attempts": 4, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "switch_model", "attempts": 2, "repeated": 2, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "stop", "attempts": 3, "repeated": 3, "stuck": true}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "retry", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "retry", "attempts": 2, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "stop", "attempts": 3, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "DebuggerAgent", "step": 1, "decision": "stop", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 2, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:12", "level": "INFO", "msg": "Backup: C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_full_flow_with_mocked_llm0\\agent_root\\tool_registry.py.1780070952.bak"}
+{"ts": "19:09:12", "level": "SUCCESS", "msg": "✅ tool_registry.py updated"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard uninstalled"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod verified and committed (1 file(s))"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod verified and committed (1 file(s))"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "WARN", "msg": "Self-mod verification failed — changes rolled back [import] alpha.py: ImportError"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "WARN", "msg": "Self-mod verification failed — changes rolled back [tests] <suite>: 1 passed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "WARN", "msg": "Self-mod verification failed — changes rolled back [import] beta.py: ImportError"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "WARN", "msg": "Self-mod verification failed — changes rolled back [import] gamma.py: ImportError"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod verified and committed (1 file(s))"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod verified and committed (1 file(s))"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod verified and committed (1 file(s))"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m1"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m2"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m3"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "", "escalation": 1, "base": "base", "chosen": "m1"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "", "escalation": 2, "base": "base", "chosen": "m2"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "", "escalation": 3, "base": "base", "chosen": "m3"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m1"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m2"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "", "escalation": 9, "base": "base", "chosen": "m2"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "base"}
+{"ts": "19:07:41", "level": "WARN", "msg": "Adaptive router: model not in MODEL_ALIASES", "model": "m2"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "37274df3-f838-4c73-b910-d531b286975c", "correlation_id": "fe7b3d62-9344-4b6a-9d44-b0c326d72354"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "build a small feature", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "d3a2f939-1414-47ea-9e0f-39bea3299d99", "correlation_id": "4732b694-8b65-4e0a-9a61-e82e763bb7ed"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "build a small feature\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ✅ [success] Similar task: build a small feature\\n     Pattern used:\\n       ok\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive runtime finished", "status": "completed", "steps": 2, "progress": 1.0}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "0866fab3-255a-46fb-aee4-0c48eade300c", "correlation_id": "4a3947ff-893b-4a47-84b9-1cec9b6a10e0"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "do something", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "PlannerAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "PlannerAgent", "escalation": 1, "base": "or_deepseek", "chosen": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "e6c60462-a55f-4e34-8a79-45d5ee30ee83", "correlation_id": "3cc689c8-c475-4a8d-b515-b6419654d877"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "do something\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: do something\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "PlannerAgent", "step": 1, "decision": "switch_model", "attempts": 2, "repeated": 2, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "PlannerAgent", "escalation": 2, "base": "or_deepseek", "chosen": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "87dc867e-c28c-421a-83a2-3acd875425c4", "correlation_id": "7ea8ff61-fec5-4710-a154-981c9711a39e"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "do something\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: do something\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\n  ❌ [failed] Similar task: do something\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "PlannerAgent", "step": 1, "decision": "stop", "attempts": 3, "repeated": 3, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive runtime finished", "status": "failed", "steps": 1, "progress": 0.0}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "16ed1371-2c72-4704-abfa-389dd7a4c1d4", "correlation_id": "6bf7cabe-d367-4215-b0b8-9bef538c91ee"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "implement", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "CodingAgent", "escalation": 1, "base": "or_qwen", "chosen": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "9c171eb2-8492-4392-8b30-be9c904f1b69", "correlation_id": "d6290594-2be0-4bec-b2a9-014256e80dbf"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "implement\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: implement\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "switch_model", "attempts": 2, "repeated": 2, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "CodingAgent", "escalation": 2, "base": "or_qwen", "chosen": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "a2460b93-675f-4c6b-94b4-7e1f42f24d83", "correlation_id": "72138bdd-3707-4c51-a482-52d02b3b0540"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "implement\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: implement\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\n  ❌ [failed] Similar task: implement\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "stop", "attempts": 3, "repeated": 3, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive runtime finished", "status": "failed", "steps": 1, "progress": 0.0}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "428b02d4-1a71-4853-b0e0-305d2daa0ba9", "correlation_id": "9dbaeb40-f2bf-4033-bf31-ec3ee88ef4fc"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "run the tests", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "TestingAgent", "escalation": 1, "base": "or_qwen", "chosen": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "0043609d-5f87-4b2e-ab7c-be859d35eaf3", "correlation_id": "ebe978b5-5694-41ec-9694-7d74245c473c"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "run the tests\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "switch_model", "attempts": 2, "repeated": 2, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "TestingAgent", "escalation": 2, "base": "or_qwen", "chosen": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "7fc78360-4b6f-4cc4-baf9-d9bb8547a369", "correlation_id": "692dc323-0a60-4445-80cc-5e4cc82f1f03"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "run the tests\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "delegate_debug", "attempts": 3, "repeated": 3, "stuck": false}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "DebuggerAgent", "role": "debugging", "task_id": "61650642-ce25-42fc-b027-70121a1358b0", "correlation_id": "a1fefaa7-7816-4c35-b985-9df602835d61"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "Diagnose and repair the failure from TestingAgent: malformed_json: no JSON object found\n\nShared context:\n{'failed_agent': 'TestingAgent', 'original_task': 'run the tests'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "DebuggerAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive router escalation", "role": "TestingAgent", "escalation": 3, "base": "or_qwen", "chosen": "or_llama"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "382a2e39-27c2-4b72-94dc-6289b704eed2", "correlation_id": "857bf647-016f-497d-b47c-fbc0bea01fc2"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "run the tests\n\nShared context:\n{'past_experience': 'RELEVANT PAST EXPERIENCE — reuse these patterns:\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\n  ❌ [failed] Similar task: run the tests\\n     Pattern used:\\n       malformed_json: no JSON object found\\n\\nApply the same pattern above to implement the current task.'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 2, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 2, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 3, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 3}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "failed", "error": "malformed_json: no JSON object found"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "stop", "attempts": 4, "repeated": 4, "stuck": true}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive runtime finished", "status": "failed", "steps": 1, "progress": 0.0}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "0ff84b17-568f-4969-9b6f-1ed4df69cb64", "correlation_id": "2b9a2915-4eb3-4d20-b85b-a15063bd292b"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "quick task", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Adaptive runtime finished", "status": "completed", "steps": 1, "progress": 1.0}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "293d7918-0a3e-44bf-b55c-ce05084d9847", "correlation_id": "8779e6cc-fd3d-45e7-b24f-fbcae8122f32"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "plan the work", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent unregistered", "agent": "ContextAgent"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "4d6a3dd7-5e7a-49c3-b839-c14e8acd88be", "workflow": ["PlannerAgent", "CodingAgent"], "strategy": "sequential"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "07844590-3e1d-4927-a954-640df25bcd2a", "correlation_id": "4d6a3dd7-5e7a-49c3-b839-c14e8acd88be"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "build feature\n\nShared context:\n{'original_task': 'build feature'}", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "db9252bb-788b-4d84-9ced-f1ee5a187e38", "correlation_id": "4d6a3dd7-5e7a-49c3-b839-c14e8acd88be"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "build feature\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'build feature', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'build feature', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '07844590-3e1d-4927-a954-640df25bcd2a', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "do something", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "task", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop resuming", "task": "demo task", "step": 3}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "demo task", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 4}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "finish after malformed json", "max_steps": 12}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 1}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "recover from invalid tool", "max_steps": 12}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous decision", "step": 1, "thought": "try missing", "tool": "missing_tool", "args": {}}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "missing_tool", "error": "invalid_tool: missing_tool", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 1}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 2}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "retry flaky tool", "max_steps": 12}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous decision", "step": 1, "thought": "first", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "RUN", "msg": "Tool call started", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "test_flaky", "error": "temporary failure", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous decision", "step": 2, "thought": "retry", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "RUN", "msg": "Tool call started", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "INFO", "msg": "Tool call completed", "tool": "test_flaky", "elapsed": 0.0}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 3}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "detect repeated loop", "max_steps": 5}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous decision", "step": 1, "thought": "loop", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "RUN", "msg": "Tool call started", "tool": "test_flaky", "args": {}}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "test_flaky", "error": "temporary failure", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 2}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous loop stopped for repetition", "tool": "test_flaky", "args": {}, "fingerprint": "test_flaky:{}"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "timeout", "max_steps": 12}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous decision", "step": 1, "thought": "sleep", "tool": "test_sleep", "args": {"seconds": 0.05}}
+{"ts": "19:07:41", "level": "RUN", "msg": "Tool call started", "tool": "test_sleep", "args": {"seconds": 0.05}}
+{"ts": "19:07:41", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "test_sleep", "error": "tool 'test_sleep' timed out after 0.01s", "consecutive_failures": 1}
+{"ts": "19:07:41", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "tool 'test_sleep' timed out after 0.01s"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "113ca462-5e4d-4262-9bbb-5d500f0787c5", "correlation_id": "7b1b8982-6c62-4899-971e-349c7aeaee6b"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "draft a plan", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "c201d64e-3fd8-4f33-9721-89dac5da9f67", "correlation_id": "e02ef47e-da4a-407b-892a-1a8d162f9b05"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:07:41", "level": "INFO", "msg": "Autonomous loop started", "task": "run the suite", "max_steps": 12}
+{"ts": "19:07:41", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:07:41", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "completed", "error": ""}
+{"ts": "19:07:41", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\TestGame\\Player.cs"}
+{"ts": "19:07:41", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\MyProject\\main.py"}
+{"ts": "19:07:41", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\BadName\\app.py"}
+{"ts": "19:08:39", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\SpaceShooter\\PlayerShipController.cs"}
+{"ts": "19:08:39", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\SpaceShooter\\EnemyAsteroid.cs"}
+{"ts": "19:08:39", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\SpaceShooter\\SpawnerScript.cs"}
+{"ts": "19:08:39", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\SpaceShooter\\GameManager.cs"}
+{"ts": "19:08:39", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\SpaceShooter\\UIHealthDisplay.cs"}
+{"ts": "19:08:39", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\SpaceShooter\\HealthBar.cs"}
+{"ts": "19:08:39", "level": "INFO", "msg": "⏱ Generation done in 0.0s — saved=6"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\PlayerController.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\EnemySpawner.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\EnemyAI.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\HealthBar.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\UIController.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\GameManager.cs"}
+{"ts": "19:08:40", "level": "INFO", "msg": "⏱ Generation done in 0.0s — saved=6"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\PlayerController.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\EnemySpawner.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\EnemyAI.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\HealthBar.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\UIController.cs"}
+{"ts": "19:08:40", "level": "SAVE", "msg": "Script saved: Generated_Scripts\\ResumeTest\\GameManager.cs"}
+{"ts": "19:08:40", "level": "INFO", "msg": "⏱ Generation done in 0.0s — saved=6"}
+{"ts": "19:08:40", "level": "INFO", "msg": "Backup: C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_add_command_flow0\\agent_root\\tool_registry.py.1780070920.bak"}
+{"ts": "19:08:40", "level": "SUCCESS", "msg": "✅ tool_registry.py updated"}
+{"ts": 1780070920.220181, "level": "WARN", "msg": "MessageBus subscriber failed", "subscription_id": "9c4c1e2c-04f6-464b-9eea-e05326c789cd", "subscribed_type": "task_done", "event_type": "task_done", "event_id": "206bdf58-4223-4cac-8156-79942fda85ae", "correlation_id": "", "error": "boom"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping or_qwen — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping or_deepseek — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping or_llama — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping or_free — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping gpt54 — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping kimi — OpenRouter not configured"}
+{"ts": "19:08:43", "level": "WARN", "msg": "Advisor: skipping claude — OpenRouter not configured"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "RUN", "msg": "Agent tool call started", "agent": "CodingAgent", "tool": "write_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_tool_permission_enforceme0", "path": "code.txt", "content": "allowed"}}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ContextAgent", "role": "context", "task_id": "34c60c7f-42f9-46a2-96c9-a6c310d957ce", "correlation_id": "ctx-1"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Summarize project\n\nShared context:\n{'scope': 'tests'}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ContextAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "orch-1", "workflow": ["PlannerAgent", "ReviewerAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "8998cf3f-eea7-457d-8cab-d4e59d9b3b32", "correlation_id": "orch-1"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Add feature safely\n\nShared context:\n{'original_task': 'Add feature safely'}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "a49cd7c9-bf0f-4591-8ff6-ca13f468e3ae", "correlation_id": "orch-1"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Add feature safely\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'Add feature safely', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'Add feature safely', 'status': 'completed', 'final_answer': 'plan ready', 'error': '', 'observations': [], 'metadata': {'task_id': '8998cf3f-eea7-457d-8cab-d4e59d9b3b32', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "5b46b485-b571-43a5-b6d0-efda11b3e87a", "correlation_id": "048f6049-4a28-4993-af3a-f24188d6f515"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Try to modify a file", "max_steps": 1}
+{"ts": "19:08:56", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "write_file", "error": "tool_not_allowed: write_file", "consecutive_failures": 1}
+{"ts": "19:08:56", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "tool_not_allowed: write_file"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "failed", "error": "tool_not_allowed: write_file"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493", "workflow": ["PlannerAgent", "CodingAgent", "ReviewerAgent", "TestingAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "3217b0be-574a-4b14-990a-d2b5865ca775", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "demo runtime task\n\nShared context:\n{'original_task': 'demo runtime task'}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "5e5ff0a2-35b0-450f-a5b3-f57e8f9e594d", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "demo runtime task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'demo runtime task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'demo runtime task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '3217b0be-574a-4b14-990a-d2b5865ca775', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "cb3ab7cc-4812-481a-bc3b-1c406a802d7f", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "demo runtime task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'demo runtime task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'demo runtime task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '3217b0be-574a-4b14-990a-d2b5865ca775', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'demo runtime task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '5e5ff0a2-35b0-450f-a5b3-f57e8f9e594d', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "c99d0c56-ba1c-4489-bd0b-13419dec40c9", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "demo runtime task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'demo runtime task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'demo runtime task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '3217b0be-574a-4b14-990a-d2b5865ca775', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'demo runtime task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '5e5ff0a2-35b0-450f-a5b3-f57e8f9e594d', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}, {'agent_name': 'ReviewerAgent', 'task': 'demo runtime task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'cb3ab7cc-4812-481a-bc3b-1c406a802d7f', 'steps': 1, 'preferred_model': 'or_llama', 'allowed_tools': ['read_file', 'search_files', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Multi-agent runtime finished", "status": "completed", "correlation_id": "627d4a32-946f-4cb2-900e-6dbae4171493", "steps": 4}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06", "workflow": ["PlannerAgent", "CodingAgent", "ReviewerAgent", "TestingAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "921773a6-b16c-48f0-a212-c70010abcd67", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "visible task\n\nShared context:\n{'original_task': 'visible task'}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "a5c04e83-9b75-4910-b5de-bb87511d068c", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "visible task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'visible task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'visible task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '921773a6-b16c-48f0-a212-c70010abcd67', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "f8e5c9fd-7618-421c-8508-d7bf6825452b", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "visible task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'visible task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'visible task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '921773a6-b16c-48f0-a212-c70010abcd67', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'visible task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'a5c04e83-9b75-4910-b5de-bb87511d068c', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "cb496995-66e9-459c-9e11-b250c49e90be", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "visible task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'visible task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'visible task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '921773a6-b16c-48f0-a212-c70010abcd67', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'visible task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'a5c04e83-9b75-4910-b5de-bb87511d068c', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}, {'agent_name': 'ReviewerAgent', 'task': 'visible task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'f8e5c9fd-7618-421c-8508-d7bf6825452b', 'steps': 1, 'preferred_model': 'or_llama', 'allowed_tools': ['read_file', 'search_files', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Multi-agent runtime finished", "status": "completed", "correlation_id": "a443f4a7-26fa-49d3-af43-ea5c07ff3d06", "steps": 4}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88", "workflow": ["PlannerAgent", "CodingAgent", "ReviewerAgent", "TestingAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "fb620cdf-d1fc-407e-a1f9-6adade7547a4", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "cleanup task\n\nShared context:\n{'original_task': 'cleanup task'}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "13892e32-5c40-4086-984d-3b084d31ccde", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "cleanup task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'cleanup task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'cleanup task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'fb620cdf-d1fc-407e-a1f9-6adade7547a4', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "1bdedffa-e943-4ef1-ab6b-b6a75ee9974c", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "cleanup task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'cleanup task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'cleanup task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'fb620cdf-d1fc-407e-a1f9-6adade7547a4', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'cleanup task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '13892e32-5c40-4086-984d-3b084d31ccde', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "c5052972-c712-48d4-8769-39d887d61f5c", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "cleanup task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'cleanup task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'cleanup task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'fb620cdf-d1fc-407e-a1f9-6adade7547a4', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'cleanup task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '13892e32-5c40-4086-984d-3b084d31ccde', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}, {'agent_name': 'ReviewerAgent', 'task': 'cleanup task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': '1bdedffa-e943-4ef1-ab6b-b6a75ee9974c', 'steps': 1, 'preferred_model': 'or_llama', 'allowed_tools': ['read_file', 'search_files', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Multi-agent runtime finished", "status": "completed", "correlation_id": "77a724d8-e0fb-4840-8954-a7dc8f207c88", "steps": 4}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370", "workflow": ["PlannerAgent", "CodingAgent", "ReviewerAgent", "TestingAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "eff5e995-3f29-4e42-829c-fc02fc434b58", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "helper task\n\nShared context:\n{'original_task': 'helper task'}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "CodingAgent", "role": "coding", "task_id": "b45d11e1-0b7e-440e-badf-ce6b0ffd9156", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "helper task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'helper task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'helper task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'eff5e995-3f29-4e42-829c-fc02fc434b58', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "CodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "b28b9640-f112-4411-b9a1-cfafc3148cf6", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "helper task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'helper task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'helper task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'eff5e995-3f29-4e42-829c-fc02fc434b58', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'helper task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'b45d11e1-0b7e-440e-badf-ce6b0ffd9156', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "TestingAgent", "role": "testing", "task_id": "583d5321-475b-4c26-b074-e29f655a1ae3", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "helper task\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'helper task', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'helper task', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'eff5e995-3f29-4e42-829c-fc02fc434b58', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}, {'agent_name': 'CodingAgent', 'task': 'helper task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'b45d11e1-0b7e-440e-badf-ce6b0ffd9156', 'steps': 1, 'preferred_model': 'or_qwen', 'allowed_tools': ['read_file', 'write_file', 'edit_file', 'search_files']}}, {'agent_name': 'ReviewerAgent', 'task': 'helper task\\n\\nContinue from previous agent results.', 'status': 'completed', 'final_answer': 'done', 'error': '', 'observations': [], 'metadata': {'task_id': 'b28b9640-f112-4411-b9a1-cfafc3148cf6', 'steps': 1, 'preferred_model': 'or_llama', 'allowed_tools': ['read_file', 'search_files', 'analyze_errors']}}]}", "max_steps": 12}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "TestingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Multi-agent runtime finished", "status": "completed", "correlation_id": "2a0cac68-e672-404f-baa8-6e8211f56370", "steps": 4}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "CodingAgent", "role": "coding"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "TestingAgent", "role": "testing"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "DebuggerAgent", "role": "debugging"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "bc8d2cb2-5282-4896-885d-a501a8016deb", "correlation_id": "strategy-1"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Stabilize Phase 2\n\nShared context:\n{'original_task': 'Stabilize Phase 2'}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "37c09602-3b38-497f-9b03-32ee4ff77b9a", "correlation_id": "strategy-1"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Stabilize Phase 2\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'Stabilize Phase 2', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'Stabilize Phase 2', 'status': 'completed', 'final_answer': 'planned', 'error': '', 'observations': [], 'metadata': {'task_id': 'bc8d2cb2-5282-4896-885d-a501a8016deb', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "PlannerAgent", "role": "planning"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent orchestration started", "correlation_id": "orch-strategy", "workflow": ["PlannerAgent", "ReviewerAgent"], "strategy": "sequential"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "PlannerAgent", "role": "planning", "task_id": "8d9e6933-8c4b-4526-ad86-e1d2899e9191", "correlation_id": "orch-strategy"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_deepseek"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Refactor orchestration\n\nShared context:\n{'original_task': 'Refactor orchestration'}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "PlannerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ReviewerAgent", "role": "review", "task_id": "6af5dfb3-108b-40ff-b5aa-39ff174a9b6d", "correlation_id": "orch-strategy"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Refactor orchestration\n\nContinue from previous agent results.\n\nShared context:\n{'original_task': 'Refactor orchestration', 'previous_results': [{'agent_name': 'PlannerAgent', 'task': 'Refactor orchestration', 'status': 'completed', 'final_answer': 'plan ok', 'error': '', 'observations': [], 'metadata': {'task_id': '8d9e6933-8c4b-4526-ad86-e1d2899e9191', 'steps': 1, 'preferred_model': 'or_deepseek', 'allowed_tools': ['search_files', 'scan_project', 'analyze_errors']}}]}", "max_steps": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ReviewerAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "HookedCodingAgent", "role": "coding", "task_id": "ea5377a6-6a52-4f0a-92cb-99f8334c3b5c", "correlation_id": "af7f8cbf-bc58-4dda-a6eb-bb2078ac0513"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Read a file then finish", "max_steps": 2}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous decision", "step": 1, "thought": "read", "tool": "read_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_lifecycle_hooks_order_and0", "path": "sample.txt"}}
+{"ts": "19:08:56", "level": "RUN", "msg": "Tool call started", "tool": "read_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_lifecycle_hooks_order_and0", "path": "sample.txt"}}
+{"ts": "19:08:56", "level": "INFO", "msg": "Tool call completed", "tool": "read_file", "elapsed": 0.002}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 2}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "HookedCodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "HookedCodingAgent", "role": "coding", "task_id": "eda771de-3270-4b90-919d-d5521eadb693", "correlation_id": "df6e9c52-75f1-4930-9591-549d67380c25"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_qwen"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Recover from malformed output", "max_steps": 2}
+{"ts": "19:08:56", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "", "error": "malformed_json: no JSON object found", "consecutive_failures": 1}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop retrying", "consecutive_failures": 1, "max_retries": 1}
+{"ts": "19:08:56", "level": "SUCCESS", "msg": "Autonomous loop completed", "steps": 2}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "HookedCodingAgent", "status": "completed", "error": ""}
+{"ts": "19:08:56", "level": "RUN", "msg": "Agent tool call started", "agent": "HookedCodingAgent", "tool": "write_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_bounded_agent_state_prune0", "path": "file_0.txt", "content": "0"}}
+{"ts": "19:08:56", "level": "RUN", "msg": "Agent tool call started", "agent": "HookedCodingAgent", "tool": "write_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_bounded_agent_state_prune0", "path": "file_1.txt", "content": "1"}}
+{"ts": "19:08:56", "level": "RUN", "msg": "Agent tool call started", "agent": "HookedCodingAgent", "tool": "write_file", "args": {"root": "C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_bounded_agent_state_prune0", "path": "file_2.txt", "content": "2"}}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ContextAgent", "role": "context"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent registered", "agent": "ReviewerAgent", "role": "review"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task started", "agent": "ContextAgent", "role": "context", "task_id": "93dd926c-8950-45c5-8d0c-bcbfbe817374", "correlation_id": "failed-plan"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous executor model selected", "model": "or_llama"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Autonomous loop started", "task": "Stop after failure\n\nShared context:\n{'original_task': 'Stop after failure'}", "max_steps": 1}
+{"ts": "19:08:56", "level": "WARN", "msg": "Autonomous step failed", "step": 1, "tool": "missing_tool", "error": "tool_not_allowed: missing_tool", "consecutive_failures": 1}
+{"ts": "19:08:56", "level": "ERROR", "msg": "Autonomous retry limit exceeded", "reason": "tool_not_allowed: missing_tool"}
+{"ts": "19:08:56", "level": "INFO", "msg": "Agent task finished", "agent": "ContextAgent", "status": "failed", "error": "tool_not_allowed: missing_tool"}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "switch_model", "attempts": 2, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "delegate_debug", "attempts": 3, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "TestingAgent", "step": 1, "decision": "stop", "attempts": 4, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "switch_model", "attempts": 2, "repeated": 2, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "stop", "attempts": 3, "repeated": 3, "stuck": true}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "retry", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "retry", "attempts": 2, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 1, "decision": "stop", "attempts": 3, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "DebuggerAgent", "step": 1, "decision": "stop", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:11", "level": "INFO", "msg": "Reflection decision", "agent": "CodingAgent", "step": 2, "decision": "switch_model", "attempts": 1, "repeated": 1, "stuck": false}
+{"ts": "19:09:12", "level": "INFO", "msg": "Backup: C:\\Users\\kamal\\AppData\\Local\\Temp\\pytest-of-kamal\\pytest-49\\test_full_flow_with_mocked_llm0\\agent_root\\tool_registry.py.1780070952.bak"}
+{"ts": "19:09:12", "level": "SUCCESS", "msg": "✅ tool_registry.py updated"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard uninstalled"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod verified and committed (1 file(s))"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod verified and committed (1 file(s))"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "WARN", "msg": "Self-mod verification failed — changes rolled back [import] alpha.py: ImportError"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "WARN", "msg": "Self-mod verification failed — changes rolled back [tests] <suite>: 1 passed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "WARN", "msg": "Self-mod verification failed — changes rolled back [import] beta.py: ImportError"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "WARN", "msg": "Self-mod verification failed — changes rolled back [import] gamma.py: ImportError"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod verified and committed (1 file(s))"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod verified and committed (1 file(s))"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod runtime guard installed"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Self-mod verified and committed (1 file(s))"}
+{"ts": "19:09:12", "level": "INFO", "msg": "Safe self-mod committed", "files": 1}
+{"ts": "19:09:12", "level": "WARN", "msg": "Safe self-mod refused before applying", "count": 1}
+{"ts": "19:09:12", "level": "WARN", "msg": "Safe self-mod rolled back after verification failure", "count": 1}
+{"ts": "19:09:12", "level": "WARN", "msg": "Safe self-mod rolled back after verification failure", "count": 1}
+{"ts": "19:09:12", "level": "WARN", "msg": "Safe self-mod rolled back after verification failure", "count": 1}
+{"ts": "19:09:12", "level": "WARN", "msg": "Safe self-mod rolled back after verification failure", "count": 1}
+{"ts": "19:09:12", "level": "WARN", "msg": "Safe self-mod refused before applying", "count": 1}
+{"ts": "19:09:12", "level": "WARN", "msg": "Safe self-mod refused before applying", "count": 1}
+{"ts": "19:09:12", "level": "WARN", "msg": "Safe self-mod refused before applying", "count": 1}
+{"ts": "19:09:12", "level": "INFO", "msg": "Safe self-mod committed", "files": 1}
+{"ts": "19:09:12", "level": "INFO", "msg": "Safe self-mod committed", "files": 1}
+{"ts": "19:09:12", "level": "WARN", "msg": "Patch rejected by review", "file": "model_router.py", "reason": "removes symbol"}
