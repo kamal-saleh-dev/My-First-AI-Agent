@@ -5,8 +5,7 @@ import llm_client
 from llm_client  import safe_chat, get_response
 from logger      import safe_print
 
-
-# ── Domain Registry ───────────────────────────────────────────────────────────
+# ── Domain Registry ────────────────────────────────────────────────────
 # Imported lazily via lambdas to avoid circular imports at module load time.
 # To add a new domain: add ONE entry here — routing is automatic everywhere.
 def _build_domain_registry() -> dict:
@@ -84,12 +83,10 @@ def _build_domain_registry() -> dict:
         },
     }
 
-
 # Build once at import time
 DOMAIN_REGISTRY = _build_domain_registry()
 
-
-# ── Domain detection ──────────────────────────────────────────────────────────
+# ── Domain detection ────────────────────────────────────────────────
 def detect_domain(task: str) -> str:
     """Detect domain from task text. Returns domain key or 'general'."""
     t = task.lower()
@@ -98,12 +95,10 @@ def detect_domain(task: str) -> str:
             return domain
     return "general"
 
-
 # Alias kept for backward compatibility
 detect_requested_language = detect_domain
 
-
-# ── Intent / mode detection ───────────────────────────────────────────────────
+# ── Intent / mode detection ──────────────────────────────────────────
 def detect_mode(user: str) -> tuple:
     """
     Smart intent router — rule-based fast path, LLM fallback for ambiguous cases.
@@ -117,15 +112,17 @@ def detect_mode(user: str) -> tuple:
     """
     t = user.lower().strip()
 
-    # ── 1. Hard system commands ───────────────────────────────────────────────
+    # ── 1. Hard system commands ──────────────────────────────────────
     if t.startswith("attach "):       return "ATTACH",       "general"
     if t == "clear":                  return "CLEAR",        "general"
     if t == "run":                    return "RUN",          "general"
     if t.startswith("/auto ") or t.startswith("/autonomous "):
         return "AUTO", "general"
+    if t.startswith("/multi ") or t.startswith("/multiagent "):
+        return "MULTI", "general"
     if t.startswith("load_session "): return "LOAD_SESSION", "general"
 
-    # ── 2. Keyword sets ───────────────────────────────────────────────────────
+    # ── 2. Keyword sets ───────────────────────────────────────────────
     CREATION_VERBS = [
         "make", "create", "build", "generate", "write", "design",
         "عمل", "اعمل", "عايز", "ابني", "انشئ", "اكتب", "سوّي",
@@ -224,11 +221,11 @@ def detect_mode(user: str) -> tuple:
     if any(kw in t for kw in SELF_MOD_KEYWORDS):
         return "SELF_MOD", "general"
 
-    # ── 3. Short messages → CHAT ─────────────────────────────────────────────
+    # ── 3. Short messages → CHAT ────────────────────────────────────
     if len(t.split()) < 4:
         return "CHAT", "general"
 
-    # ── 4. Clear questions → always CHAT, never send to LLM classifier ───────
+    # ── 4. Clear questions → always CHAT, never send to LLM classifier ───
     if is_question:
         return "CHAT", detect_domain(t)
 

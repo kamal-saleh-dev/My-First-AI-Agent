@@ -126,10 +126,21 @@ def _safe_path(path: str, root: str | None = None) -> str:
 
 
 def _rel(path: str, root: str) -> str:
+    """Return a POSIX-style (forward-slash) path relative to root.
+
+    Normalizes the OS-native separator (os.sep) and the alternate separator
+    (os.altsep, e.g. '/' on Windows) so callers get the same forward-slash
+    paths on every platform. This keeps tool output stable across Windows,
+    macOS, and Linux.
+    """
     try:
-        return os.path.relpath(path, root).replace("\\", "/")
+        rel = os.path.relpath(path, root)
     except ValueError:
         return path
+    rel = rel.replace(os.sep, "/")
+    if os.altsep:
+        rel = rel.replace(os.altsep, "/")
+    return rel
 
 
 def _looks_text(path: str) -> bool:
@@ -497,7 +508,7 @@ for _tool in (
 ):
     register_tool(_tool)
 
-# ── Lazy tool imports (avoid heavy startup cost) ──────────────────────────────
+# ── Lazy tool imports (avoid heavy startup cost) ─────────────────────────────
 
 def _get_chat_tool():
     from chat_handler import chat_tool
@@ -511,7 +522,7 @@ def _get_file_tools():
     from file_handler import attach_tool
     return attach_tool
 
-# ── Individual tool wrappers ──────────────────────────────────────────────────
+# ── Individual tool wrappers ──────────────────────────────────────────
 
 def _tool_run(user: str):
     from session_manager import load_last_project
@@ -632,6 +643,33 @@ def _tool_auto(task: str):
     safe_print("⚡AGENT_IDLE", flush=True)
 
 
+def _tool_multi(task: str):
+    prompt = task.strip()
+    for prefix in ("/multiagent", "/multi"):
+        if prompt.lower().startswith(prefix):
+            prompt = prompt[len(prefix):].strip()
+            break
+    if not prompt:
+        safe_print("Usage: /multi <engineering task>")
+        safe_print("⚡AGENT_IDLE", flush=True)
+        return
+
+    from multi_agent_runtime import MultiAgentRuntime
+
+    safe_print("\nMulti-agent runtime started...\n")
+    try:
+        result = MultiAgentRuntime().run(prompt)
+    except Exception as exc:
+        safe_print(f"\nMulti-agent runtime error: {exc}\n")
+        safe_print("⚡AGENT_IDLE", flush=True)
+        return
+    if result.status == "completed":
+        safe_print(f"\nAgent: multi-agent run completed across {len(result.results)} step(s).\n")
+    else:
+        safe_print(f"\nMulti-agent run stopped: {result.status}\n")
+    safe_print("⚡AGENT_IDLE", flush=True)
+
+
 def _tool_weather(user: str):
     """Show current weather for a city.  Usage: /weather <city>
     Uses Open-Meteo + Nominatim — 100% free, no API key needed.
@@ -640,14 +678,12 @@ def _tool_weather(user: str):
     import urllib.parse   as _up
     import json           as _json
 
-    # ── 1. Parse city name ────────────────────────────────────────────────────
     parts = user.strip().split(maxsplit=1)
     city  = parts[1].strip() if len(parts) > 1 else ""
     if not city:
         print("❌ Usage: /weather <city>   e.g. /weather Cairo")
         return
 
-    # ── 2. Geocode city → lat/lon (Nominatim, free) ───────────────────────────
     try:
         geo_url = (
             "https://nominatim.openstreetmap.org/search?"
@@ -669,7 +705,6 @@ def _tool_weather(user: str):
     lon        = geo[0]["lon"]
     city_label = geo[0].get("display_name", city).split(",")[0]
 
-    # ── 3. Fetch weather (Open-Meteo, free, no key) ───────────────────────────
     try:
         wx_url = (
             "https://api.open-meteo.com/v1/forecast?"
@@ -697,7 +732,6 @@ def _tool_weather(user: str):
     prec = c.get("precipitation",       0)
     code = c.get("weathercode",         0)
 
-    # WMO weather code → description
     _WMO = {
         0:"Clear sky", 1:"Mainly clear", 2:"Partly cloudy", 3:"Overcast",
         45:"Foggy", 48:"Icy fog",
@@ -719,7 +753,7 @@ def _tool_weather(user: str):
     print()
 
 
-# ── Registry ─────────────────────────────────────────────────────────────────
+# ── Registry ────────────────────────────────────────────────────────
 # To add a new tool: add one entry here and implement the function above.
 
 TOOL_REGISTRY: dict = {
@@ -738,10 +772,11 @@ TOOL_REGISTRY: dict = {
     "WEATHER":  _tool_weather,   # New tool for checking weather
     "MEMORY":   _tool_memory,    # RAG memory — view, search, clear
     "AUTO":     _tool_auto,      # Autonomous think-act-observe loop
+    "MULTI":    _tool_multi,     # Opt-in multi-agent orchestration runtime
 }
 
 
-BACKGROUND_TOOLS = {"GAME", "PROJECT", "JOB", "SELF_MOD", "CHAT", "AUTO"}
+BACKGROUND_TOOLS = {"GAME", "PROJECT", "JOB", "SELF_MOD", "CHAT", "AUTO", "MULTI"}
 
 
 def get_tool(mode: str, *, structured: bool = False):
