@@ -5,7 +5,8 @@ import llm_client
 from llm_client  import safe_chat, get_response
 from logger      import safe_print
 
-# ── Domain Registry ────────────────────────────────────────────────────
+
+# ── Domain Registry ───────────────────────────────────────────────────────────
 # Imported lazily via lambdas to avoid circular imports at module load time.
 # To add a new domain: add ONE entry here — routing is automatic everywhere.
 def _build_domain_registry() -> dict:
@@ -83,10 +84,12 @@ def _build_domain_registry() -> dict:
         },
     }
 
+
 # Build once at import time
 DOMAIN_REGISTRY = _build_domain_registry()
 
-# ── Domain detection ────────────────────────────────────────────────
+
+# ── Domain detection ──────────────────────────────────────────────────────────
 def detect_domain(task: str) -> str:
     """Detect domain from task text. Returns domain key or 'general'."""
     t = task.lower()
@@ -95,10 +98,12 @@ def detect_domain(task: str) -> str:
             return domain
     return "general"
 
+
 # Alias kept for backward compatibility
 detect_requested_language = detect_domain
 
-# ── Intent / mode detection ──────────────────────────────────────────
+
+# ── Intent / mode detection ───────────────────────────────────────────────────
 def detect_mode(user: str) -> tuple:
     """
     Smart intent router — rule-based fast path, LLM fallback for ambiguous cases.
@@ -112,17 +117,15 @@ def detect_mode(user: str) -> tuple:
     """
     t = user.lower().strip()
 
-    # ── 1. Hard system commands ──────────────────────────────────────
+    # ── 1. Hard system commands ───────────────────────────────────────────────
     if t.startswith("attach "):       return "ATTACH",       "general"
     if t == "clear":                  return "CLEAR",        "general"
     if t == "run":                    return "RUN",          "general"
     if t.startswith("/auto ") or t.startswith("/autonomous "):
         return "AUTO", "general"
-    if t.startswith("/multi ") or t.startswith("/multiagent "):
-        return "MULTI", "general"
     if t.startswith("load_session "): return "LOAD_SESSION", "general"
 
-    # ── 2. Keyword sets ───────────────────────────────────────────────
+    # ── 2. Keyword sets ───────────────────────────────────────────────────────
     CREATION_VERBS = [
         "make", "create", "build", "generate", "write", "design",
         "عمل", "اعمل", "عايز", "ابني", "انشئ", "اكتب", "سوّي",
@@ -141,9 +144,21 @@ def detect_mode(user: str) -> tuple:
     ]
     DELETE_KEYWORDS = ["delete", "remove", "احذف", "امسح", "شيل"]
     LANG_KEYWORDS   = [
-        "python", "unity", "unreal", "c#", "c++", "csharp", "dotnet", ".net",
+        "python", "بايثون", "unity", "unreal", "c#", "c++", "csharp", "dotnet", ".net",
         "asp.net", "aspnet", "fastapi", "flask", "django", "react", "angular",
         "html", "sql", "postgres", "server", "api",
+    ]
+    # NEW: explicit run/execute words — RUN intent is only trusted when one is present
+    RUN_KEYWORDS = [
+        "run ", "execute", "launch", "operate", "start the",
+        "شغّل", "شغل المشروع", "نفذ", "نفّذ", "تشغيل",
+    ]
+    # NEW: small code-snippet indicators — a snippet is conversational (CHAT),
+    # not a full project (GAME) and not a run command (RUN)
+    SNIPPET_WORDS = [
+        "function", "func ", "method", "snippet", "algorithm", "regex",
+        "one-liner", "دالة", "فانكشن", "ميثود", "خوارزمية", "مثال كود",
+        "كود صغير", "سكربت صغير",
     ]
     SELF_MOD_KEYWORDS = [
         # Direct modification commands
@@ -175,11 +190,13 @@ def detect_mode(user: str) -> tuple:
         " بيعمل ", " بيحصل ", " غريب", " صعب", " سهل",
     ]
 
-    has_verb   = any(kw in t for kw in CREATION_VERBS)
-    has_target = any(kw in t for kw in GAME_TARGETS)
-    has_lang   = any(kw in t for kw in LANG_KEYWORDS)
-    has_job    = any(kw in t for kw in JOB_KEYWORDS)
-    has_del    = any(kw in t for kw in DELETE_KEYWORDS)
+    has_verb    = any(kw in t for kw in CREATION_VERBS)
+    has_target  = any(kw in t for kw in GAME_TARGETS)
+    has_lang    = any(kw in t for kw in LANG_KEYWORDS)
+    has_job     = any(kw in t for kw in JOB_KEYWORDS)
+    has_del     = any(kw in t for kw in DELETE_KEYWORDS)
+    has_run     = any(kw in t for kw in RUN_KEYWORDS)      # NEW
+    has_snippet = any(kw in t for kw in SNIPPET_WORDS)     # NEW
 
     is_question = (
         any(t.startswith(q + " ") or t.startswith(q) or t == q for q in QUESTION_STARTS)
@@ -212,6 +229,13 @@ def detect_mode(user: str) -> tuple:
         (has_verb and (has_target or has_lang))
         or (has_target and not is_question and not is_opinion)
     )
+
+    # NEW: a small code snippet/function request is conversational, NOT a project
+    # build and NOT a run command. Catch it before is_game so a single function
+    # doesn't trigger the full generation pipeline.
+    if has_verb and has_snippet and not has_run and not has_target:
+        return "CHAT", detect_domain(t)
+
     if is_game and not _is_vague:
         return "GAME", detect_domain(t)
     if is_game and _is_vague:
@@ -221,11 +245,11 @@ def detect_mode(user: str) -> tuple:
     if any(kw in t for kw in SELF_MOD_KEYWORDS):
         return "SELF_MOD", "general"
 
-    # ── 3. Short messages → CHAT ────────────────────────────────────
+    # ── 3. Short messages → CHAT ─────────────────────────────────────────────
     if len(t.split()) < 4:
         return "CHAT", "general"
 
-    # ── 4. Clear questions → always CHAT, never send to LLM classifier ───
+    # ── 4. Clear questions → always CHAT, never send to LLM classifier ───────
     if is_question:
         return "CHAT", detect_domain(t)
 
@@ -249,6 +273,10 @@ def detect_mode(user: str) -> tuple:
         )
         intent = get_response(r).strip().upper().split()[0]
         if intent in ("GAME", "JOB", "DELETE", "RUN", "CHAT"):
+            # NEW GUARD: only trust RUN when the user actually asked to run/execute.
+            # Stops weak local models from sending generation requests to _tool_run.
+            if intent == "RUN" and not has_run:
+                intent = "CHAT"
             if intent == "JOB" and is_question:
                 intent = "CHAT"
             d = detect_domain(t) if intent == "GAME" else "general"

@@ -76,12 +76,29 @@ _VAGUE_PHRASES = [
     "عاوز اعمل", "فكرة", "ممكن تساعدني", "ازاي اعمل",
 ]
 
+# Small snippet / single-function asks → these are CHAT, not full-project generation.
+_SNIPPET_WORDS = [
+    "function", "func ", "a function", "single function", "method",
+    "snippet", "one-liner", "oneliner", "regex", "algorithm", "helper",
+    "دالة", "فانكشن", "فنكشن", "ميثود", "خوارزمية", "سطر واحد",
+    "كود صغير", "مثال كود", "سكربت صغير",
+]
+
+# Words that clearly indicate a real multi-file project (override the snippet guard).
+_PROJECT_WORDS = [
+    "project", "app", "application", "website", "site", "web app", "api",
+    "server", "backend", "frontend", "full", "complete", "system",
+    "dashboard", "crud", "game",
+    "مشروع", "تطبيق", "موقع", "نظام", "كامل", "كاملة", "لعبة", "سيرفر",
+]
+
 def is_generation_request(task_lower: str, domain: str) -> tuple[bool, bool]:
     """
     Returns (is_complete_generation, is_single_script).
     Single source of truth — imported by chat_handler.py to avoid duplication.
 
     Vague requests ("i want to make a unique game") → (False, False) → CHAT
+    Snippet requests ("write me a python function") → (False, False) → CHAT
     Specific requests ("make a space shooter unity game") → (True, True) → GENERATE
     """
     has_verb    = any(w in task_lower for w in CREATION_VERBS)
@@ -95,6 +112,15 @@ def is_generation_request(task_lower: str, domain: str) -> tuple[bool, bool]:
         "tower defense", "horror", "fighting", "survival",
         "لعبة", "شوتر", "منصات",
     ]):
+        return False, False
+
+    # ── SNIPPET GUARD ────────────────────────────────────────────────────────
+    # "write me a function / دالة / snippet" is a CHAT answer, NOT a full project,
+    # even for python/web domains. A real project must mention a project/app/
+    # site/api keyword to override this guard.
+    has_snippet = any(w in task_lower for w in _SNIPPET_WORDS)
+    has_project = any(w in task_lower for w in _PROJECT_WORDS)
+    if has_snippet and not has_project:
         return False, False
 
     is_full = (has_game_kw and (has_verb or has_game_kw)) or (is_web and has_verb)
