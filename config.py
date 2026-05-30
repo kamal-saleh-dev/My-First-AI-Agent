@@ -3,9 +3,9 @@
 
 import os
 
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # LLM / MODEL
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 DEFAULT_MODEL        = "qwen2.5-coder:7b"
 LLM_RETRIES          = 2          # number of retry attempts on failure
@@ -17,9 +17,17 @@ CTX_CLOUD   = 150_000   # Claude, GPT-4, large-context cloud models
 CTX_MID     = 32_000    # local 14b+ models
 CTX_SMALL   = 8_000     # default local 7b model
 
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ── Local → Cloud failover (v1.1) ────────────────────────────────────────────
+# When the local Ollama backend is unreachable (connection refused, timeout,
+# model missing), optionally retry the SAME request against a FREE OpenRouter
+# model. Opt-in, free-tier only, OFF by default — set AGENT_LOCAL_CLOUD_FAILOVER=1
+# to enable. DEFAULT_MODEL is never mutated and paid models are never used.
+LOCAL_CLOUD_FAILOVER = False
+FAILOVER_FREE_LADDER = ["or_qwen", "or_llama", "or_deepseek", "or_free"]
+
+# ══════════════════════════════════════════════════════════════════════════════
 # GENERATION
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 MAX_SCRIPTS_PER_PROJECT = 8       # cap on generated files per request
 COMPILE_FIX_ATTEMPTS    = 3       # Unity C# compile-fix loop max retries
@@ -38,15 +46,14 @@ MULTI_AGENT_MODEL_DEEPSEEK   = "or_deepseek"
 MULTI_AGENT_MODEL_QWEN_CODER = "or_qwen"
 MULTI_AGENT_MODEL_LLAMA      = "or_llama"
 
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # ADAPTIVE AUTONOMY  (Phase 3 — redesigned per architecture audit)
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # A single, lightweight reflect -> decide -> adapt control loop layered on top
 # of the existing multi-agent system. Used ONLY by adaptive_runtime.py; /auto
 # and /multi are unaffected. The audit merged the original Phase 3 (reflection),
 # Phase 6 (repair) and Phase 8 (routing) ideas into this one thin layer and
 # rescoped Phase 4 memory to "integrate the store we already have".
-
 ADAPTIVE_MAX_STEP_RETRIES      = 2      # per-agent failed attempts before debug/stop
 ADAPTIVE_MAX_ESCALATIONS       = 2      # model escalations per agent before plain retry
 ADAPTIVE_MAX_DEBUG_DELEGATIONS = 1      # DebuggerAgent hand-offs per failing step
@@ -61,25 +68,25 @@ ADAPTIVE_MEMORY_ONLY_SUCCESS = False    # restrict recall to past successes only
 # Ordered fast/cheap -> stronger. Never hardcode raw provider model strings here.
 ADAPTIVE_ESCALATION_LADDER   = ("or_qwen", "or_deepseek", "or_llama")
 
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # CONTEXT / HISTORY
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 HISTORY_MAX_TOKENS      = 3000    # trim chat history above this token budget
 HISTORY_MIN_KEEP        = 4       # always keep last N messages
 HISTORY_MAX_SESSIONS    = 30      # max stored sessions in chat_sessions.json
 FILE_CONTEXT_READ_CHARS = 1500    # max chars read from each attached text file
 
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # PLANNING CACHE
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 PLAN_CACHE_MAX          = 300     # max entries in planning_cache.json
 PLAN_CACHE_EVICT        = 50      # entries to evict when limit is reached
 
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # LOGGING
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 LOG_FILE                = "agent_log.jsonl"
 LOG_FLUSH_EVERY         = 20      # write to disk every N log entries
@@ -87,15 +94,15 @@ LOG_MAX_FILE_MB         = 5       # rotate log file above this size
 LOG_KEEP_ROTATED        = 10      # number of rotated log files to keep
 LOG_MIN_LEVEL           = "INFO"  # DEBUG | INFO | WARN | ERROR
 
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # PROCESS REGISTRY
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 PROC_TERMINATE_TIMEOUT  = 3.0     # seconds to wait before force-killing
 
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # FILE PATHS
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 BASE_DIR        = os.path.dirname(os.path.abspath(__file__))
 MEMORY_FILE     = os.path.join(BASE_DIR, "agent_memory.txt")
@@ -104,12 +111,12 @@ HISTORY_FILE    = os.path.join(BASE_DIR, "chat_sessions.json")
 METRICS_FILE    = os.path.join(BASE_DIR, "agent_metrics.json")
 PLAN_CACHE_FILE = os.path.join(BASE_DIR, "planning_cache.json")
 
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 # OVERRIDE FROM ENVIRONMENT (optional)
 # Set env vars to override without editing this file:
 #   AGENT_DEFAULT_MODEL=llama3:8b
 #   AGENT_LLM_RETRIES=3
-# ═══════════════════════════════════════════════════════════════════════════════════
+# ══════════════════════════════════════════════════════════════════════════════
 
 def _env(key: str, default, cast=str):
     val = os.getenv(f"AGENT_{key.upper()}")
@@ -120,6 +127,12 @@ def _env_bool(key: str, default: bool) -> bool:
     if val is None:
         return default
     return val.strip().lower() not in ("0", "false", "no", "off", "")
+
+def _env_list(key: str, default: list) -> list:
+    val = os.getenv(f"AGENT_{key.upper()}")
+    if val is None:
+        return default
+    return [s.strip() for s in val.split(",") if s.strip()]
 
 DEFAULT_MODEL        = _env("DEFAULT_MODEL",        DEFAULT_MODEL)
 LLM_RETRIES          = _env("LLM_RETRIES",          LLM_RETRIES,          int)
@@ -141,6 +154,10 @@ ADAPTIVE_MEMORY_TOP_K          = _env("ADAPTIVE_MEMORY_TOP_K",          ADAPTIVE
 ADAPTIVE_MEMORY_ENABLED        = _env_bool("ADAPTIVE_MEMORY_ENABLED",      ADAPTIVE_MEMORY_ENABLED)
 ADAPTIVE_MEMORY_ONLY_SUCCESS   = _env_bool("ADAPTIVE_MEMORY_ONLY_SUCCESS", ADAPTIVE_MEMORY_ONLY_SUCCESS)
 
-# ── Testing / Debug ────────────────────────────────────────────────
+# ── Local → Cloud failover overrides (v1.1) ──────────────────────────────────
+LOCAL_CLOUD_FAILOVER = _env_bool("LOCAL_CLOUD_FAILOVER", LOCAL_CLOUD_FAILOVER)
+FAILOVER_FREE_LADDER = _env_list("FAILOVER_FREE_LADDER", FAILOVER_FREE_LADDER)
+
+# ── Testing / Debug ──────────────────────────────────────────────────────────
 # Set AGENT_SCRIPT_DELAY=5 to slow generation for manual checkpoint testing
 SCRIPT_DELAY: int = _env("SCRIPT_DELAY", 0, int)

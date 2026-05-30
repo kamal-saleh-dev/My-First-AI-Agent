@@ -809,7 +809,14 @@ def _generate_patch(task: str, target_files: list[str],
             # Cap tokens for cloud models to avoid 402 insufficient credits.
             # Local Ollama ignores this parameter safely.
             _is_cloud = "/" in str(model_alias) or model_alias.startswith("or_")
-            _call_kw  = {"max_tokens": 4096} if _is_cloud else {}
+
+            # v1.1: self-mod owns its own escalation ladder — suppress
+            # safe_chat's local→cloud auto-failover here (no double escalation).
+            _call_kw = {"allow_failover": False}
+
+            if _is_cloud:
+                _call_kw["max_tokens"] = 4096
+            
             r = _call_safe_chat(model=model_alias, messages=messages, **_call_kw)
             response = _call_get_response(r)
             patches  = _parse_file_blocks(response, target_files)

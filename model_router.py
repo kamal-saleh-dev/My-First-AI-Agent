@@ -123,7 +123,12 @@ def detect_mode(user: str) -> tuple:
     if t == "run":                    return "RUN",          "general"
     if t.startswith("/auto ") or t.startswith("/autonomous "):
         return "AUTO", "general"
-    if t.startswith("load_session "): return "LOAD_SESSION", "general"
+    
+    if t.startswith("/multi ") or t.startswith("/multiagent "):
+        return "MULTI", "general"
+
+    if t.startswith("load_session "): 
+        return "LOAD_SESSION", "general"
 
     # ── 2. Keyword sets ───────────────────────────────────────────────────────
     CREATION_VERBS = [
