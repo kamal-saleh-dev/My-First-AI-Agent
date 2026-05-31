@@ -107,6 +107,13 @@ def _validate_model(model_name: str, is_cloud: bool) -> bool:
         return False
     return True
 
+def _is_cloud_model(model_name: str) -> bool:
+    """
+    True لو الموديل سحابي (OpenRouter) — يعني ليه بادئة 'provider/' معروفة.
+    الموديلات المحلية (زي 'qwen2.5-coder:7b') بترجع False.
+    القرار ده مستقل عن DEFAULT_MODEL اللي _switch_model() ممكن يكون غيّره لموديل سحابي.
+    """
+    return any(model_name.startswith(p) for p in _KNOWN_PROVIDERS)
 
 # ── Local → Cloud failover (v1.1) ────────────────────────────────────────────
 # Opt-in, infrastructure-failure-only escalation from the local Ollama backend
@@ -212,8 +219,8 @@ def safe_chat(model=None, messages=None, stream=False,
 
     # Validate model name on first call (attempt 0 only — avoid spam)
     _will_use_cloud = (USE_OPENROUTER and cloud_client is not None
-                       and full_model_name != DEFAULT_MODEL
-                       and full_model_name != "llava")
+                    and _is_cloud_model(full_model_name)
+                    and full_model_name != "llava")
     _validate_model(full_model_name, _will_use_cloud)
 
     # Whether this call targets the local backend (eligible for failover).
@@ -226,7 +233,7 @@ def safe_chat(model=None, messages=None, stream=False,
             use_cloud = (
                 USE_OPENROUTER
                 and cloud_client is not None
-                and full_model_name != DEFAULT_MODEL
+                and _is_cloud_model(full_model_name)
                 and full_model_name != "llava"
             )
 
