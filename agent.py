@@ -121,8 +121,8 @@ def _print_help():
 ║  /model local                Use local ollama model          ║
 ║  /model or_free              Use OpenRouter free model       ║
 ║  /model or_deepseek          Use DeepSeek free               ║
-║  /model kimi                 Use Kimi K2.5 (paid)            ║
-║  /model claude               Use Claude Sonnet (paid)        ║
+║  /model or_qwen              Use Qwen3 Coder 480B free       ║
+║  /model or_dsflash           Use DeepSeek V4 Flash free      ║
 ║                                                              ║
 ║  SESSION                                                     ║
 ║  new_chat                    Start new conversation          ║

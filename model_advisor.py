@@ -24,9 +24,10 @@ ESCALATION_LADDER: list[tuple[str, str]] = [
     ("or_deepseek","DeepSeek R1 0528 Qwen3 8B Free"),   # free، reasoning قوي
     ("or_llama",   "Llama 3.3 70B Free"),              # free، confirmed working
     ("or_free",    "OpenRouter Auto Free"),             # free، بيختار أحسن model تلقائي
-    ("gpt54",      "GPT-5.4"),                          # paid
-    ("kimi",       "Kimi K2.5"),                        # paid
-    ("claude",     "Claude Sonnet"),                    # paid، الأقوى
+    ("or_glm",     "GLM 4.5 Air Free"),                 # free, agent + thinking
+    ("or_gptoss",  "gpt-oss 120B Free"),                # free, agentic + tool use
+    ("or_qwennext","Qwen3 Next 80B Free"),              # free, سريع ومستقر
+    ("or_dsflash", "DeepSeek V4 Flash Free"),           # free, 1M context — الأقوى
 ]
 
 # Map a raw model name → ladder position (for "above current" lookup)

@@ -150,9 +150,9 @@ COMMANDS = [
         ("/model or_free",            "Use OpenRouter auto free model"),
         ("/model or_deepseek",        "Use DeepSeek R1 free"),
         ("/model or_llama",           "Use Llama 3.3 70B free"),
-        ("/model kimi",               "Use Kimi K2.5 (paid)"),
-        ("/model claude",             "Use Claude Sonnet (paid)"),
-        ("/model gpt54",              "Use GPT-5.4 (paid)"),
+        ("/model or_qwen",            "Use Qwen3 Coder 480B free"),
+        ("/model or_gptoss",          "Use gpt-oss 120B free"),
+        ("/model or_dsflash",         "Use DeepSeek V4 Flash free"),
     ]),
     ("SYSTEM", [
         ("/status",                   "Show current model, memory and context info"),

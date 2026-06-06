@@ -34,22 +34,22 @@ if USE_OPENROUTER and OPENROUTER_API_KEY:
 _LOCAL_ALIAS = "local"
 
 MODEL_ALIASES = {
-    # ── Free models (no credits needed) ─────────────────────────────────────
-    "or_free":     "openrouter/free",                          # auto-picks best available free model
-    "or_deepseek": "deepseek/deepseek-r1-0528-qwen3-8b:free", # DeepSeek R1 0528 Qwen3 8B free
-    "or_deepseek2":"deepseek/deepseek-chat-v3-0324:free",     # DeepSeek V3 free
-    "or_llama":    "meta-llama/llama-3.3-70b-instruct:free",  # Llama 3.3 70B free
-    "or_mistral":  "mistralai/mistral-small-3.1-24b-instruct:free",  # Mistral free
-    "or_gemma":    "google/gemma-3-27b-it:free",              # Gemma 3 27B free
-    "or_qwen":     "qwen/qwen3-coder:free",                   # Qwen3 Coder free
+    # ── Free models (no credits needed) ──────────────────────────────
+    "or_free":      "openrouter/free",                          # auto-picks an available free model
 
-    # ── Paid models (تحتاج credits على OpenRouter) ────────────────────────
-    "gpt54":  "openai/gpt-5.5",
-    "gpt4":   "openai/gpt-4o",
-    "claude":      "anthropic/claude-sonnet-4-6",
-    "opus":        "anthropic/claude-opus-4-6",
-    "codex":       "openai/gpt-4o",
-    "kimi":        "moonshotai/kimi-k2.6",
+    # — ⭐ أفضل اختيارات (أكواد + agent) —
+    "or_dsflash":   "deepseek/deepseek-v4-flash:free",          # DeepSeek V4 Flash — 1M context
+    "or_qwen":      "qwen/qwen3-coder:free",                    # Qwen3 Coder 480B — أقوى للأكواد
+    "or_gptoss":    "openai/gpt-oss-120b:free",                 # gpt-oss 120B — agentic + tool use
+    "or_glm":       "z-ai/glm-4.5-air:free",                    # GLM 4.5 Air — agent + thinking
+    "or_qwennext":  "qwen/qwen3-next-80b-a3b-instruct:free",    # Qwen3 Next 80B — سريع ومستقر
+
+    # — بدائل —
+    "or_llama":     "meta-llama/llama-3.3-70b-instruct:free",   # Llama 3.3 70B
+    "or_deepseek":  "deepseek/deepseek-r1-0528-qwen3-8b:free",  # مرجوع في config (سيبه)
+    "or_deepseek2": "deepseek/deepseek-chat-v3-0324:free",      # DeepSeek V3
+    "or_mistral":   "mistralai/mistral-small-3.1-24b-instruct:free",
+    "or_gemma":     "google/gemma-3-27b-it:free",               # Gemma 3 27B
 }
 
 # ── Lazy imports — SINGLE source of truth. Import from here, not from agent.py ─
