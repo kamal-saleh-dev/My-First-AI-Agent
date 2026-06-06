@@ -13,17 +13,9 @@ LLM_TIMEOUT          = 120        # seconds per LLM call
 INTENT_ROUTER_RETRIES = 1         # fewer retries for fast intent classification
 
 # ── Context window limits (characters, not tokens — 1 token ≈ 4 chars) ───────
-CTX_CLOUD   = 150_000   # Claude, GPT-4, large-context cloud models
+CTX_CLOUD   = 150_000   # large-context models
 CTX_MID     = 32_000    # local 14b+ models
 CTX_SMALL   = 8_000     # default local 7b model
-
-# ── Local → Cloud failover (v1.1) ────────────────────────────────────────────
-# When the local Ollama backend is unreachable (connection refused, timeout,
-# model missing), optionally retry the SAME request against a FREE OpenRouter
-# model. Opt-in, free-tier only, OFF by default — set AGENT_LOCAL_CLOUD_FAILOVER=1
-# to enable. DEFAULT_MODEL is never mutated and paid models are never used.
-LOCAL_CLOUD_FAILOVER = False
-FAILOVER_FREE_LADDER = ["or_qwen", "or_llama", "or_deepseek", "or_free"]
 
 # ══════════════════════════════════════════════════════════════════════════════
 # GENERATION
@@ -42,9 +34,9 @@ AUTONOMOUS_TOOL_TIMEOUT  = 30
 AUTONOMOUS_REPEAT_LIMIT  = 3
 
 # Multi-agent model preferences use aliases from llm_client.MODEL_ALIASES.
-MULTI_AGENT_MODEL_DEEPSEEK   = "or_deepseek"
-MULTI_AGENT_MODEL_QWEN_CODER = "or_qwen"
-MULTI_AGENT_MODEL_LLAMA      = "or_llama"
+MULTI_AGENT_MODEL_DEEPSEEK   = "local_reason"    # Planner, Debugger
+MULTI_AGENT_MODEL_QWEN_CODER = "local_coder"     # Coding, Testing
+MULTI_AGENT_MODEL_LLAMA      = "local_general"   # Reviewer, Context
 
 # ══════════════════════════════════════════════════════════════════════════════
 # ADAPTIVE AUTONOMY  (Phase 3 — redesigned per architecture audit)
@@ -65,8 +57,8 @@ ADAPTIVE_MEMORY_TOP_K        = 3        # past experiences injected per step
 ADAPTIVE_MEMORY_ONLY_SUCCESS = False    # restrict recall to past successes only
 
 # Model escalation ladder — aliases resolved via llm_client.MODEL_ALIASES.
-# Ordered fast/cheap -> stronger. Never hardcode raw provider model strings here.
-ADAPTIVE_ESCALATION_LADDER   = ("or_qwen", "or_deepseek", "or_llama")
+# Ordered weaker -> stronger. All LOCAL aliases (no cloud).
+ADAPTIVE_ESCALATION_LADDER   = ("local_coder", "local_reason", "local_general")
 
 # ══════════════════════════════════════════════════════════════════════════════
 # CONTEXT / HISTORY
@@ -153,10 +145,6 @@ ADAPTIVE_STUCK_THRESHOLD       = _env("ADAPTIVE_STUCK_THRESHOLD",       ADAPTIVE
 ADAPTIVE_MEMORY_TOP_K          = _env("ADAPTIVE_MEMORY_TOP_K",          ADAPTIVE_MEMORY_TOP_K,          int)
 ADAPTIVE_MEMORY_ENABLED        = _env_bool("ADAPTIVE_MEMORY_ENABLED",      ADAPTIVE_MEMORY_ENABLED)
 ADAPTIVE_MEMORY_ONLY_SUCCESS   = _env_bool("ADAPTIVE_MEMORY_ONLY_SUCCESS", ADAPTIVE_MEMORY_ONLY_SUCCESS)
-
-# ── Local → Cloud failover overrides (v1.1) ──────────────────────────────────
-LOCAL_CLOUD_FAILOVER = _env_bool("LOCAL_CLOUD_FAILOVER", LOCAL_CLOUD_FAILOVER)
-FAILOVER_FREE_LADDER = _env_list("FAILOVER_FREE_LADDER", FAILOVER_FREE_LADDER)
 
 # ── Testing / Debug ──────────────────────────────────────────────────────────
 # Set AGENT_SCRIPT_DELAY=5 to slow generation for manual checkpoint testing

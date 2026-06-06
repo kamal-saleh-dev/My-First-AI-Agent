@@ -3,7 +3,7 @@
 
 from threading import Lock
 
-# ── State lock (used for atomic writes to _state primitives) ─────────────────
+# ── State lock (used for atomic writes to _state primitives) ───────────────
 _state_lock = Lock()
 
 
@@ -22,6 +22,7 @@ class AgentState:
         self.pending_task          = ""     # task deferred until name is given
         self.last_user_input       = ""     # last raw user message
         self.active_intent         = "default"
+        self.manual_model          = None   # set by /model ; None = auto-route per task
 
     def reset_project(self):
         """Clear per-project state after generation completes."""
@@ -30,10 +31,10 @@ class AgentState:
         self.pending_task          = ""
 
 
-# ── Singleton instance ────────────────────────────────────────────────────────
+# ── Singleton instance ──────────────────────────────────────────────
 _state = AgentState()
 
-# ── Backward-compatible module-level aliases ──────────────────────────────────
+# ── Backward-compatible module-level aliases ───────────────────────────
 # Code that does `from state_manager import chat_history` gets the same list
 # object as _state.chat_history — mutations are visible everywhere.
 chat_history    = _state.chat_history
