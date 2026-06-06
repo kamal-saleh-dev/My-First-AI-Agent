@@ -460,40 +460,32 @@ def _duckduckgo_search(query: str, max_results: int = 5) -> str:
 def _web_search(query: str, max_results: int = 5) -> str:
     """
     Search the web for implementation guidance.
-    Priority ladder (first success wins):
-      1. SearXNG   — local Docker, aggregates Google+Bing+DDG, no limits
-      2. Google    — Playwright headless scrape, real results, captcha-aware
-      3. DuckDuckGo — pure Python fallback, always available
+    Primary engine = DuckDuckGo (zero setup, no captcha, no API key).
+    Optional fallback = local SearXNG if you happen to run one.
 
-    One-time setup (pick one):
-      SearXNG : docker run -d -p 8080:8080 searxng/searxng
-      Google  : pip install playwright && playwright install chromium
-      DDG     : pip install ddgs   (zero setup — last resort)
+    Google (Playwright) is intentionally NOT used here: scraping Google
+    triggers captcha constantly and is unreliable. DuckDuckGo is stable.
+
+    One-time setup:
+      DDG     : pip install ddgs                              (recommended)
+      SearXNG : docker run -d -p 8080:8080 searxng/searxng    (optional)
     """
-    # ── 1. SearXNG ────────────────────────────────────────────────────────────
-    results = _searxng_search(query, max_results)
-    if results:
-        safe_print("   🔍 Search via SearXNG", flush=True)
-        return results
-
-    # ── 2. Google via Playwright ──────────────────────────────────────────────
-    results = _playwright_google_search(query, max_results)
-    if results:
-        safe_print("   🔍 Search via Google (Playwright)", flush=True)
-        return results
-
-    # ── 3. DuckDuckGo fallback ────────────────────────────────────────────────
+    # ── 1. DuckDuckGo (primary — no captcha, no key, no setup) ────────────────
     results = _duckduckgo_search(query, max_results)
     if results:
         safe_print("   🔍 Search via DuckDuckGo", flush=True)
         return results
 
-    safe_print("⚠️  No search results — all engines failed.", flush=True)
-    safe_print("   • SearXNG : docker run -d -p 8080:8080 searxng/searxng", flush=True)
-    safe_print("   • Google  : pip install playwright && playwright install chromium", flush=True)
-    safe_print("   • DDG     : pip install ddgs", flush=True)
-    return ""
+    # ── 2. SearXNG (optional local fallback) ──────────────────────────────────
+    results = _searxng_search(query, max_results)
+    if results:
+        safe_print("   🔍 Search via SearXNG", flush=True)
+        return results
 
+    safe_print("⚠️  No search results — install the search engine:", flush=True)
+    safe_print("   • DDG     : pip install ddgs   (recommended, zero setup)", flush=True)
+    safe_print("   • SearXNG : docker run -d -p 8080:8080 searxng/searxng", flush=True)
+    return ""
 
 # ══════════════════════════════════════════════════════════════
 # 2. TARGET FILE DETECTION

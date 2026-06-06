@@ -683,6 +683,7 @@ class ModernAgentGUI(QMainWindow):
         if self._confirm_mode:
             self._exit_confirm_mode()
         self._flush_agent_turn()
+        send_text = msg          # ① الافتراضي = اللي المستخدم كتبه
         # 1) ابعت المرفقات المتجمّعة للباك‑إند الأول
         sent_names = []
         if self._attached:
@@ -701,7 +702,7 @@ class ModernAgentGUI(QMainWindow):
         if sent_names:
             self.chat_display.append("<span style='color:" + P["txt3"] + ";'>📎 " + ", ".join(sent_names) + "</span>")
         try:
-            self.process.stdin.write(msg + "\n"); self.process.stdin.flush()
+            self.process.stdin.write(send_text + "\n"); self.process.stdin.flush()
             self._pending_idles = max(0, getattr(self, "_pending_idles", 0)) + 1
             self._set_busy(True)
         except Exception as e:
@@ -770,7 +771,7 @@ class ModernAgentGUI(QMainWindow):
     def _capture(self, screen, path):
         screen.grabWindow(0).save(path, "PNG"); self.show()
         self._attached.append(path); self._upd_att()
-        self.chat_display.append("<span style='color:" + P["accent"] + ";'>📸 Screenshot ready — اكتب سؤالك (اختياري) ودوس Send</span>")
+        self.chat_display.append("<span style='color:" + P["accent"] + ";'>📸 Screenshot ready — type your question (optional) and hit Send</span>")
         self.input_box.setFocus()
     def _att_ready(self):
         self._unlock(); self.chat_display.append("<span style='color:" + P["ok"] + ";'>✅ File ready — ask about it now</span><br>")

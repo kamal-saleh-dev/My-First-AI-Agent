@@ -24,6 +24,10 @@ def _get_model() -> str:
 # والملفات القديمة تفضل متاحة للأسئلة المتابعة بس من غير ما تتلغبط مع الجديدة.
 _seen_paths: set = set()
 
+def _is_arabic(text: str) -> bool:
+    """True لو الرسالة فيها حروف عربي → نطبع رسايل الحالة بالعربي. غير كده إنجليزي."""
+    return any("؀" <= ch <= "ۿ" for ch in (text or ""))
+
 # ── System prompt builder ────────────────────────────────
 
 def _build_system_prompt(intent: str, working_context: list,
@@ -172,6 +176,8 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
     intent = detect_intent(task)
     _state.active_intent = intent
     domain = _hint_domain if _hint_domain != "general" else detect_domain(task.lower())
+    # لغة رسايل الحالة تتبع لغة المستخدم: عربي لو كتب عربي، غير كده إنجليزي
+    ar = _is_arabic(task)
 
     # ── Context resolution ────────────────────────────────
     # مرفقات الرسالة الحالية = الملفات الجديدة اللي اترفعت لسه (مش اللي من رسائل قديمة).
@@ -267,12 +273,18 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
                 r = safe_chat(model=model_name, messages=messages)
                 code = get_response(r)
                 ok = extract_and_save_scripts(code, _state.current_project_name)
-                clean = (
-                    "عاش يا هندسة! 🫡 الأكواد اتبرمجت واتقسمت صح.\n\n"
-                    f"[ 💾 تم حفظ الملفات بنجاح في:"
-                    f" Generated_Scripts/{_state.current_project_name.replace(' ','_')} ]"
-                    if ok else "⚠️ تم إيقاف الحفظ بسبب أخطاء في الكود."
-                )
+                if ok:
+                    clean = (
+                        "عاش يا هندسة! 🫡 الأكواد اتبرمجت واتقسمت صح.\n\n"
+                        f"[ 💾 تم حفظ الملفات بنجاح في:"
+                        f" Generated_Scripts/{_state.current_project_name.replace(' ','_')} ]"
+                    ) if ar else (
+                        "Done! 🫡 Code generated and split correctly.\n\n"
+                        f"[ 💾 Files saved successfully in:"
+                        f" Generated_Scripts/{_state.current_project_name.replace(' ','_')} ]"
+                    )
+                else:
+                    clean = "⚠️ تم إيقاف الحفظ بسبب أخطاء في الكود." if ar else "⚠️ Saving stopped due to errors in the code."
                 print(f"\n🤖 Agent: {clean}\n\n")
                 sys.stdout.flush()
                 chat_history.append({"role": "assistant", "content": clean})
@@ -290,7 +302,10 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
             # ── With attached files ──────────────────────
             chat_history[-1]["images"] = images if images else None
             if images:
-                print(f"🔍 بحلّل الصورة بموديل {model_name} ... (أول مرة ممكن ياخد شوية لحد ما الموديل يتحمّل)")
+                if ar:
+                    print(f"🔍 بحلّل الصورة بموديل {model_name} ... (أول مرة ممكن ياخد شوية لحد ما الموديل يتحمّل)")
+                else:
+                    print(f"🔍 Analyzing the image with {model_name} ... (first run may take a moment while the model loads)")
                 sys.stdout.flush()
             r = safe_chat(
                 model=model_name,
@@ -300,21 +315,39 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
 
             # ── تشخيص واضح بدل السكوت ──────────────────────
             if result and result.lstrip().startswith("[ERROR"):
-                result = (
-                    f"⚠️ فشل نداء الموديل ({model_name}):\n{result}\n"
-                    "تأكد إن الموديل متسطّب وشغّال: شغّل (ollama list) و (ollama ps)."
-                )
-            elif not result or not result.strip():
-                if images:
+                if ar:
                     result = (
-                        f"⚠️ الموديل ({model_name}) رجع رد فاضي على الصورة.\n"
-                        "غالبًا الموديل ده مش multimodal (مش بيشوف الصور).\n"
-                        "تأكد بـ: ollama list  — ولو مفيش موديل رؤية، سطّب واحد زي:\n"
-                        "    ollama pull llama3.2-vision   (أو llava / qwen2.5vl / moondream)\n"
-                        "وغيّر alias بتاع local_vision في llm_client.py للموديل ده."
+                        f"⚠️ فشل نداء الموديل ({model_name}):\n{result}\n"
+                        "تأكد إن الموديل متسطّب وشغّال: شغّل (ollama list) و (ollama ps)."
                     )
                 else:
-                    result = f"⚠️ الموديل ({model_name}) رجع رد فاضي. جرّب تاني أو غيّر الموديل."
+                    result = (
+                        f"⚠️ Model call failed ({model_name}):\n{result}\n"
+                        "Make sure the model is installed and running: run (ollama list) and (ollama ps)."
+                    )
+            elif not result or not result.strip():
+                if images:
+                    if ar:
+                        result = (
+                            f"⚠️ الموديل ({model_name}) رجع رد فاضي على الصورة.\n"
+                            "غالبًا الموديل ده مش multimodal (مش بيشوف الصور).\n"
+                            "تأكد بـ: ollama list  — ولو مفيش موديل رؤية، سطّب واحد زي:\n"
+                            "    ollama pull llama3.2-vision   (أو llava / qwen2.5vl / moondream)\n"
+                            "وغيّر alias بتاع local_vision في llm_client.py للموديل ده."
+                        )
+                    else:
+                        result = (
+                            f"⚠️ The model ({model_name}) returned an empty response for the image.\n"
+                            "It's likely not a multimodal model (it can't see images).\n"
+                            "Check with: ollama list  — if you have no vision model, pull one like:\n"
+                            "    ollama pull llama3.2-vision   (or llava / qwen2.5vl / moondream)\n"
+                            "and point the local_vision alias in llm_client.py to it."
+                        )
+                else:
+                    if ar:
+                        result = f"⚠️ الموديل ({model_name}) رجع رد فاضي. جرّب تاني أو غيّر الموديل."
+                    else:
+                        result = f"⚠️ The model ({model_name}) returned an empty response. Try again or switch the model."
 
             print(f"\n🤖 Agent: {result}\n\n")
             sys.stdout.flush()
