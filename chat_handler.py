@@ -19,7 +19,12 @@ from generation_engine import is_generation_request as _is_generation_request
 def _get_model() -> str:
     return llm_client.DEFAULT_MODEL
 
-# ── System prompt builder ─────────────────────────────────────────
+# ── ذاكرة المسارات اللي اتعالجت في رسائل سابقة ──────────────────
+# سلوك زي ChatGPT/Gemini: كل رسالة تركّز على المرفقات الجديدة بتاعتها،
+# والملفات القديمة تفضل متاحة للأسئلة المتابعة بس من غير ما تتلغبط مع الجديدة.
+_seen_paths: set = set()
+
+# ── System prompt builder ────────────────────────────────
 
 def _build_system_prompt(intent: str, working_context: list,
                          domain: str, images: list, videos: list) -> str:
@@ -72,7 +77,7 @@ def _build_system_prompt(intent: str, working_context: list,
         "Answer naturally and clearly in the same language the user is speaking."
     )
 
-# ── Context reader ───────────────────────────────────────────────
+# ── Context reader ───────────────────────────────────
 
 def _read_text_context(working_context: list) -> str:
     text_context = ""
@@ -90,7 +95,7 @@ def _read_text_context(working_context: list) -> str:
                 safe_print(f"⚠ context read error: {e}")
     return text_context
 
-# ── Stream output helper ─────────────────────────────────────────
+# ── Stream output helper ────────────────────────────────
 
 def _stream_response(stream) -> str:
     """Print a streaming response token-by-token. Returns full text."""
@@ -121,7 +126,7 @@ def _stream_response(stream) -> str:
     sys.stdout.flush()
     return full
 
-# ── Main chat dispatcher ─────────────────────────────────────────
+# ── Main chat dispatcher ────────────────────────────────
 
 def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
     """
@@ -136,10 +141,8 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
 
     if task:
         task = task.strip()
-        if task == "Analyze and describe the attached files in detail.":
-            task = ""
 
-    # ── Waiting for project name ────────────────────────────────────
+    # ── Waiting for project name ────────────────────────────
     if _state.awaiting_project_name and task:
         _state.current_project_name = task
         _state.awaiting_project_name = False
@@ -148,6 +151,11 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
             " جاري كتابة السكريبت...\n"
         )
         task = _state.pending_task
+
+    # ── لو مفيش رسالة لكن فيه مرفقات → حلّلها تلقائيًا (زي ChatGPT/Gemini) ──
+    # الـ agent يفهم النية لوحده مهما كتب المستخدم. الـ prompt الافتراضي إنجليزي.
+    if not task and project_context:
+        task = "Analyze and describe the attached files in detail. If there is an image, say exactly what you see in it."
 
     if not task:
         count = len(project_context)
@@ -160,13 +168,24 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
         _state.active_intent = "default"
         return
 
-    # ── Intent + domain (computed ONCE) ──────────────────────────────
+    # ── Intent + domain (computed ONCE) ──────────────────────────
     intent = detect_intent(task)
     _state.active_intent = intent
     domain = _hint_domain if _hint_domain != "general" else detect_domain(task.lower())
 
-    # ── Context resolution ────────────────────────────────────────
-    working_context = select_relevant_files(task, project_context)
+    # ── Context resolution ────────────────────────────────
+    # مرفقات الرسالة الحالية = الملفات الجديدة اللي اترفعت لسه (مش اللي من رسائل قديمة).
+    global _seen_paths
+    new_files = [item for item in project_context if item["path"] not in _seen_paths]
+    if new_files:
+        # ركّز على مرفقات الرسالة دي بس (زي ChatGPT/Gemini)
+        working_context = new_files
+        print(f"🎯 Using {len(new_files)} attachment(s) from this message")
+    else:
+        # مفيش مرفقات جديدة → سؤال متابعة على آخر ملف (زي 'كبّر الركن')
+        working_context = select_relevant_files(task, project_context)
+    # سجّل كل المسارات الحالية كـ "اتعالجت" عشان الرسالة اللي بعدها ماتعتبرهاش جديدة
+    _seen_paths.update(item["path"] for item in project_context)
     images = [i["path"] for i in working_context if i["type"] == "image"]
     videos = [i["path"] for i in working_context if i["type"] == "video"]
     text_ctx = _read_text_context(working_context)
@@ -180,28 +199,33 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
         from model_router import select_model
         model_name = select_model(intent, domain, task)
 
-    # ── System prompt ────────────────────────────────────────────
+    # ── System prompt ──────────────────────────────────
     system_prompt = _build_system_prompt(intent, working_context, domain, images, videos)
+    # قاعدة اللغة: رُدّ بنفس لغة رسالة المستخدم. الافتراضي إنجليزي، وعربي بس لو المستخدم كتب عربي.
+    system_prompt += (
+        "\n\nLANGUAGE RULE: Reply in the SAME language as the user's latest message. "
+        "Default to English. Only reply in Arabic if the user's message is actually written in Arabic."
+    )
 
-    # ── Prepend file context to task ───────────────────────────────
+    # ── Prepend file context to task ──────────────────────────
     task_with_ctx = (
         f"Context from text files:\n{text_ctx}\n\nUser Task: {task}"
         if text_ctx else task
     )
 
-    # ── History management ────────────────────────────────────────
+    # ── History management ────────────────────────────────
     chat_history.append({"role": "user", "content": task_with_ctx})
     chat_history[:] = smart_trim_history(chat_history, max_tokens=3000)
     messages = [{"role": "system", "content": system_prompt}] + chat_history
 
-    # ── Force generation pipeline for web/code domains ────────────────────
+    # ── Force generation pipeline for web/code domains ──────────────────
     if domain in _WEB_DOMAINS and any(w in task.lower() for w in _CREATION_VERBS):
         text_ctx = ""
         images = []
         videos = []
 
     try:
-        # ── No attached files — text-only branch ────────────────────────
+        # ── No attached files — text-only branch ──────────────────────
         if not text_ctx and not images and not videos:
             _t = task.lower()
 
@@ -263,13 +287,35 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
             save_session()
 
         else:
-            # ── With attached files ─────────────────────────────────
+            # ── With attached files ──────────────────────
             chat_history[-1]["images"] = images if images else None
+            if images:
+                print(f"🔍 بحلّل الصورة بموديل {model_name} ... (أول مرة ممكن ياخد شوية لحد ما الموديل يتحمّل)")
+                sys.stdout.flush()
             r = safe_chat(
                 model=model_name,
                 messages=[{"role": "system", "content": system_prompt}] + chat_history,
             )
             result = get_response(r)
+
+            # ── تشخيص واضح بدل السكوت ──────────────────────
+            if result and result.lstrip().startswith("[ERROR"):
+                result = (
+                    f"⚠️ فشل نداء الموديل ({model_name}):\n{result}\n"
+                    "تأكد إن الموديل متسطّب وشغّال: شغّل (ollama list) و (ollama ps)."
+                )
+            elif not result or not result.strip():
+                if images:
+                    result = (
+                        f"⚠️ الموديل ({model_name}) رجع رد فاضي على الصورة.\n"
+                        "غالبًا الموديل ده مش multimodal (مش بيشوف الصور).\n"
+                        "تأكد بـ: ollama list  — ولو مفيش موديل رؤية، سطّب واحد زي:\n"
+                        "    ollama pull llama3.2-vision   (أو llava / qwen2.5vl / moondream)\n"
+                        "وغيّر alias بتاع local_vision في llm_client.py للموديل ده."
+                    )
+                else:
+                    result = f"⚠️ الموديل ({model_name}) رجع رد فاضي. جرّب تاني أو غيّر الموديل."
+
             print(f"\n🤖 Agent: {result}\n\n")
             sys.stdout.flush()
             chat_history.append({"role": "assistant", "content": result})
@@ -279,5 +325,12 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
 
     except Exception as e:
         log.error(f"chat_tool error: {e}")
+        print(f"\n❌ حصل خطأ أثناء المعالجة: {e}\n")
+        sys.stdout.flush()
         if chat_history:
             chat_history.pop()
+    finally:
+        # دور الشات بيتنفّذ كـ background tool، والـ main loop في agent.py
+        # بيتعمّد ما يطبعش ⚡AGENT_IDLE للـ background tools (كل واحد بيطبعها بنفسه).
+        # من غير السطر ده الواجهة تفضل "بتفكّر" للأبد بعد ما الرد يخلص.
+        print("⚡AGENT_IDLE", flush=True)

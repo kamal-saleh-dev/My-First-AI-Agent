@@ -479,6 +479,7 @@ class ModernAgentGUI(QMainWindow):
         self._sessions = {}; self._active_id = ""; self._pending_id = ""
         self._agent_buf = ""; self._in_agent_turn = False; self._attached = []
         self._manually_busy = False
+        self._pending_idles = 0
         self._confirm_mode = False
         self._sess_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gui_sessions.json")
         self._load_sessions()
@@ -555,6 +556,11 @@ class ModernAgentGUI(QMainWindow):
         self.send_btn = QPushButton("➤"); self.send_btn.setFixedSize(48, 48); self.send_btn.setCursor(Qt.PointingHandCursor); self.send_btn.setStyleSheet(q_send())
         self.send_btn.clicked.connect(self.send_msg); self.input_box.returnPressed.connect(self.send_msg)
         self.stop_btn = QPushButton("⏹"); self.stop_btn.setFixedSize(48, 48); self.stop_btn.setCursor(Qt.PointingHandCursor); self.stop_btn.setStyleSheet(q_stop()); self.stop_btn.clicked.connect(self._stop_agent); self.stop_btn.hide()
+        self._att_strip = QWidget()
+        self._att_strip_lay = QHBoxLayout(self._att_strip)
+        self._att_strip_lay.setContentsMargins(6, 2, 6, 2); self._att_strip_lay.setSpacing(8)
+        self._att_strip.hide()
+        cl.addWidget(self._att_strip)
         ir.addWidget(self.input_box); ir.addWidget(self.send_btn); ir.addWidget(self.stop_btn); cl.addLayout(ir)
         rl.addWidget(ct, 1)
     # ── Sessions ──
@@ -666,28 +672,50 @@ class ModernAgentGUI(QMainWindow):
                 self.process.stdin.write("STOP_AGENT\n"); self.process.stdin.flush()
             except Exception:
                 pass
+        self._pending_idles = 0
         self._set_busy(False)
         self.chat_display.append("<span style='color:" + P["err"] + ";'>⛔ Stopped.</span>")
     def send_msg(self):
         msg = self.input_box.text().strip()
-        if not msg or not self.process: return
+        if not self.process: return
+        if not msg and not self._attached: return  # مفيش نص ولا مرفقات
         self.input_box.clear()
         if self._confirm_mode:
             self._exit_confirm_mode()
         self._flush_agent_turn()
+        # 1) ابعت المرفقات المتجمّعة للباك‑إند الأول
+        sent_names = []
+        if self._attached:
+            for path in self._attached:
+                try:
+                    self.process.stdin.write("attach " + path + "\n"); self.process.stdin.flush()
+                    self._pending_idles = max(0, getattr(self, "_pending_idles", 0)) + 1
+                    sent_names.append(os.path.basename(path))
+                except Exception as e:
+                    self.chat_display.append("<span style='color:" + P["err"] + ";'>❌ " + str(e) + "</span>")
+            self._attached.clear(); self._upd_att()
+            # 2) لو المستخدم مكتبش حاجة، ابعت جملة تحليل
+            if not msg:
+                send_text = "Analyze the attached files in detail and tell me what you see."
         self._bubble("user", msg); self._save_msg("user", msg, msg)
+        if sent_names:
+            self.chat_display.append("<span style='color:" + P["txt3"] + ";'>📎 " + ", ".join(sent_names) + "</span>")
         try:
             self.process.stdin.write(msg + "\n"); self.process.stdin.flush()
+            self._pending_idles = max(0, getattr(self, "_pending_idles", 0)) + 1
             self._set_busy(True)
-        except Exception as e: self.chat_display.append("<span style='color:" + P["err"] + ";'>❌ " + str(e) + "</span>")
+        except Exception as e:
+            self.chat_display.append("<span style='color:" + P["err"] + ";'>❌ " + str(e) + "</span>")
     # ── Streaming ──
     def _on_char(self, ch):
         self.hologram.set_state("talking"); self._typing_timer.start(8000)  # long safety net only; true end = AGENT_IDLE marker
         self._in_agent_turn = True; self._agent_buf += ch
         if "⚡AGENT_IDLE" in self._agent_buf[-20:]:
             self._agent_buf = self._agent_buf.replace("⚡AGENT_IDLE", "")
-            self._typing_timer.stop()
-            self._set_busy(False)          # agent explicitly signalled it is done -> bring Send back exactly now
+            self._pending_idles = max(0, getattr(self, "_pending_idles", 0) - 1)
+            if self._pending_idles <= 0:
+                self._typing_timer.stop()
+                self._set_busy(False)          # كل الأدوار خلصت -> رجّع Send
         c = self.chat_display.textCursor(); c.movePosition(QTextCursor.End)
         self.chat_display.setTextCursor(c); self.chat_display.insertPlainText(ch)
         self.chat_display.verticalScrollBar().setValue(self.chat_display.verticalScrollBar().maximum())
@@ -698,6 +726,11 @@ class ModernAgentGUI(QMainWindow):
         if "Type  YES  to apply" in self._agent_buf and not self._confirm_mode:
             self._enter_confirm_mode()
     def _agent_turn_ended(self):
+        # شبكة أمان فقط. لو لسه فيه أدوار مستنية (زي موديل رؤية بطيء لسه بيحمّل
+        # ومبعتش أي حروف)، استنى بدل ما ترجع idle بدري — ماركر ⚡AGENT_IDLE هو الحَكَم.
+        if getattr(self, "_pending_idles", 0) > 0:
+            self._typing_timer.start(8000)
+            return
         self._typing_timer.stop(); self._flush_agent_turn()
         self._set_busy(False)                       # always restore the Send button once the agent goes quiet
         if self._confirm_mode:
@@ -725,14 +758,10 @@ class ModernAgentGUI(QMainWindow):
     def _attach_file(self):
         paths, _ = QFileDialog.getOpenFileNames(self, "Attach Files", "", "All Files (*);; Images (*.png *.jpg *.jpeg *.webp *.bmp);; Documents (*.pdf *.docx *.xlsx *.pptx *.txt);; Code (*.py *.cs *.cpp *.js *.ts *.html *.css *.json)")
         if not paths: return
-        self._lock("⏳ Attaching…")
         for path in paths:
             self._attached.append(path)
-            self.chat_display.append("<span style='color:" + P["warn"] + ";'>📎 Attaching: " + os.path.basename(path) + "</span>")
-            if self.process:
-                try: self.process.stdin.write("attach " + path + "\n"); self.process.stdin.flush()
-                except Exception as e: self.chat_display.append("<span style='color:" + P["err"] + ";'>❌ " + str(e) + "</span>")
-        self._upd_att(); QTimer.singleShot(1500, self._att_ready)
+        self._upd_att()
+        self.input_box.setFocus()
     def _take_screenshot(self):
         base = os.path.dirname(sys.executable) if getattr(sys, "frozen", False) else os.path.dirname(os.path.abspath(__file__))
         path = os.path.join(base, "live_screen.png"); screen = QApplication.primaryScreen()
@@ -740,18 +769,46 @@ class ModernAgentGUI(QMainWindow):
         self.hide(); QTimer.singleShot(250, lambda: self._capture(screen, path))
     def _capture(self, screen, path):
         screen.grabWindow(0).save(path, "PNG"); self.show()
-        self.chat_display.append("<span style='color:" + P["accent"] + ";'>📸 Screenshot captured — attaching…</span>")
-        self._lock("⏳ Attaching screenshot…")
-        if self.process:
-            try: self.process.stdin.write("attach " + path + "\n"); self.process.stdin.flush()
-            except Exception as e: self.chat_display.append("<span style='color:" + P["err"] + ";'>❌ " + str(e) + "</span>")
-        self._attached.append(path); self._upd_att(); QTimer.singleShot(1500, self._att_ready)
+        self._attached.append(path); self._upd_att()
+        self.chat_display.append("<span style='color:" + P["accent"] + ";'>📸 Screenshot ready — اكتب سؤالك (اختياري) ودوس Send</span>")
+        self.input_box.setFocus()
     def _att_ready(self):
         self._unlock(); self.chat_display.append("<span style='color:" + P["ok"] + ";'>✅ File ready — ask about it now</span><br>")
     def _upd_att(self):
-        if not self._attached: self._att_lbl.setText("No files attached"); return
-        names = [os.path.basename(p) for p in self._attached[-4:]]; extra = len(self._attached)-4
-        self._att_lbl.setText("📎 " + "\n".join(names) + (("\n+" + str(extra) + " more") if extra > 0 else ""))
+        if not self._attached:
+            self._att_lbl.setText("No files attached")
+        else:
+            names = [os.path.basename(p) for p in self._attached[-4:]]; extra = len(self._attached) - 4
+            self._att_lbl.setText("📎 " + "\n".join(names) + (("\n+" + str(extra) + " more") if extra > 0 else ""))
+        if not hasattr(self, "_att_strip"): return
+        while self._att_strip_lay.count():
+            it = self._att_strip_lay.takeAt(0)
+            if it.widget(): it.widget().deleteLater()
+        if not self._attached:
+            self._att_strip.hide(); return
+        from PySide6.QtGui import QPixmap
+        IMG_EXT = (".png", ".jpg", ".jpeg", ".webp", ".bmp")
+        for i, path in enumerate(self._attached):
+            chip = QFrame(); cl2 = QHBoxLayout(chip); cl2.setContentsMargins(6, 4, 6, 4); cl2.setSpacing(6)
+            chip.setStyleSheet("QFrame{background:" + P["accent_soft"] + ";border-radius:8px;}")
+            if path.lower().endswith(IMG_EXT):
+                thumb = QLabel(); pm = QPixmap(path)
+                if not pm.isNull(): thumb.setPixmap(pm.scaled(34, 34, Qt.KeepAspectRatio, Qt.SmoothTransformation))
+                cl2.addWidget(thumb)
+            name = QLabel(os.path.basename(path)); name.setStyleSheet("color:" + P["txt"] + ";font-size:11px;background:transparent;")
+            cl2.addWidget(name)
+            x = QPushButton("✕"); x.setFixedSize(18, 18); x.setCursor(Qt.PointingHandCursor)
+            x.setStyleSheet("QPushButton{background:transparent;color:" + P["txt3"] + ";border:none;font-size:12px;}QPushButton:hover{color:" + P["err"] + ";}")
+            x.clicked.connect(lambda _, idx=i: self._remove_att(idx))
+            cl2.addWidget(x)
+            self._att_strip_lay.addWidget(chip)
+        self._att_strip_lay.addStretch()
+        self._att_strip.show()
+
+    def _remove_att(self, idx):
+        if 0 <= idx < len(self._attached):
+            self._attached.pop(idx); self._upd_att()
+            
     def _clear_display(self): self.chat_display.clear()
     # ── Confirmation mode ──
     def _enter_confirm_mode(self):
