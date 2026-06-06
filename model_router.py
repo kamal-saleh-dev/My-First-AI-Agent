@@ -2,21 +2,20 @@
 # Extracted from agent.py — single source of truth for all routing logic
 
 import llm_client
-from llm_client  import safe_chat, get_response
-from logger      import safe_print
-
+from llm_client import safe_chat, get_response
+from logger import safe_print
 
 # ── Domain Registry ───────────────────────────────────────────────────────────
 # Imported lazily via lambdas to avoid circular imports at module load time.
 # To add a new domain: add ONE entry here — routing is automatic everywhere.
 def _build_domain_registry() -> dict:
-    from dotnet_templates  import (DOTNET_PLANNING_PROMPT, DOTNET_FULLSTACK_PLANNING_PROMPT,
-                                   get_dotnet_ext as _get_dotnet_ext)
-    from react_templates   import REACT_PLANNING_PROMPT,   get_react_ext
+    from dotnet_templates import (DOTNET_PLANNING_PROMPT, DOTNET_FULLSTACK_PLANNING_PROMPT,
+        get_dotnet_ext as _get_dotnet_ext)
+    from react_templates import REACT_PLANNING_PROMPT, get_react_ext
     from angular_templates import ANGULAR_PLANNING_PROMPT, get_angular_ext
-    from html_templates    import HTML_PLANNING_PROMPT,    get_html_ext
-    from sql_templates     import SQL_PLANNING_PROMPT
-    from python_templates  import PYTHON_PLANNING_PROMPT
+    from html_templates import HTML_PLANNING_PROMPT, get_html_ext
+    from sql_templates import SQL_PLANNING_PROMPT
+    from python_templates import PYTHON_PLANNING_PROMPT
 
     return {
         "unity": {
@@ -69,7 +68,7 @@ def _build_domain_registry() -> dict:
         },
         "sql": {
             "keywords": ["sql", "database", "postgres", "postgresql", "mysql",
-                         "sqlite", "db schema", "قاعدة بيانات"],
+                "sqlite", "db schema", "قاعدة بيانات"],
             "planning": lambda t: SQL_PLANNING_PROMPT.format(task=t),
             "get_ext": lambda n, r: ".sql",
             "lang": "SQL",
@@ -84,10 +83,8 @@ def _build_domain_registry() -> dict:
         },
     }
 
-
 # Build once at import time
 DOMAIN_REGISTRY = _build_domain_registry()
-
 
 # ── Domain detection ──────────────────────────────────────────────────────────
 def detect_domain(task: str) -> str:
@@ -98,10 +95,8 @@ def detect_domain(task: str) -> str:
             return domain
     return "general"
 
-
 # Alias kept for backward compatibility
 detect_requested_language = detect_domain
-
 
 # ── Intent / mode detection ───────────────────────────────────────────────────
 def detect_mode(user: str) -> tuple:
@@ -109,25 +104,25 @@ def detect_mode(user: str) -> tuple:
     Smart intent router — rule-based fast path, LLM fallback for ambiguous cases.
 
     Priority:
-      1. Hard system commands  (never LLM)
-      2. Fast keyword rules    (saves LLM call for obvious cases)
-      3. LLM classification    (skipped for short messages < 4 words)
+        1. Hard system commands (never LLM)
+        2. Fast keyword rules (saves LLM call for obvious cases)
+        3. LLM classification (skipped for short messages < 4 words)
 
     Returns: (mode: str, domain: str)
     """
     t = user.lower().strip()
 
     # ── 1. Hard system commands ───────────────────────────────────────────────
-    if t.startswith("attach "):       return "ATTACH",       "general"
-    if t == "clear":                  return "CLEAR",        "general"
-    if t == "run":                    return "RUN",          "general"
+    if t.startswith("attach "): return "ATTACH", "general"
+    if t == "clear": return "CLEAR", "general"
+    if t == "run": return "RUN", "general"
     if t.startswith("/auto ") or t.startswith("/autonomous "):
         return "AUTO", "general"
-    
+
     if t.startswith("/multi ") or t.startswith("/multiagent "):
         return "MULTI", "general"
 
-    if t.startswith("load_session "): 
+    if t.startswith("load_session "):
         return "LOAD_SESSION", "general"
 
     # ── 2. Keyword sets ───────────────────────────────────────────────────────
@@ -148,7 +143,7 @@ def detect_mode(user: str) -> tuple:
         "career", "vacancy", "vacancies", "توظيف",
     ]
     DELETE_KEYWORDS = ["delete", "remove", "احذف", "امسح", "شيل"]
-    LANG_KEYWORDS   = [
+    LANG_KEYWORDS = [
         "python", "بايثون", "unity", "unreal", "c#", "c++", "csharp", "dotnet", ".net",
         "asp.net", "aspnet", "fastapi", "flask", "django", "react", "angular",
         "html", "sql", "postgres", "server", "api",
@@ -195,19 +190,19 @@ def detect_mode(user: str) -> tuple:
         " بيعمل ", " بيحصل ", " غريب", " صعب", " سهل",
     ]
 
-    has_verb    = any(kw in t for kw in CREATION_VERBS)
-    has_target  = any(kw in t for kw in GAME_TARGETS)
-    has_lang    = any(kw in t for kw in LANG_KEYWORDS)
-    has_job     = any(kw in t for kw in JOB_KEYWORDS)
-    has_del     = any(kw in t for kw in DELETE_KEYWORDS)
-    has_run     = any(kw in t for kw in RUN_KEYWORDS)      # NEW
-    has_snippet = any(kw in t for kw in SNIPPET_WORDS)     # NEW
+    has_verb = any(kw in t for kw in CREATION_VERBS)
+    has_target = any(kw in t for kw in GAME_TARGETS)
+    has_lang = any(kw in t for kw in LANG_KEYWORDS)
+    has_job = any(kw in t for kw in JOB_KEYWORDS)
+    has_del = any(kw in t for kw in DELETE_KEYWORDS)
+    has_run = any(kw in t for kw in RUN_KEYWORDS)        # NEW
+    has_snippet = any(kw in t for kw in SNIPPET_WORDS)   # NEW
 
     is_question = (
         any(t.startswith(q + " ") or t.startswith(q) or t == q for q in QUESTION_STARTS)
         or t.endswith("?") or t.endswith("؟")
     )
-    is_opinion  = any(op in t for op in OPINION_WORDS)
+    is_opinion = any(op in t for op in OPINION_WORDS)
 
     if has_del:
         return "DELETE", "general"
@@ -261,12 +256,12 @@ def detect_mode(user: str) -> tuple:
     try:
         prompt = (
             'Classify this user message into ONE intent:\n'
-            'GAME     - user wants to create/build/make/design/generate a game, app, website, database, API, or code project\n'
-            'JOB      - user wants job listings, vacancies, or career info (NOT general programming questions)\n'
-            'DELETE   - user wants to delete/remove something\n'
-            'RUN      - user wants to RUN or EXECUTE already-existing code\n'
+            'GAME - user wants to create/build/make/design/generate a game, app, website, database, API, or code project\n'
+            'JOB - user wants job listings, vacancies, or career info (NOT general programming questions)\n'
+            'DELETE - user wants to delete/remove something\n'
+            'RUN - user wants to RUN or EXECUTE already-existing code\n'
             'SELF_MOD - user wants the agent to modify/improve/expand itself\n'
-            'CHAT     - anything else\n\n'
+            'CHAT - anything else\n\n'
             'Reply with ONLY the intent word.\n'
             f'Message: "{user}"\n'
             'Intent:'
@@ -290,3 +285,26 @@ def detect_mode(user: str) -> tuple:
         safe_print(f"⚠ intent router error: {e}")
 
     return "CHAT", "general"
+
+
+# ── اختيار الموديل المحلي تلقائيًا حسب نوع التاسك (محلي 100%) ───────────────────
+# يُستدعى من chat_handler لما مفيش اختيار يدوي (/model).
+_CODING_DOMAINS = {"unity", "unreal", "dotnet", "react", "angular", "html", "python", "sql"}
+_REASON_CUES = [
+    "why", "explain", "reason", "debug", "analyze", "compare", "math",
+    "calculate", "prove", "step by step",
+    "ليه", "اشرح", "وضّح", "حلل", "قارن", "احسب", "علل", "فرق", "خطوة بخطوة",
+]
+
+def select_model(intent: str, domain: str, task: str) -> str:
+    """يرجّع أنسب alias محلي للرسالة دي."""
+    t = (task or "").lower()
+    if domain in _CODING_DOMAINS:
+        return "local_coder"
+    if intent == "detect_issues" or any(c in t for c in _REASON_CUES):
+        return "local_reason"
+    if intent in ("compare", "summarize"):
+        return "local_general"
+    if len(t.split()) <= 6:
+        return "local_fast"
+    return "local_general"

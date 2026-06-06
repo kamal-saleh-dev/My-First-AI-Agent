@@ -5,11 +5,11 @@ import os
 import sys
 import json
 
-from logger        import log, safe_print
+from logger import log, safe_print
 from state_manager import _state, chat_history, project_context
-from llm_client    import safe_chat, get_response
+from llm_client import safe_chat, get_response
 import llm_client
-from model_router  import detect_domain
+from model_router import detect_domain
 
 # ── Import shared constants from generation_engine (single source of truth) ───
 # Previously these were duplicated here — now we import to avoid drift.
@@ -22,11 +22,11 @@ def _get_model() -> str:
 # ── System prompt builder ─────────────────────────────────────────
 
 def _build_system_prompt(intent: str, working_context: list,
-                          domain: str, images: list, videos: list) -> str:
+                         domain: str, images: list, videos: list) -> str:
     """Return the right system prompt for this turn."""
     if intent == "compare":
-        if videos:  return "You are an expert video analyst. Compare the attached videos explicitly."
-        if images:  return "You are an expert visual analyst. Compare the attached images explicitly."
+        if videos: return "You are an expert video analyst. Compare the attached videos explicitly."
+        if images: return "You are an expert visual analyst. Compare the attached images explicitly."
         return "You are an expert data analyst. Compare the attached files explicitly."
     if intent == "summarize":
         return "You are an expert summarizer. Provide a concise, highly accurate summary of the provided files."
@@ -55,19 +55,19 @@ def _build_system_prompt(intent: str, working_context: list,
         "You are an autonomous AI agent with full access to your own source code.\n"
         "You CAN modify yourself — use the self-modification system to add new features.\n\n"
         "YOUR KEY SOURCE FILES:\n"
-        "  - agent.py          : main loop + all /commands (scan, status, time, help...)\n"
-        "  - agent_gui.py      : the GUI window (hologram, chat, sidebar, commands menu)\n"
-        "  - chat_handler.py   : conversation + generation dispatcher\n"
-        "  - model_router.py   : intent detection (what mode to use)\n"
-        "  - self_mod.py       : self-modification system (scan, read, diff, patch)\n"
-        "  - tool_registry.py  : all tool functions + TOOL_REGISTRY dict\n"
+        "  - agent.py            : main loop + all /commands (scan, status, time, help...)\n"
+        "  - agent_gui.py        : the GUI window (hologram, chat, sidebar, commands menu)\n"
+        "  - chat_handler.py     : conversation + generation dispatcher\n"
+        "  - model_router.py     : intent detection (what mode to use)\n"
+        "  - self_mod.py         : self-modification system (scan, read, diff, patch)\n"
+        "  - tool_registry.py    : all tool functions + TOOL_REGISTRY dict\n"
         "  - generation_engine.py: game/web project generation pipeline\n"
-        "  - planner.py        : script planning for game generation\n"
-        "  - model_advisor.py  : model escalation ladder\n"
-        "  - llm_client.py     : LLM calls + model aliases\n"
-        "  - agents/           : multi-agent package (built, not yet wired into runtime)\n"
-        "  - plugins/          : Unity/Unreal/Web/Python domain plugins\n"
-        "  - tests/            : pytest test files\n\n"
+        "  - planner.py          : script planning for game generation\n"
+        "  - model_advisor.py    : model escalation ladder\n"
+        "  - llm_client.py       : LLM calls + model aliases\n"
+        "  - agents/             : multi-agent package (built, not yet wired into runtime)\n"
+        "  - plugins/            : Unity/Unreal/Web/Python domain plugins\n"
+        "  - tests/              : pytest test files\n\n"
         "When asked about which file does X, answer from the list above.\n"
         "Answer naturally and clearly in the same language the user is speaking."
     )
@@ -127,21 +127,21 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
     """
     Main conversation + generation dispatcher.
     Responsibilities:
-      1. Resolve context (files, images, videos)
-      2. Route to: generation pipeline | single script | stream chat | file Q&A
-      3. Update chat_history and save session
+        1. Resolve context (files, images, videos)
+        2. Route to: generation pipeline | single script | stream chat | file Q&A
+        3. Update chat_history and save session
     """
-    from file_handler    import detect_intent, select_relevant_files
+    from file_handler import detect_intent, select_relevant_files
     from session_manager import save_session, smart_trim_history
 
     if task:
         task = task.strip()
-    if task == "Analyze and describe the attached files in detail.":
-        task = ""
+        if task == "Analyze and describe the attached files in detail.":
+            task = ""
 
     # ── Waiting for project name ────────────────────────────────────
     if _state.awaiting_project_name and task:
-        _state.current_project_name  = task
+        _state.current_project_name = task
         _state.awaiting_project_name = False
         print(
             f"\n🤖 Agent: عظيم! تم تحديد اسم البروجكت: '{_state.current_project_name}'."
@@ -150,7 +150,7 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
         task = _state.pending_task
 
     if not task:
-        count     = len(project_context)
+        count = len(project_context)
         file_word = "file" if count == 1 else "files"
         print(f"📎 Successfully attached {count} {file_word} to project context!")
         if count >= 2:
@@ -161,17 +161,24 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
         return
 
     # ── Intent + domain (computed ONCE) ──────────────────────────────
-    intent               = detect_intent(task)
+    intent = detect_intent(task)
     _state.active_intent = intent
-    domain               = _hint_domain if _hint_domain != "general" else detect_domain(task.lower())
+    domain = _hint_domain if _hint_domain != "general" else detect_domain(task.lower())
 
     # ── Context resolution ────────────────────────────────────────
     working_context = select_relevant_files(task, project_context)
-    images   = [i["path"] for i in working_context if i["type"] == "image"]
-    videos   = [i["path"] for i in working_context if i["type"] == "video"]
+    images = [i["path"] for i in working_context if i["type"] == "image"]
+    videos = [i["path"] for i in working_context if i["type"] == "video"]
     text_ctx = _read_text_context(working_context)
 
-    model_name = "llava" if images else _get_model()
+    # اختيار الموديل: اليدوي (/model) له الأولوية، وإلا توجيه تلقائي محلي
+    if images:
+        model_name = "local_vision"
+    elif getattr(_state, "manual_model", None):
+        model_name = _state.manual_model
+    else:
+        from model_router import select_model
+        model_name = select_model(intent, domain, task)
 
     # ── System prompt ────────────────────────────────────────────
     system_prompt = _build_system_prompt(intent, working_context, domain, images, videos)
@@ -190,8 +197,8 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
     # ── Force generation pipeline for web/code domains ────────────────────
     if domain in _WEB_DOMAINS and any(w in task.lower() for w in _CREATION_VERBS):
         text_ctx = ""
-        images   = []
-        videos   = []
+        images = []
+        videos = []
 
     try:
         # ── No attached files — text-only branch ────────────────────────
@@ -200,7 +207,7 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
 
             # Python quick-run: generate + sandbox test
             is_python = any(w in _t for w in ["python", "بايثون", "script"])
-            is_unity  = any(w in _t for w in ["unity", "c#", "combat", "game"])
+            is_unity = any(w in _t for w in ["unity", "c#", "combat", "game"])
             if is_python and not is_unity and any(w in _t for w in ["code", "برنامج", "كود"]):
                 from generation_engine import auto_run_and_fix
                 r = safe_chat(model=model_name, messages=messages)
@@ -233,9 +240,9 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
                 from generation_engine import extract_and_save_scripts, extract_project_name
                 if not _state.current_project_name:
                     _state.current_project_name = extract_project_name(task, "unity")
-                r    = safe_chat(model=model_name, messages=messages)
+                r = safe_chat(model=model_name, messages=messages)
                 code = get_response(r)
-                ok   = extract_and_save_scripts(code, _state.current_project_name)
+                ok = extract_and_save_scripts(code, _state.current_project_name)
                 clean = (
                     "عاش يا هندسة! 🫡 الأكواد اتبرمجت واتقسمت صح.\n\n"
                     f"[ 💾 تم حفظ الملفات بنجاح في:"
@@ -251,7 +258,7 @@ def chat_tool(task: str, _hint_domain: str = "general", _resume: bool = False):
 
             # Plain streaming chat
             stream = safe_chat(model=model_name, messages=messages, stream=True)
-            full   = _stream_response(stream)
+            full = _stream_response(stream)
             chat_history.append({"role": "assistant", "content": full})
             save_session()
 

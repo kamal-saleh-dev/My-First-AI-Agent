@@ -1,15 +1,15 @@
 """
 agent.py — Entry point only.
 All logic lives in dedicated modules:
-  chat_handler.py     — conversation + generation
-  session_manager.py  — history, context, project memory
-  shutdown_manager.py — signals, atexit, background executor
-  tool_registry.py    — TOOL_REGISTRY + get_tool()
-  self_mod.py         — self-modification (isolated)
-  model_router.py     — intent + domain detection
-  llm_client.py       — LLM calls
-  state_manager.py    — shared mutable state
-  logger.py           — structured logging
+    chat_handler.py     — conversation + generation
+    session_manager.py  — history, context, project memory
+    shutdown_manager.py — signals, atexit, background executor
+    tool_registry.py    — TOOL_REGISTRY + get_tool()
+    self_mod.py         — self-modification (isolated)
+    model_router.py     — intent + domain detection
+    llm_client.py       — LLM calls
+    state_manager.py    — shared mutable state
+    logger.py           — structured logging
 """
 
 import sys
@@ -20,10 +20,10 @@ if sys.platform == "win32":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace", line_buffering=True)
     sys.stdin.reconfigure(encoding="utf-8", errors="replace")
 else:
-        sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
-        sys.stdin.reconfigure(encoding="utf-8")
+    sys.stdout.reconfigure(encoding="utf-8", line_buffering=True)
+    sys.stdin.reconfigure(encoding="utf-8")
 
-# Load .env FIRST — before importing llm_client (it reads OPENROUTER_API_KEY at import time)
+# Load .env FIRST — before importing llm_client (it reads env vars at import time)
 try:
     from dotenv import load_dotenv as _load_dotenv
     from pathlib import Path as _Path
@@ -33,40 +33,43 @@ try:
 except ImportError:
     print("⚠️ python-dotenv NOT installed — .env will be ignored. Run: pip install python-dotenv")
 
-from logger          import log, safe_print
-from state_manager   import _state, chat_history, project_context
+from logger import log, safe_print
+from state_manager import _state, chat_history, project_context
 import llm_client
 
-from model_router    import detect_mode
-from file_handler    import detect_intent, inject_globals as _fh_inject
+from model_router import detect_mode
+from file_handler import detect_intent, inject_globals as _fh_inject
 from session_manager import (load_all_sessions,
-                              save_project_context, load_project_context)
+                             save_project_context, load_project_context)
 from shutdown_manager import run_in_background, register_shutdown_hooks
-from tool_registry   import get_tool, BACKGROUND_TOOLS
-from env_check       import check_and_exit_if_missing
-from metrics         import metrics
-from profiler        import profiler
-from domain_sandbox  import print_health_report
-from recovery        import get_checkpoint_manager
+from tool_registry import get_tool, BACKGROUND_TOOLS
+from env_check import check_and_exit_if_missing
+from metrics import metrics
+from profiler import profiler
+from domain_sandbox import print_health_report
+from recovery import get_checkpoint_manager
 
 # Thread-safe model switch
 from threading import Lock as _Lock
 _model_lock = _Lock()
 
 def _switch_model(new_model: str):
-    # Resolve "local" → actual configured model name before storing
+    # "/model auto" → رجّع التوجيه التلقائي (كل تاسك ياخد أنسب موديل محلي)
+    if new_model == "auto":
+        _state.manual_model = None
+        log.info("Model switched to AUTO (per-task routing)")
+        print("🔄 رجعنا للتوجيه التلقائي: كل تاسك هياخد أنسب موديل محلي.")
+        return
     import config as _cfg
     if new_model == "local":
         resolved = _cfg.DEFAULT_MODEL
     else:
         resolved = llm_client.MODEL_ALIASES.get(new_model, new_model)
-        # If alias resolves to a cloud model but OpenRouter isn't configured, warn
-        if "/" in resolved and not llm_client.USE_OPENROUTER:
-            print(f"⚠️  Model '{new_model}' needs OpenRouter (CLAUDE_CODE_USE_OPENROUTER=1)")
     with _model_lock:
         llm_client.DEFAULT_MODEL = resolved
+        _state.manual_model = resolved   # الاختيار اليدوي يغلب التلقائي
     log.info(f"Model switched to {resolved} (alias: {new_model})")
-    print(f"🔄 تم تحويل الـ Agent بنجاح إلى الموديل: {new_model} → {resolved}")
+    print(f"🔄 تم التحويل إلى الموديل: {new_model} → {resolved}")
 
 # Startup
 check_and_exit_if_missing()
@@ -97,55 +100,53 @@ _fh_inject(
 load_project_context()
 log.success("AGENT READY — type your request")
 
-# ── Help menu ───────────────────────────────────────────────────────
+# ── Help menu ────────────────────────────────────────────────
 def _print_help():
     print("""
-╔═══════════════════════════════════════════════════════════╗
-║                    AGENT COMMANDS                            ║
-╠═══════════════════════════════════════════════════════════╣
-║  GENERATION                                                  ║
-║  make a <game/app/website>   Start a full generation         ║
-║  /resume <project>           Resume interrupted generation   ║
-║  checkpoints                 List resumable generations      ║
-║                                                              ║
-║  SELF-MODIFICATION                                           ║
-║  add <feature> to yourself   Add a new capability            ║
-║  can you edit yourself       Trigger self-mod mode           ║
-║  /scan                       List all project .py files      ║
-║  /read <file.py>             Read a file (smart summary)     ║
-║  /read <file.py> full        Read entire file                ║
-║  /diff <file.py>             Diff current vs last backup     ║
-║                                                              ║
-║  MODEL                                                       ║
-║  /model <alias>              Switch active model             ║
-║  /model local                Use local ollama model          ║
-║  /model or_free              Use OpenRouter free model       ║
-║  /model or_deepseek          Use DeepSeek free               ║
-║  /model or_qwen              Use Qwen3 Coder 480B free       ║
-║  /model or_dsflash           Use DeepSeek V4 Flash free      ║
-║                                                              ║
-║  SESSION                                                     ║
-║  new_chat                    Start new conversation          ║
-║  attach <path>               Attach a file to context        ║
-║  metrics                     Show performance dashboard      ║
-║  profile                     Show timing profiler            ║
-║  health                      Show domain health report       ║
-║  /date                       Show today's date               ║
-║  /time                       Show current time               ║
-║  /weather                     Show weather info              ║
-║  /memory                     Show recent memories            ║
-║  /memory search <q>          Search past tasks               ║
-║  exit                        Quit the agent                  ║
-╚═══════════════════════════════════════════════════════════╝
+╔═══════════════════════════════════════╗
+║                 AGENT COMMANDS              ║
+╠═══════════════════════════════════════╣
+║ GENERATION                                  ║
+║   make a            Start a full generation ║
+║   /resume           Resume interrupted gen   ║
+║   checkpoints       List resumable gens      ║
+║                                              ║
+║ SELF-MODIFICATION                            ║
+║   add to yourself   Add a new capability     ║
+║   /scan             List all project .py     ║
+║   /read             Read a file (summary)    ║
+║   /read full        Read entire file         ║
+║   /diff             Diff vs last backup      ║
+║                                              ║
+║ MODEL (كله محلي)                           ║
+║   /model auto       توجيه تلقائي (افتراضي)  ║
+║   /model local         الموديل الافتراضي   ║
+║   /model local_coder   qwen2.5-coder:7b      ║
+║   /model local_reason  deepseek-r1:8b        ║
+║   /model local_general qwen3.5:9b            ║
+║   /model local_fast    qwen3.5:4b            ║
+║                                              ║
+║ SESSION                                      ║
+║   new_chat          Start new conversation   ║
+║   attach            Attach a file to context ║
+║   metrics           Performance dashboard    ║
+║   profile           Timing profiler          ║
+║   health            Domain health report     ║
+║   /date             Show today's date        ║
+║   /time             Show current time         ║
+║   /weather          Show weather info        ║
+║   /memory           Show recent memories     ║
+║   /memory search    Search past tasks        ║
+║   exit              Quit the agent           ║
+╚═══════════════════════════════════════╝
 """, flush=True)
-
 
 # Main loop
 while True:
     try:
         user = input().strip()
         _state.last_user_input = user
-        _is_background_cmd = False   # set True for BACKGROUND_TOOLS
+        _is_background_cmd = False  # set True for BACKGROUND_TOOLS
 
         if user.startswith("/model "):
             _switch_model(user.replace("/model", "").strip())
@@ -163,7 +164,7 @@ while True:
         if not user:
             continue
 
-        # ── Confirmation intercept ───────────────────────────────────────────
+        # ── Confirmation intercept ──────────────────────────────────────────
         # Only intercept YES/NO when self_mod is explicitly waiting for an answer
         try:
             from self_mod import is_waiting_for_confirmation, provide_confirmation
@@ -216,7 +217,7 @@ while True:
             elif user.strip().startswith("/read "):
                 parts = user.strip().split()
                 fname = parts[1] if len(parts) > 1 else ""
-                full  = len(parts) > 2 and parts[2].lower() == "full"
+                full = len(parts) > 2 and parts[2].lower() == "full"
                 if fname:
                     from self_mod import read_tool, read_full_tool
                     (read_full_tool if full else read_tool)(fname)
@@ -259,48 +260,46 @@ while True:
 
             elif user.strip() == "/help":
                 print("""
-╔═════════════════════════════════════════════════════════╗
-║                    AGENT COMMANDS                        ║
-╠═══════════════════════════════════════════════════════╣
-║  GENERATION                                              ║
-║  make a <type> game         Generate Unity/Unreal game   ║
-║  build a <type> website     Generate web project         ║
-║  /resume <project>          Resume interrupted project   ║
-║                                                          ║
-║  SELF-MODIFICATION                                       ║
-║  add <feature> to yourself  Add new capability           ║
-║  edit yourself              Modify own source code       ║
-║  /scan                      List all project .py files   ║
-║  /read <file>               Read a source file           ║
-║  /read <file> full          Read entire file             ║
-║  /diff <file>               Diff file vs last backup     ║
-║                                                          ║
-║  FILES                                                   ║
-║  attach <path>              Attach file to context       ║
-║  clear                      Clear file context           ║
-║                                                          ║
-║  MODEL                                                   ║
-║  /model <alias>             Switch model                 ║
-║  /model local               Use local ollama model       ║
-║  /model or_free             Use free OpenRouter model    ║
-║  /model or_deepseek         Use DeepSeek free            ║
-║  /model kimi                Use Kimi K2.5 (paid)         ║
-║  /model claude              Use Claude Sonnet (paid)     ║
-║                                                          ║
-║  SYSTEM                                                  ║
-║  checkpoints                Show resumable generations   ║
-║  metrics                    Show performance dashboard   ║
-║  health                     Show domain health report    ║
-║  profile                    Show profiler report         ║
-║  new_chat                   Start new conversation       ║
-║  /date                      Show today's date            ║
-║  /time                      Show current time            ║
-║  /help                      Show this menu               ║
-║  /weather                   Show weather info            ║
-║  /memory                    Show recent memories         ║
-║  /memory search <q>         Search past tasks            ║
-║  exit                       Exit the agent               ║
-╚═══════════════════════════════════════════════════════╝
+╔═════════════════════════════════════╗
+║                 AGENT COMMANDS            ║
+╠═════════════════════════════════════╣
+║ GENERATION                                ║
+║   make a game     Generate Unity/Unreal    ║
+║   build a website Generate web project      ║
+║   /resume         Resume interrupted        ║
+║                                            ║
+║ SELF-MODIFICATION                          ║
+║   add to yourself Add new capability        ║
+║   edit yourself   Modify own source code    ║
+║   /scan           List project .py files    ║
+║   /read           Read a source file        ║
+║   /diff           Diff file vs backup       ║
+║                                            ║
+║ FILES                                      ║
+║   attach          Attach file to context    ║
+║   clear           Clear file context        ║
+║                                            ║
+║ MODEL (كله محلي)                          ║
+║   /model auto       توجيه تلقائي            ║
+║   /model local      الموديل الافتراضي       ║
+║   /model local_coder   qwen2.5-coder:7b     ║
+║   /model local_reason  deepseek-r1:8b       ║
+║   /model local_general qwen3.5:9b           ║
+║   /model local_fast    qwen3.5:4b           ║
+║                                            ║
+║ SYSTEM                                      ║
+║   checkpoints     Show resumable gens       ║
+║   metrics         Performance dashboard     ║
+║   health          Domain health report      ║
+║   profile         Profiler report           ║
+║   new_chat        Start new conversation    ║
+║   /date           Show today's date         ║
+║   /time           Show current time         ║
+║   /help           Show this menu            ║
+║   /weather        Show weather info         ║
+║   /memory         Show recent memories      ║
+║   exit            Exit the agent            ║
+╚═════════════════════════════════════╝
 """, flush=True)
 
             elif user.startswith("/resume "):
@@ -308,7 +307,7 @@ while True:
                 from chat_handler import chat_tool
                 cp = get_checkpoint_manager().load(project_name)
                 if cp:
-                    safe_print(f"♻️  Resuming '{project_name}'...")
+                    safe_print(f"♻️ Resuming '{project_name}'...")
                     run_in_background(chat_tool, cp.task,
                                       **{"_hint_domain": cp.engine, "_resume": True})
                     _is_background_cmd = True

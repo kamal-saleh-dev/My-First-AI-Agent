@@ -4,8 +4,8 @@
 # with a stronger model. Keeps trying up the ladder until quality passes
 # or all models are exhausted — then returns the best result seen.
 #
-# Escalation ladder (weakest -> strongest):
-#   local -> free OpenRouter aliases -> paid models -> Claude
+# Escalation ladder (weakest -> strongest) — LOCAL ONLY:
+#   local_coder -> local_reason -> local_general
 #
 # Integration: called from script_generator.generate_single() after generation.
 
@@ -13,21 +13,14 @@ import re
 from typing import Optional
 from logger import log, safe_print
 
-
-# ── Escalation ladder ─────────────────────────────────────────────────────────
+# ── Escalation ladder ─────────────────────────────────────────────────────
 # Each level is (alias_key, display_name).
-# Aliases are resolved via MODEL_ALIASES in llm_client.py.
+# Aliases are resolved via MODEL_ALIASES in llm_client.py. All LOCAL (no cloud).
 
 ESCALATION_LADDER: list[tuple[str, str]] = [
-    ("local",      "Local model"),                      # دايماً شغال، مجاني
-    ("or_qwen",    "Qwen3 Coder Free"),                # free، coding قوي
-    ("or_deepseek","DeepSeek R1 0528 Qwen3 8B Free"),   # free، reasoning قوي
-    ("or_llama",   "Llama 3.3 70B Free"),              # free، confirmed working
-    ("or_free",    "OpenRouter Auto Free"),             # free، بيختار أحسن model تلقائي
-    ("or_glm",     "GLM 4.5 Air Free"),                 # free, agent + thinking
-    ("or_gptoss",  "gpt-oss 120B Free"),                # free, agentic + tool use
-    ("or_qwennext","Qwen3 Next 80B Free"),              # free, سريع ومستقر
-    ("or_dsflash", "DeepSeek V4 Flash Free"),           # free, 1M context — الأقوى
+    ("local_coder",   "qwen2.5-coder:7b — كود"),
+    ("local_reason",  "deepseek-r1:8b — تفكير/تحليل"),
+    ("local_general", "qwen3.5:9b — عام"),
 ]
 
 # Map a raw model name → ladder position (for "above current" lookup)
@@ -46,29 +39,26 @@ def _ladder_index(model_name: str) -> int:
         if resolved == canonical or resolved == model_name:
             return i
 
-    # Unknown model → treat as "local" (bottom of ladder)
+    # Unknown model → treat as bottom of ladder
     return 0
-
 
 def _models_above(current_model: str) -> list[str]:
     """Return alias keys for every ladder level above current_model."""
     idx = _ladder_index(current_model)
     return [alias for alias, _ in ESCALATION_LADDER[idx + 1:]]
 
-
-# ── Quality scoring ───────────────────────────────────────────────────────────
+# ── Quality scoring ─────────────────────────────────────────────────────
 
 # Each issue reduces score. Weights chosen so any single bad issue triggers escalation.
 _ISSUE_WEIGHTS: dict[str, int] = {
-    "no_code_block":   60,   # model returned no code at all
-    "too_short":       40,   # suspiciously short code
-    "placeholder":     35,   # TODO / placeholder comments remain
-    "compile_error":   25,   # each compile error (capped)
-    "validation_fail": 50,   # validate_code() rejected it
+    "no_code_block": 60,    # model returned no code at all
+    "too_short": 40,        # suspiciously short code
+    "placeholder": 35,      # TODO / placeholder comments remain
+    "compile_error": 25,    # each compile error (capped)
+    "validation_fail": 50,  # validate_code() rejected it
 }
 
-_ESCALATE_THRESHOLD = 30   # score below this → escalate
-
+_ESCALATE_THRESHOLD = 30  # score below this → escalate
 
 def assess_quality(code: str, engine: str,
                    script_name: str = "",
@@ -81,22 +71,22 @@ def assess_quality(code: str, engine: str,
     issues: list[str] = []
     penalty = 0
 
-    # ── 1. Code block present? ────────────────────────────────────────────────
+    # ── 1. Code block present? ──────────────────────────────────────────
     has_block = bool(re.search(r"```", code))
     if not has_block:
         issues.append("no_code_block: model returned no fenced code block")
         penalty += _ISSUE_WEIGHTS["no_code_block"]
 
-    # ── Extract raw code for further checks ───────────────────────────────────
+    # ── Extract raw code for further checks ───────────────────────────────
     raw = re.sub(r"```[a-zA-Z]*\n?", "", code).replace("```", "").strip()
 
-    # ── 2. Too short? ─────────────────────────────────────────────────────────
+    # ── 2. Too short? ─────────────────────────────────────────────────
     lines = [l for l in raw.splitlines() if l.strip()]
     if len(lines) < 12:
         issues.append(f"too_short: only {len(lines)} non-empty lines")
         penalty += _ISSUE_WEIGHTS["too_short"]
 
-    # ── 3. Placeholders / TODO ────────────────────────────────────────────────
+    # ── 3. Placeholders / TODO ───────────────────────────────────────
     PLACEHOLDER_PATTERNS = [
         r"//\s*(TODO|FIXME|your logic|your code|add logic|implement here|replace this|assuming)",
         r"/\*\s*(TODO|placeholder|implement)\s*\*/",
@@ -107,9 +97,9 @@ def assess_quality(code: str, engine: str,
         if re.search(pat, raw, re.IGNORECASE):
             issues.append("placeholder: unimplemented TODO/placeholder found")
             penalty += _ISSUE_WEIGHTS["placeholder"]
-            break   # count once
+            break  # count once
 
-    # ── 4. Validation (syntax / structural) ───────────────────────────────────
+    # ── 4. Validation (syntax / structural) ──────────────────────────────
     try:
         from compiler_tools import validate_code
         ok, _ = validate_code(raw, script_name or "script")
@@ -119,7 +109,7 @@ def assess_quality(code: str, engine: str,
     except Exception:
         pass
 
-    # ── 5. Compile errors (Unity only, requires dotnet) ───────────────────────
+    # ── 5. Compile errors (Unity only, requires dotnet) ──────────────────────
     if engine == "unity" and script_name and generated_context is not None:
         try:
             from compiler_tools import compile_check_csharp
@@ -129,17 +119,16 @@ def assess_quality(code: str, engine: str,
                 planned_scripts=script_names or [],
             )
             if errors:
-                capped = min(len(errors), 4)   # cap at 4 so score doesn't go negative
+                capped = min(len(errors), 4)  # cap at 4 so score doesn't go negative
                 issues.append(f"compile_errors: {len(errors)} error(s) — {errors[0][:80]}")
                 penalty += _ISSUE_WEIGHTS["compile_error"] * capped
         except Exception:
-            pass   # dotnet unavailable — skip
+            pass  # dotnet unavailable — skip
 
     score = max(0, 100 - penalty)
     return score, issues
 
-
-# ── Escalation engine ─────────────────────────────────────────────────────────
+# ── Escalation engine ─────────────────────────────────────────────────
 
 def escalate(
     task: str,
@@ -151,14 +140,14 @@ def escalate(
     eng_cfg: dict,
     script_pairs: list,
     generated_context: dict,
-    model_name: str,            # same as current_model (kept for clarity)
+    model_name: str,  # same as current_model (kept for clarity)
 ) -> tuple[str, str]:
     """
     Try each model above current_model in the escalation ladder.
     Returns (best_code, model_alias_used).
 
-    If no escalation candidate is available (e.g. no OpenRouter key),
-    returns (current_code, current_model) unchanged.
+    If no escalation candidate is available (already at the top of the
+    local ladder), returns (current_code, current_model) unchanged.
     """
     from llm_client import safe_chat, get_response, MODEL_ALIASES
     import llm_client
@@ -168,7 +157,7 @@ def escalate(
         return current_code, current_model
 
     # Track best result across all attempts
-    best_code  = current_code
+    best_code = current_code
     best_score, best_issues = assess_quality(
         current_code, engine, script_name, generated_context, [p[0] for p in script_pairs]
     )
@@ -181,18 +170,8 @@ def escalate(
     )
 
     for alias in candidates:
-        # Skip if this model needs OpenRouter but it's not configured
         resolved = MODEL_ALIASES.get(alias, alias)
-        needs_cloud = "/" in resolved   # OpenRouter models have provider/name format
-        if needs_cloud:
-            if not getattr(llm_client, "USE_OPENROUTER", False):
-                log.warn(f"Advisor: skipping {alias} — OpenRouter not configured")
-                continue
-            if not getattr(llm_client, "cloud_client", None):
-                log.warn(f"Advisor: skipping {alias} — cloud_client not initialized")
-                continue
-
-        safe_print(f"   🔁 Trying {alias} ({resolved[:40]})...", flush=True)
+        safe_print(f"  🔁 Trying {alias} ({resolved[:40]})...", flush=True)
 
         try:
             new_code = _regenerate(
@@ -204,31 +183,30 @@ def escalate(
                 new_code, engine, script_name,
                 generated_context, [p[0] for p in script_pairs],
             )
-            safe_print(f"   📊 {alias}: score={score}/100")
+            safe_print(f"  📊 {alias}: score={score}/100")
 
             if score > best_score:
-                best_code  = new_code
+                best_code = new_code
                 best_score = score
                 best_model = alias
                 best_issues = issues
 
             if score >= (100 - _ESCALATE_THRESHOLD):
-                safe_print(f"   ✅ Quality OK with {alias} (score={score})")
-                break   # good enough — stop escalating
+                safe_print(f"  ✅ Quality OK with {alias} (score={score})")
+                break  # good enough — stop escalating
 
         except Exception as e:
             log.warn(f"Advisor: {alias} failed — {e}")
             continue
 
     if best_model != current_model:
-        safe_print(f"   🏆 Best result: {best_model} (score={best_score}/100)")
+        safe_print(f"  🏆 Best result: {best_model} (score={best_score}/100)")
     else:
-        safe_print(f"   ⚠️ All escalations failed — keeping original (score={best_score}/100)")
+        safe_print(f"  ⚠️ All escalations failed — keeping original (score={best_score}/100)")
 
     return best_code, best_model
 
-
-# ── Re-generation helper ──────────────────────────────────────────────────────
+# ── Re-generation helper ──────────────────────────────────────────────
 
 def _regenerate(alias: str, task: str, script_name: str, script_role: str,
                 engine: str, eng_cfg: dict, script_pairs: list,
@@ -236,7 +214,7 @@ def _regenerate(alias: str, task: str, script_name: str, script_role: str,
     """Ask a specific model to regenerate a single script from scratch."""
     from script_generator import BLOCK_MAP, WEB_ENGINES, _build_context_block
 
-    block_type    = BLOCK_MAP.get(engine, "csharp")
+    block_type = BLOCK_MAP.get(engine, "csharp")
     context_block = _build_context_block(generated_context)
 
     if engine in WEB_ENGINES:
@@ -263,6 +241,6 @@ def _regenerate(alias: str, task: str, script_name: str, script_role: str,
 
     r = safe_chat(model=alias, messages=[
         {"role": "system", "content": eng_cfg["system"]},
-        {"role": "user",   "content": prompt},
+        {"role": "user", "content": prompt},
     ])
     return get_response(r)

@@ -242,10 +242,31 @@ def select_relevant_files(user_text: str, context_list: list) -> list:
     print("🧠 Context Layer: Selecting the best files for this task...")
     text_lower = user_text.lower()
 
-    if "كل" in text_lower or "all" in text_lower or str(total_files) in text_lower:
-        print(f"🎯 Selected ALL {total_files} relevant files (Fast Rule)")
+    # ── Fast rule 1: "كل"/"all" أو طلب مقارنة → استخدم كل الملفات ──
+    all_words = [
+        "كل", "all", "قارن", "فرق", "مقارنة", "اختلاف", "بينهم",
+        "الصورتين", "compare", "difference", "both",
+    ]
+    if any(w in text_lower for w in all_words) or str(total_files) in text_lower:
+        print(f"🎬 Selected ALL {total_files} relevant files (Fast Rule)")
         return context_list
 
+    # ── Fast rule 2: مفيش رقم/ترتيب صريح → استخدم آخر ملف اترفع ──
+    # FIX: لما اليوزر يرفع ملف ويسأل سؤال عام ("شايف ايه"، "describe it")،
+    # مانسيبش الموديل يخمّن رقم (كان بيقع على File 1 = الأقدم).
+    # الافتراضي بقى آخر ملف اترفع (الأحدث).
+    ordinal_hints = [
+        "الأول", "الاول", "الثاني", "التاني", "الثالث", "التالت", "الرابع",
+        "الخامس", "السادس", "الأخير", "الاخير", "رقم",
+        "first", "second", "third", "fourth", "fifth", "sixth", "last", "number",
+    ]
+    has_number = any(ch.isdigit() for ch in user_text)
+    has_ordinal = any(h in text_lower for h in ordinal_hints)
+    if not has_number and not has_ordinal:
+        print("🎯 No specific file mentioned — using the latest attachment")
+        return [context_list[-1]]
+
+    # ── غير كده: اسأل الموديل يستخرج أرقام الملفات المطلوبة ──
     files_info = "".join(
         f"File {i}: {os.path.basename(item['path'])}\n"
         for i, item in enumerate(context_list, 1)
@@ -258,17 +279,18 @@ def select_relevant_files(user_text: str, context_list: list) -> list:
         "Reply ONLY with the digits separated by commas (e.g., 1, 4). No text."
     )
     try:
-        r   = _deps.safe_chat(model=_model(), messages=[{"role": "user", "content": prompt}])
+        r = _deps.safe_chat(model=_model(), messages=[{"role": "user", "content": prompt}])
         ans = _deps.get_response(r).strip()
-        selected_ids   = [int(s) - 1 for s in ans.replace(",", " ").split() if s.isdigit()]
+        selected_ids = [int(s) - 1 for s in ans.replace(",", " ").split() if s.isdigit()]
         selected_files = [context_list[i] for i in selected_ids if 0 <= i < total_files]
         if selected_files:
-            print(f"🎯 Selected {len(selected_files)} relevant files out of {total_files}")
+            print(f"🎬 Selected {len(selected_files)} relevant files out of {total_files}")
             return selected_files
     except Exception as e:
         print(f"⚠️ Context selection error: {e}")
 
-    return context_list
+    # Final fallback: آخر ملف (مش الأقدم)
+    return [context_list[-1]]
 
 
 # ── Brain prompt builder ──────────────────────────────────────────────────────
